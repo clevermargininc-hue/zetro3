@@ -18,9 +18,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
     setError(null);
     setInfo(null);
     setLoading(true);
-    const supabase = createClient();
 
     try {
+      const supabase = createClient();
       if (mode === "signup") {
         const { error: signError } = await supabase.auth.signUp({
           email,
@@ -54,15 +54,18 @@ export function AuthForm({ mode }: { mode: Mode }) {
   async function signInWithOAuth(provider: "google" | "azure") {
     setLoading(true);
     setError(null);
-    const supabase = createClient();
-    const { error: signError } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    if (signError) {
-      setError(signError.message);
+    
+    try {
+      const supabase = createClient();
+      const { error: signError } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (signError) throw signError;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
       setLoading(false);
     }
   }
