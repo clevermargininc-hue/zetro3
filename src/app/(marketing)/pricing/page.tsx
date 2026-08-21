@@ -23,19 +23,21 @@ export default function PricingPage() {
         {/* Tier 1 */}
         <div className="bg-white rounded-3xl p-8 border border-line/50 flex flex-col hover:shadow-lg transition-shadow">
           <h3 className="text-2xl font-bold text-ink mb-2">Starter</h3>
-          <p className="text-muted text-sm mb-6">Perfect for small teams testing the waters.</p>
+          <p className="text-muted text-sm mb-6">For small teams getting started with AI-powered QA.</p>
           <div className="mb-6">
-            <span className="text-4xl font-extrabold text-ink">$0.03</span>
-            <span className="text-muted font-medium"> / minute</span>
+            <span className="text-4xl font-extrabold text-ink">$79</span>
+            <span className="text-muted font-medium"> / month</span>
           </div>
           <ul className="space-y-4 mb-8 flex-1 text-sm text-ink/80 font-medium">
-             <li className="flex gap-3"><svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Bilingual Audio Transcription</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Standard QA Scorecards</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Basic Analytics</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Pay-as-you-go billing</li>
+             <li className="flex gap-3"><svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>2,000 AI minutes</li>
+             <li className="flex gap-3"><svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Automated QA scorecards</li>
+             <li className="flex gap-3"><svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Compliance checks & Sentiment analysis</li>
+             <li className="flex gap-3"><svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Agent performance & Basic analytics</li>
+             <li className="flex gap-3"><svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>English + Swahili</li>
+             <li className="flex gap-3"><svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Renew monthly. Cancel anytime.</li>
           </ul>
           <Link href="/signup" className="btn btn-blue w-full shadow-md shadow-blue/20">
-            Start for free
+            Start Free
           </Link>
         </div>
 
@@ -45,40 +47,62 @@ export default function PricingPage() {
             Most Popular
           </div>
           <h3 className="text-2xl font-bold text-white mb-2">Professional</h3>
-          <p className="text-blue-100 text-sm mb-6">For growing contact centers needing predictability.</p>
+          <p className="text-blue-100 text-sm mb-6">For growing contact centers that need full QA automation.</p>
           <div className="mb-6">
-            <span className="text-4xl font-extrabold text-white">$49</span>
-            <span className="text-blue-100 font-medium"> / agent / mo</span>
+            <span className="text-4xl font-extrabold text-white">$249</span>
+            <span className="text-blue-100 font-medium"> / month</span>
           </div>
           <ul className="space-y-4 mb-8 flex-1 text-sm text-white font-medium">
-             <li className="flex gap-3"><svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Includes 2,000 minutes per agent</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Custom SOP & Manual Uploads</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Advanced Coaching Dashboards</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>1-Year Data Retention</li>
+             <li className="flex gap-3"><svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>10,000 AI minutes</li>
+             <li className="flex gap-3"><svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Everything in Starter</li>
+             <li className="flex gap-3"><svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Advanced QA scorecards</li>
+             <li className="flex gap-3"><svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Custom SOPs & knowledge base</li>
+             <li className="flex gap-3"><svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Team & agent analytics</li>
+             <li className="flex gap-3"><svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Priority support</li>
           </ul>
           <Link href="/signup" className="btn bg-white text-blue hover:bg-surface-2 w-full shadow-md">
-            Start Free Trial
+            Start Free
           </Link>
         </div>
 
         {/* Tier 3 */}
         <div className="bg-surface-2 rounded-3xl p-8 border border-line/50 flex flex-col hover:shadow-lg transition-shadow">
           <h3 className="text-2xl font-bold text-ink mb-2">Enterprise</h3>
-          <p className="text-muted text-sm mb-6">For large scale operations with custom needs.</p>
+          <p className="text-muted text-sm mb-6">For large contact centers with complex requirements.</p>
           <div className="mb-6 pt-2 pb-2">
             <span className="text-3xl font-extrabold text-ink">Custom</span>
           </div>
           <ul className="space-y-4 mb-8 flex-1 text-sm text-ink/80 font-medium">
-             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Volume Discounts</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Custom AI Fine-tuning</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>SSO & Active Directory Integration</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Dedicated Success Manager & SLAs</li>
+             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Unlimited/custom volume</li>
+             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Custom integrations & Custom retention</li>
+             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>SSO / Microsoft Entra</li>
+             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Custom QA & AI Policies</li>
+             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Dedicated support & SLA</li>
           </ul>
           <Link href="/talk-sales" className="btn bg-white border border-line/50 text-ink hover:bg-surface-2 w-full shadow-sm">
-            Contact Sales
+            Talk to Sales
           </Link>
         </div>
 
+      </div>
+
+      <div className="max-w-4xl mx-auto mt-16 p-8 bg-surface-2 border border-line/50 rounded-2xl">
+        <h4 className="font-bold text-ink mb-4">Overage Pricing (Pay as you scale)</h4>
+        <p className="text-muted text-sm mb-4">If you exceed your included monthly AI minutes, you will only be billed for what you use:</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm font-medium">
+          <div className="bg-white p-4 rounded-xl border border-line/40">
+            <span className="block text-muted mb-1">Starter</span>
+            <span className="text-ink text-lg font-bold">$0.05 <span className="text-sm font-normal text-muted">/ min</span></span>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-line/40">
+            <span className="block text-muted mb-1">Professional</span>
+            <span className="text-ink text-lg font-bold">$0.035 <span className="text-sm font-normal text-muted">/ min</span></span>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-line/40">
+            <span className="block text-muted mb-1">Enterprise</span>
+            <span className="text-ink text-lg font-bold">Custom <span className="text-sm font-normal text-muted">(&#60; $0.02)</span></span>
+          </div>
+        </div>
       </div>
     </div>
   );
