@@ -1,28 +1,52 @@
+import { nearDuplicate, soften } from "@/lib/text-distance";
+import { repairSwahiliTranscript } from "@/lib/swahili-repair";
+
 function normalize(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  return soften(text);
 }
 
-function similar(a: string, b: string) {
+function sameText(a: string, b: string) {
   const x = normalize(a);
   const y = normalize(b);
-  if (!x || !y) return false;
-  if (x === y) return true;
-  if (Math.min(x.length, y.length) < 12) return false;
-  if (x.includes(y) || y.includes(x)) return true;
-  const xs = new Set(x.split(" "));
-  const ys = y.split(" ");
-  const overlap = ys.filter((w) => xs.has(w)).length;
-  return overlap / Math.max(ys.length, 1) > 0.86;
+  return Boolean(x) && x === y;
 }
 
+function collapseRepeatedPhrases(text: string) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const out: string[] = [];
+  let i = 0;
+  while (i < words.length) {
+    let skipped = false;
+    const maxN = Math.min(20, Math.floor((words.length - i) / 2));
+    for (let n = maxN; n >= 6; n--) {
+      const chunk = words.slice(i, i + n).join(" ");
+      let copies = 0;
+      while (
+        i + n * (copies + 1) <= words.length &&
+        nearDuplicate(chunk, words.slice(i + n * (copies + 1), i + n * (copies + 2)).join(" "))
+      ) {
+        copies += 1;
+      }
+      if (copies > 0) {
+        out.push(...words.slice(i, i + n));
+        i += n * (copies + 1);
+        skipped = true;
+        break;
+      }
+    }
+    if (!skipped) {
+      out.push(words[i]);
+      i += 1;
+    }
+  }
+  return out.join(" ");
+}
+
+/** Collapse ASR stutter loops. Does not invent new wording. */
 export function collapseAsrLoops(text: string) {
   if (!text) return text;
 
-  let collapsed = text;
+  let collapsed = collapseRepeatedPhrases(text);
   for (let i = 0; i < 4; i++) {
     collapsed = collapsed.replace(/(.{10,120}?)(?:\s*\1){1,}/gi, "$1");
   }
@@ -33,28 +57,20 @@ export function collapseAsrLoops(text: string) {
   for (const part of parts) {
     const next = part.trim();
     if (!next) continue;
-    if (out.some((prev) => similar(prev, next))) continue;
+    const prev = out[out.length - 1];
+    if (prev && (sameText(prev, next) || nearDuplicate(prev, next))) continue;
     out.push(next);
   }
   return out.join(" ").replace(/\s+/g, " ").trim();
 }
 
-export function collapseTurnList<T extends { text: string; role?: string }>(turns: T[]): T[] {
+export function collapseTurnList<T extends { text: string }>(turns: T[]): T[] {
   const out: T[] = [];
   for (const turn of turns) {
-    const text = collapseAsrLoops(turn.text);
+    const text = collapseAsrLoops(repairSwahiliTranscript(turn.text));
     if (!text) continue;
     const prev = out[out.length - 1];
-    if (prev && similar(prev.text, text)) continue;
-    if (
-      prev &&
-      prev.role &&
-      turn.role &&
-      prev.role === turn.role &&
-      similar(prev.text, text)
-    ) {
-      continue;
-    }
+    if (prev && (sameText(prev.text, text) || nearDuplicate(prev.text, text))) continue;
     out.push({ ...turn, text });
   }
   return out;

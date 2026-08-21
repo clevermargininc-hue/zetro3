@@ -60,7 +60,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       const { error: signError } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
         },
       });
       if (signError) throw signError;

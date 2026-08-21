@@ -1,11 +1,13 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  assemblyNetworkMessage,
+  isAssemblyNetworkError,
   submitTranscript,
   uploadToAssemblyAI,
   waitForTranscript,
 } from "@/lib/assemblyai";
-import { analyzeCall, refineTranscript } from "@/lib/openai";
-import { collapseAsrLoops, collapseTurnList } from "@/lib/collapse-asr";
+import { analyzeCall } from "@/lib/openai";
+import { collapseTurnList } from "@/lib/collapse-asr";
 import {
   loadQaDocuments,
   requireReadableStandards,
@@ -67,7 +69,12 @@ export async function transcribeCall(callId: string) {
       .download(call.audio_path);
 
     if (downloadError || !file) {
-      throw new Error(downloadError?.message || "Could not download the recording");
+      const detail = downloadError?.message || "";
+      throw new Error(
+        /fetch failed|timeout|network/i.test(detail)
+          ? "Could not download the recording. Check your internet connection and try again."
+          : detail || "Could not download the recording",
+      );
     }
 
     const bytes = await file.arrayBuffer();
@@ -88,47 +95,16 @@ export async function transcribeCall(callId: string) {
       throw new Error("No speakers were detected in this recording");
     }
 
-    const collapsed: AssemblyUtterance[] = utterances.map((u) => ({
-      ...u,
-      text: collapseAsrLoops(u.text),
+    const rows = collapseTurnList(utterances).map((u, index) => ({
+      call_id: callId,
+      sequence: index,
+      speaker_label: u.speaker,
+      role: roleForSpeaker(u.speaker),
+      text: u.text,
+      start_ms: u.start,
+      end_ms: u.end,
+      confidence: u.confidence,
     }));
-
-    let rows: Array<{
-      call_id: string;
-      sequence: number;
-      speaker_label: string;
-      role: SpeakerRole;
-      text: string;
-      start_ms: number;
-      end_ms: number;
-      confidence: number;
-    }>;
-
-    try {
-      const cleaned = collapseTurnList(await refineTranscript(collapsed));
-      rows = cleaned.map((turn, index) => ({
-        call_id: callId,
-        sequence: index,
-        speaker_label: turn.role === "agent" ? "Agent" : "Customer",
-        role: turn.role,
-        text: collapseAsrLoops(turn.text),
-        start_ms: turn.start_ms,
-        end_ms: turn.end_ms,
-        confidence: 1,
-      }));
-    } catch (cleanError) {
-      console.error("Transcript cleanup failed, using raw diarization", cleanError);
-      rows = collapsed.map((u, index) => ({
-        call_id: callId,
-        sequence: index,
-        speaker_label: u.speaker,
-        role: roleForSpeaker(u.speaker),
-        text: u.text,
-        start_ms: u.start,
-        end_ms: u.end,
-        confidence: u.confidence,
-      }));
-    }
 
     await supabase.from("utterances").delete().eq("call_id", callId);
     await supabase.from("call_scores").delete().eq("call_id", callId);
@@ -148,7 +124,11 @@ export async function transcribeCall(callId: string) {
       })
       .eq("id", callId);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown transcription error";
+    const message = isAssemblyNetworkError(err)
+      ? assemblyNetworkMessage(err)
+      : err instanceof Error
+        ? err.message
+        : "Unknown transcription error";
     if (supabase) {
       await supabase
         .from("calls")

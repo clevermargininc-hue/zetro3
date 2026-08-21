@@ -220,6 +220,14 @@ create policy "call_audio_select_own" on storage.objects
     and split_part(name, '/', 1) = auth.uid()::text
   );
 
+drop policy if exists "call_audio_delete_own" on storage.objects;
+create policy "call_audio_delete_own" on storage.objects
+  for delete to authenticated
+  using (
+    bucket_id = 'call-audio'
+    and split_part(name, '/', 1) = auth.uid()::text
+  );
+
 insert into storage.buckets (id, name, public)
 values ('qa-documents', 'qa-documents', false)
 on conflict (id) do nothing;

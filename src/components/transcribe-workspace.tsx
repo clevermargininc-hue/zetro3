@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { authFetch } from "@/lib/auth-fetch";
 import { waitForCallStatus } from "@/lib/wait-call-status";
+import { DeleteCallButton } from "@/components/delete-call-button";
 import { StatusPill, useCallLive } from "@/components/use-call-live";
 import { TranscriptView } from "@/components/transcript-view";
 import { AuditActions } from "@/components/audit-actions";
@@ -18,7 +19,7 @@ export function TranscribeWorkspace({
   initialUtterances: Utterance[];
   initialScore: CallScore | null;
 }) {
-  const { call, setCall, utterances } = useCallLive(
+  const { call, setCall, utterances, audioUrl } = useCallLive(
     initialCall,
     initialUtterances,
     initialScore,
@@ -71,6 +72,12 @@ export function TranscribeWorkspace({
             {call.detected_language ? call.detected_language : ""}
           </p>
         </div>
+        <DeleteCallButton
+          callId={call.id}
+          title={call.title}
+          status={call.status}
+          redirectTo="/calls"
+        />
       </div>
 
       {(actionError || call.error_message) && (
@@ -84,7 +91,7 @@ export function TranscribeWorkspace({
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-ink">Generate Transcript</h2>
           <p className="mt-4 text-[15px] leading-relaxed text-muted">
-            The system will transcribe the audio, separate the speakers, and format the conversation into a clean, readable script.
+            The system will transcribe the original recording as spoken, separate the speakers, and keep the wording verbatim.
           </p>
           <button
             type="button"
@@ -136,7 +143,7 @@ export function TranscribeWorkspace({
           </section>
 
           <div className="transition-all duration-500">
-            <TranscriptView utterances={utterances} />
+            <TranscriptView utterances={utterances} audioUrl={audioUrl} />
           </div>
           
           <div className="flex justify-center pt-4">

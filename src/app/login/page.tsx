@@ -2,7 +2,19 @@ import Link from "next/link";
 import { AuthForm } from "@/components/auth-form";
 import { Logo } from "@/components/logo";
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string; error?: string }>;
+}) {
+  const { error } = await searchParams;
+  const oauthError =
+    error === "oauth" || error === "oauth_missing_code"
+      ? "Google sign-in did not finish. Try again, or use email."
+      : error
+        ? decodeURIComponent(error)
+        : null;
+
   return (
     <div className="grid min-h-screen bg-white lg:grid-cols-2">
       <div className="hidden flex-col justify-between bg-blue p-10 text-white lg:flex">
@@ -24,6 +36,7 @@ export default function LoginPage() {
           <p className="mt-2 text-sm text-muted">
             Access your workspace to review calls and agent scores.
           </p>
+          {oauthError ? <p className="alert-error mt-4">{oauthError}</p> : null}
           <div className="mt-8">
             <AuthForm mode="login" />
           </div>

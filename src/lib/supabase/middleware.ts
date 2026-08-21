@@ -34,6 +34,16 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+  const oauthCode = request.nextUrl.searchParams.get("code");
+  if (oauthCode && !path.startsWith("/auth/callback")) {
+    const callback = request.nextUrl.clone();
+    callback.pathname = "/auth/callback";
+    if (!callback.searchParams.get("next")) {
+      callback.searchParams.set("next", "/dashboard");
+    }
+    return NextResponse.redirect(callback);
+  }
+
   const isPublic =
     PUBLIC_PATHS.has(path) ||
     path.startsWith("/auth") ||

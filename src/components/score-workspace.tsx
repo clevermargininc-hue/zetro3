@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { DeleteCallButton } from "@/components/delete-call-button";
 import { StatusPill, useCallLive } from "@/components/use-call-live";
 import { ScoreCard } from "@/components/score-card";
 import { AuditActions } from "@/components/audit-actions";
@@ -43,11 +44,15 @@ export function ScoreWorkspace({
           </p>
         </div>
         
-        {score && (
-          <div className="no-print flex flex-wrap items-center gap-3">
-             <CallAuditExport callId={call.id} />
-          </div>
-        )}
+        <div className="no-print flex flex-wrap items-center gap-3">
+          {score ? <CallAuditExport callId={call.id} /> : null}
+          <DeleteCallButton
+            callId={call.id}
+            title={call.title}
+            status={call.status}
+            redirectTo="/calls"
+          />
+        </div>
       </div>
 
       {call.error_message && <div className="alert-error no-print shadow-sm rounded-xl">{call.error_message}</div>}

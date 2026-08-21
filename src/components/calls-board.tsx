@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { DeleteCallButton } from "@/components/delete-call-button";
 import { auditLabel, auditStatus, formatDate, languageLabel, verdictLabel } from "@/lib/format";
 import type { AuditStatus } from "@/lib/format";
 import type { Call, CallScore, CallStatus } from "@/lib/types";
@@ -136,23 +137,34 @@ export function CallsBoard({ initialCalls }: { initialCalls: CallRow[] }) {
                     )}
                   </td>
                   <td className="px-6 py-4">
-                    {call.status === "queued" || call.status === "failed" ? (
-                      <Link href={`/calls/${call.id}/transcribe`} className="btn btn-blue shadow-md shadow-blue/20 hover:-translate-y-0.5 active:translate-y-0">
-                        Transcribe call
-                      </Link>
-                    ) : call.status === "transcribing" ? (
-                      <Link href={`/calls/${call.id}/transcribe`} className="btn btn-ghost border border-line bg-surface-2 hover:-translate-y-0.5 active:translate-y-0 shadow-sm">
-                        View progress
-                      </Link>
-                    ) : call.status === "completed" ? (
-                      <Link href={`/calls/${call.id}/score`} className="btn btn-ghost border border-line hover:bg-surface-2 hover:-translate-y-0.5 active:translate-y-0 shadow-sm">
-                        View Score
-                      </Link>
-                    ) : (
-                      <Link href={`/calls/${call.id}/transcribe`} className="btn bg-blue-soft text-blue hover:bg-blue/10 hover:-translate-y-0.5 active:translate-y-0 shadow-sm">
-                        Audit / Score
-                      </Link>
-                    )}
+                    <div className="flex flex-wrap items-center gap-3">
+                      {call.status === "queued" || call.status === "failed" ? (
+                        <Link href={`/calls/${call.id}/transcribe`} className="btn btn-blue shadow-md shadow-blue/20 hover:-translate-y-0.5 active:translate-y-0">
+                          Transcribe call
+                        </Link>
+                      ) : call.status === "transcribing" ? (
+                        <Link href={`/calls/${call.id}/transcribe`} className="btn btn-ghost border border-line bg-surface-2 hover:-translate-y-0.5 active:translate-y-0 shadow-sm">
+                          View progress
+                        </Link>
+                      ) : call.status === "completed" ? (
+                        <Link href={`/calls/${call.id}/score`} className="btn btn-ghost border border-line hover:bg-surface-2 hover:-translate-y-0.5 active:translate-y-0 shadow-sm">
+                          View Score
+                        </Link>
+                      ) : (
+                        <Link href={`/calls/${call.id}/transcribe`} className="btn bg-blue-soft text-blue hover:bg-blue/10 hover:-translate-y-0.5 active:translate-y-0 shadow-sm">
+                          Audit / Score
+                        </Link>
+                      )}
+                      <DeleteCallButton
+                        callId={call.id}
+                        title={call.title}
+                        status={call.status}
+                        compact
+                        onDeleted={() =>
+                          setCalls((rows) => rows.filter((row) => row.id !== call.id))
+                        }
+                      />
+                    </div>
                   </td>
                 </tr>
               );

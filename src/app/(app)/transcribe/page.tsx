@@ -22,8 +22,8 @@ export default async function TranscribePage() {
           <p className="page-kicker">Transcription</p>
           <h1 className="mt-1 text-2xl font-semibold">Transcribe calls</h1>
           <p className="mt-1 max-w-xl text-sm text-muted">
-            AssemblyAI transcribes audio and splits speakers. GPT-5-mini then labels Agent vs Customer
-            and writes the clean script.
+            AssemblyAI transcribes the original recording and splits speakers. The script is kept
+            verbatim so you can check each line against the audio.
           </p>
         </div>
         <Link href="/upload" className="btn btn-blue">
@@ -40,11 +40,11 @@ export default async function TranscribePage() {
           </p>
         </article>
         <article className="panel rounded-xl p-4">
-          <p className="page-kicker">GPT-5-mini</p>
-          <h2 className="mt-2 text-sm font-semibold">Speaker roles & clean script</h2>
+          <p className="page-kicker">Original audio</p>
+          <h2 className="mt-2 text-sm font-semibold">Click a line to hear it</h2>
           <p className="mt-1.5 text-sm leading-6 text-muted">
-            Decides who is the agent and who is the customer from the conversation, then repairs
-            the script without translating or inventing lines.
+            We do not rewrite or repair the script. Play the original recording next to each line
+            to confirm what was said.
           </p>
         </article>
       </div>
