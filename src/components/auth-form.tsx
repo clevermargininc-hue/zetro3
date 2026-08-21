@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "login" | "signup";
 
 export function AuthForm({ mode }: { mode: Mode }) {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -40,8 +38,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
           password,
         });
         if (signError) throw signError;
-        router.push("/dashboard");
-        router.refresh();
+        
+        // Force a hard navigation. This completely clears Next.js router cache 
+        // and transitions from the unauthenticated layout to the dashboard layout 
+        // much faster than a client-side transition.
+        window.location.href = "/dashboard";
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

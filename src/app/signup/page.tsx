@@ -4,7 +4,7 @@ import { Logo } from "@/components/logo";
 
 export default function SignupPage() {
   return (
-    <div className="grid min-h-full bg-white lg:grid-cols-2">
+    <div className="grid min-h-screen bg-white lg:grid-cols-2">
       <div className="hidden flex-col justify-between bg-blue p-10 text-white lg:flex">
         <Logo invert />
         <div>
