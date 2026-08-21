@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Zetro — bilingual call QA
 
-## Getting Started
+Upload a call-center recording. AssemblyAI separates the **agent** from the **customer** (Kiswahili, English, or mixed). OpenAI writes a clean two-speaker transcript, scores the agent, and ranks the team.
 
-First, run the development server:
+## What it does
+
+1. You upload a call (`mp3`, `wav`, `m4a`, `mp4`, …) and name the agent.
+2. **AssemblyAI** transcribes the audio (speech-to-text) and **diarizes** it: splits the two speakers and suggests Agent / Customer roles, with code-switching so mixed Kiswahili/English stays in the original languages.
+3. **GPT-5-mini** **corrects speaker roles** from the conversation and writes a clean two-speaker script (no translation).
+4. You upload **process documents**, a **scorecard**, and **compliance** files. **text-embedding-3-small** indexes them. **GPT-5 cannot score or audit** until all three are readable.
+5. **GPT-5** scores against retrieved chunks from those files (not a generic rubric) and lists compliance findings.
+
+## Stack
+
+- Next.js App Router
+- Supabase Auth, Postgres, Storage, Realtime
+- AssemblyAI Universal (speaker labels + Kiswahili support)
+- OpenAI Chat Completions with structured JSON
+
+## Setup
+
+### 1. Install
+
+```bash
+npm install
+```
+
+Copy environment variables:
+
+```bash
+copy .env.example .env.local
+```
+
+### 2. Supabase
+
+1. Create a project at [supabase.com](https://supabase.com).
+2. Project Settings → API: copy **Project URL**, **anon key**, and **service role key** into `.env.local`.
+3. Authentication → URL configuration: add `http://localhost:3000/auth/callback` to Redirect URLs. Site URL: `http://localhost:3000`.
+4. Optional for local testing: Authentication → Providers → Email → turn **off** “Confirm email”.
+5. SQL Editor: paste and run [`supabase/schema.sql`](supabase/schema.sql). That creates tables, RLS, the `call-audio` and `qa-documents` buckets, and realtime.
+6. Existing projects: also run [`supabase/qa-standards.sql`](supabase/qa-standards.sql).
+
+### 3. AssemblyAI
+
+Create an API key at [assemblyai.com](https://www.assemblyai.com). Put it in `ASSEMBLYAI_API_KEY`.
+
+Language handling:
+
+- **Mixed English + Kiswahili** (default): Universal-2 with `language_codes: ["en", "sw"]` and a fallback to auto-detect + code-switching.
+- **Kiswahili**: `language_code: "sw"`.
+- **English**: Universal-3 Pro with Universal-2 fallback.
+- **Auto-detect**: language detection + code-switching.
+
+Speaker ID uses AssemblyAI role identification (`Agent` / `Customer`), then OpenAI corrects labels from the conversation.
+
+### 4. OpenAI
+
+Create an API key at [platform.openai.com](https://platform.openai.com). Put it in `OPENAI_API_KEY`. Optional: `OPENAI_PROJECT` if the key belongs to a specific project.
+
+Default models:
+
+- `AI_REASONING_MODEL=gpt-5` — reads retrieved scorecard/compliance chunks and scores the agent
+- `AI_FAST_MODEL=gpt-5-mini` — cleans the two-speaker script
+- `AI_EMBEDDING_MODEL=text-embedding-3-small` — indexes uploaded files
+- `LLM_PROVIDER=openai` and `EMBEDDING_PROVIDER=openai`
+- `AI_TEMPERATURE=0.1`, `AI_MAX_RETRIES=3`, `AI_TIMEOUT=120000`
+
+### 5. Run
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000), sign up, and upload a call. Transcription of a few-minute recording usually takes 30–90 seconds. Keep the call page open; it polls until scoring is done.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Processing flow
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+Browser → Supabase Storage (private bucket)
+       → POST /api/calls
+       → POST /api/calls/:id/process
+            → AssemblyAI: speech-to-text + speaker diarization (Agent / Customer hints)
+            → GPT-5-mini: correct roles + clean two-speaker script
+            → text-embedding-3-small indexes process document + scorecard + compliance
+            → GPT-5 analysis against retrieved chunks (confirm roles + scores + compliance findings)
+            → utterances + call_scores rows
+Leaderboard averages overall_score per named agent.
+```
 
-## Learn More
+API keys never leave the server. The service role key is used only in `process-call` to download audio and write analysis rows.
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Set the same env vars on Vercel (or similar). Add the production URL to Supabase redirect URLs. Call processing can take a few minutes — the process route is configured with `maxDuration = 300`.

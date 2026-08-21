@@ -1,0 +1,87 @@
+import { NextResponse, after } from "next/server";
+import { getRequestUser } from "@/lib/supabase/request-user";
+import { scoreCall } from "@/lib/process-call";
+import { loadQaDocuments, summarizeDocuments } from "@/lib/qa-documents";
+import { readinessErrorMessage } from "@/lib/qa-kinds";
+import type { AuditMode } from "@/lib/types";
+
+export const runtime = "nodejs";
+export const maxDuration = 300;
+
+function parseMode(value: unknown): AuditMode | null {
+  if (value === "documents" || value === "automatic") return value;
+  return null;
+}
+
+export async function POST(
+  request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { id } = await context.params;
+  const { user, supabase } = await getRequestUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = (await request.json().catch(() => ({}))) as { mode?: unknown };
+  const mode = parseMode(body.mode);
+  if (!mode) {
+    return NextResponse.json(
+      { error: "Choose documents scoring or automatic auditing." },
+      { status: 400 },
+    );
+  }
+
+  const { data: call } = await supabase
+    .from("calls")
+    .select("id, user_id, status")
+    .eq("id", id)
+    .single();
+
+  if (!call || call.user_id !== user.id) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (mode === "documents") {
+    try {
+      const readiness = summarizeDocuments(await loadQaDocuments(user.id));
+      if (!readiness.ready) {
+        return NextResponse.json(
+          {
+            error: readinessErrorMessage(readiness.missing),
+            missing: readiness.missing,
+            code: "STANDARDS_REQUIRED",
+          },
+          { status: 409 },
+        );
+      }
+    } catch (error) {
+      const setupRequired = Boolean(
+        error && typeof error === "object" && "setupRequired" in error,
+      );
+      return NextResponse.json(
+        {
+          error: readinessErrorMessage(
+            ["document", "scorecard", "compliance"],
+            setupRequired,
+          ),
+          code: "STANDARDS_REQUIRED",
+        },
+        { status: 409 },
+      );
+    }
+  }
+
+  if (call.status === "analyzing") {
+    return NextResponse.json({ ok: true, status: "analyzing", mode });
+  }
+
+  const work = scoreCall(id, mode).catch((error) => {
+    console.error("Scoring failed", error);
+  });
+  after(async () => {
+    await work;
+  });
+
+  return NextResponse.json({ ok: true, status: "started", mode });
+}

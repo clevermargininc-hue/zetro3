@@ -1,0 +1,40 @@
+import Link from "next/link";
+import { AuthForm } from "@/components/auth-form";
+import { Logo } from "@/components/logo";
+
+export default function LoginPage() {
+  return (
+    <div className="grid min-h-full bg-white lg:grid-cols-2">
+      <div className="hidden flex-col justify-between bg-blue p-10 text-white lg:flex">
+        <Logo invert />
+        <div>
+          <p className="text-sm font-medium text-white/70">Enterprise call QA</p>
+          <h1 className="mt-3 max-w-md text-3xl font-semibold leading-snug">
+            Quality intelligence for bilingual contact centers.
+          </h1>
+        </div>
+        <p className="text-sm text-white/70">Kiswahili · English · Mixed language operations</p>
+      </div>
+      <div className="grid place-items-center bg-white px-5 py-16">
+        <div className="w-full max-w-md">
+          <div className="lg:hidden">
+            <Logo />
+          </div>
+          <h1 className="mt-8 text-2xl font-semibold lg:mt-0">Sign in to Zetro</h1>
+          <p className="mt-2 text-sm text-muted">
+            Access your workspace to review calls and agent scores.
+          </p>
+          <div className="mt-8">
+            <AuthForm mode="login" />
+          </div>
+          <p className="mt-6 text-sm text-muted">
+            New organization?{" "}
+            <Link href="/signup" className="font-medium text-blue hover:underline">
+              Create a workspace
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

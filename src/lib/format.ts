@@ -1,0 +1,102 @@
+import type { CallStatus, Verdict } from "./types";
+
+export function formatClock(ms: number | null | undefined) {
+  if (ms == null || Number.isNaN(ms)) return "0:00";
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+export function formatDuration(seconds: number | null | undefined) {
+  if (seconds == null) return "—";
+  return formatClock(seconds * 1000);
+}
+
+export function formatDate(iso: string) {
+  return new Intl.DateTimeFormat("en-KE", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(iso));
+}
+
+export function scoreTone(score: number | null | undefined) {
+  if (score == null) return "muted";
+  if (score >= 85) return "excellent";
+  if (score >= 70) return "good";
+  if (score >= 50) return "warn";
+  return "poor";
+}
+
+export function verdictLabel(verdict: Verdict | string | null) {
+  switch (verdict) {
+    case "excellent":
+      return "Excellent service";
+    case "good":
+      return "Good service";
+    case "needs_improvement":
+      return "Needs improvement";
+    case "poor":
+      return "Poor service";
+    default:
+      return "Not scored";
+  }
+}
+
+export function statusLabel(status: CallStatus) {
+  switch (status) {
+    case "queued":
+      return "Uploaded";
+    case "transcribing":
+      return "Transcribing speakers";
+    case "transcribed":
+      return "Transcript ready";
+    case "analyzing":
+      return "Scoring the agent";
+    case "completed":
+      return "Scored";
+    case "failed":
+      return "Failed";
+  }
+}
+
+export type AuditStatus = "processing" | "transcribed" | "audited" | "failed";
+
+export function auditStatus(status: CallStatus): AuditStatus {
+  if (status === "completed") return "audited";
+  if (status === "transcribed") return "transcribed";
+  if (status === "failed") return "failed";
+  return "processing";
+}
+
+export function auditLabel(status: CallStatus) {
+  switch (auditStatus(status)) {
+    case "audited":
+      return "Scored / Audited";
+    case "transcribed":
+      return "Transcribed";
+    case "failed":
+      return "Failed";
+    default:
+      return "Processing";
+  }
+}
+
+export function languageLabel(mode: string | null) {
+  switch (mode) {
+    case "en":
+      return "English";
+    case "sw":
+      return "Kiswahili";
+    case "mixed":
+      return "English + Kiswahili";
+    case "auto":
+      return "Auto-detect";
+    default:
+      return mode || "Unknown";
+  }
+}
