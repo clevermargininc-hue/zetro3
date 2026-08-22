@@ -135,6 +135,7 @@ export async function GET(request: Request) {
       members,
       requests,
       invites,
+      mailConfigured: Boolean(process.env.RESEND_API_KEY?.trim()),
     });
   } catch (error) {
     return jsonError(error);

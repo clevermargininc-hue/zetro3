@@ -18,6 +18,7 @@ type TeamData = {
   members: Person[];
   requests: Array<Person & { id: string; createdAt: string }>;
   invites?: Array<{ id: string; email: string; token: string; createdAt: string }>;
+  mailConfigured?: boolean;
   error?: string;
 };
 
@@ -29,6 +30,7 @@ function personLabel(person: { username?: string; fullName: string; email: strin
 export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
   const [data, setData] = useState<TeamData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [inviteDraft, setInviteDraft] = useState("");
 
@@ -65,14 +67,21 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
         (body.action === "invite" && json.emailed === 0) ||
         (body.action === "resend-invite" && json.emailed === false)
       ) {
+        setNotice(null);
         setError("Invite saved, but email could not be sent. Copy the link and share it.");
+      } else if (body.action === "invite" || body.action === "resend-invite") {
+        setError(null);
+        setNotice("Invite email sent.");
       } else {
         setError(null);
+        setNotice(null);
       }
       await load();
       return true;
     } catch (err) {
+      setNotice(null);
       setError(err instanceof Error ? err.message : "Could not update");
+      if (body.action === "invite" || body.action === "resend-invite") await load();
       return false;
     } finally {
       setBusy(null);
@@ -90,6 +99,7 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
   return (
     <div className="space-y-8">
       {error ? <p className="alert-error">{error}</p> : null}
+      {notice ? <p className="alert-ok">{notice}</p> : null}
       {data ? (
         <>
           {!embedded ? (
@@ -113,6 +123,11 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
                   We’ll email them a link to join this workspace.
                 </p>
               )}
+              {data.mailConfigured === false ? (
+                <p className="alert-error mt-3">
+                  Invite email is not configured on this server. Restart the app after adding RESEND_API_KEY, and add the same key in Vercel.
+                </p>
+              ) : null}
               <form
                 className="mt-4 flex flex-col gap-3 sm:flex-row"
                 onSubmit={async (event) => {

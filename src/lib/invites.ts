@@ -20,34 +20,77 @@ export function inviteJoinUrl(origin: string, token: string) {
   return `${origin}/invite/${token}`;
 }
 
-async function sendResendInvite(input: {
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (char) => {
+    const map: Record<string, string> = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    };
+    return map[char] || char;
+  });
+}
+
+async function postResendEmail(input: {
+  key: string;
+  from: string;
   to: string;
   workspaceName: string;
   inviterName: string;
   url: string;
 }) {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return false;
-  const from = process.env.RESEND_FROM || "Zetro <beth.t@example.com>";
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${key}`,
+      Authorization: `Bearer ${input.key}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from,
+      from: input.from,
       to: [input.to],
       subject: `Join ${input.workspaceName} on Zetro`,
       html: `
-        <p>${input.inviterName} invited you to the <strong>${input.workspaceName}</strong> workspace on Zetro.</p>
+        <p>${escapeHtml(input.inviterName)} invited you to the <strong>${escapeHtml(input.workspaceName)}</strong> workspace on Zetro.</p>
         <p><a href="${input.url}">Accept invitation</a></p>
         <p>If you already have an account, sign in with this email. If not, create one, then open the link again.</p>
       `,
       text: `${input.inviterName} invited you to ${input.workspaceName} on Zetro. Accept: ${input.url}`,
     }),
   });
-  return response.ok;
+  const body = (await response.json().catch(() => ({}))) as { message?: string; name?: string };
+  if (response.ok) return { ok: true as const };
+  return {
+    ok: false as const,
+    message: body.message || `Resend returned ${response.status}.`,
+  };
+}
+
+async function sendResendInvite(input: {
+  to: string;
+  workspaceName: string;
+  inviterName: string;
+  url: string;
+}) {
+  const key = process.env.RESEND_API_KEY?.trim();
+  if (!key) {
+    throw new Error("RESEND_API_KEY is missing. Add it in .env.local and in Vercel env vars.");
+  }
+
+  const fromAddresses = [
+    process.env.RESEND_FROM?.trim(),
+    "Zetro <beth.t@example.com>",
+  ].filter((value, index, list): value is string => Boolean(value) && list.indexOf(value) === index);
+
+  let lastError = "Resend could not send the invite email.";
+  for (const from of fromAddresses) {
+    const result = await postResendEmail({ key, from, ...input });
+    if (result.ok) return true;
+    lastError = result.message;
+    if (!/domain|verified|from|testing emails/i.test(result.message)) break;
+  }
+  throw new Error(lastError);
 }
 
 function rowToInvite(
@@ -173,23 +216,13 @@ export async function emailInviteLink(input: {
 }) {
   const url = inviteJoinUrl(input.origin, input.token);
   const inviterName = input.inviterEmail.split("@")[0] || "A teammate";
-
-  if (process.env.RESEND_API_KEY) {
-    const emailed = await sendResendInvite({
-      to: input.email,
-      workspaceName: input.workspaceName,
-      inviterName,
-      url,
-    });
-    return { emailed, joinUrl: url };
-  }
-
-  const supabase = createAdminClient();
-  const authInvite = await supabase.auth.admin.inviteUserByEmail(input.email, {
-    data: { invite_token: input.token },
-    redirectTo: `${input.origin}/auth/callback?next=/invite/${input.token}`,
+  await sendResendInvite({
+    to: input.email,
+    workspaceName: input.workspaceName,
+    inviterName,
+    url,
   });
-  return { emailed: !authInvite.error, joinUrl: url };
+  return { emailed: true, joinUrl: url };
 }
 
 export async function sendWorkspaceInvites(input: {
