@@ -23,6 +23,23 @@ async function userHasWorkspace(
 }
 
 export async function updateSession(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  const oauthCode = request.nextUrl.searchParams.get("code");
+
+  // Google/Microsoft return with ?code=. Do not call getUser() first — it can
+  // overwrite the PKCE verifier cookie the callback needs to exchange the code.
+  if (oauthCode && !path.startsWith("/auth/callback")) {
+    const callback = request.nextUrl.clone();
+    callback.pathname = "/auth/callback";
+    if (!callback.searchParams.get("next")) {
+      callback.searchParams.set("next", "/onboarding");
+    }
+    return NextResponse.redirect(callback);
+  }
+  if (path.startsWith("/auth/callback")) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -51,17 +68,6 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const path = request.nextUrl.pathname;
-  const oauthCode = request.nextUrl.searchParams.get("code");
-  if (oauthCode && !path.startsWith("/auth/callback")) {
-    const callback = request.nextUrl.clone();
-    callback.pathname = "/auth/callback";
-    if (!callback.searchParams.get("next")) {
-      callback.searchParams.set("next", "/onboarding");
-    }
-    return NextResponse.redirect(callback);
-  }
 
   const isPublic =
     PUBLIC_PATHS.has(path) ||

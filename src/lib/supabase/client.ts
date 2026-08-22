@@ -3,5 +3,10 @@ import { getPublicEnv } from "@/lib/env";
 
 export function createClient() {
   const { supabaseUrl, supabaseAnonKey } = getPublicEnv();
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
+  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    cookieOptions: {
+      path: "/",
+      sameSite: "lax",
+    },
+  });
 }

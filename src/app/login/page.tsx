@@ -9,12 +9,13 @@ export default async function LoginPage({
 }) {
   const { error, next } = await searchParams;
   const dest = next && next.startsWith("/") && !next.startsWith("//") ? next : undefined;
+  const decoded = error ? decodeURIComponent(error) : null;
   const oauthError =
-    error === "oauth" || error === "oauth_missing_code"
-      ? "Google sign-in did not finish. Try again, or use email."
-      : error
-        ? decodeURIComponent(error)
-        : null;
+    error === "oauth" || error === "oauth_missing_code" || error === "oauth_pkce"
+      ? "Google sign-in did not finish. Use the same browser tab and try again."
+      : decoded && /pkce|verifier/i.test(decoded)
+        ? "Google sign-in did not finish. Use the same browser tab and try again."
+        : decoded;
 
   return (
     <div className="grid min-h-screen bg-white lg:grid-cols-2">
