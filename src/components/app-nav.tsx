@@ -109,11 +109,13 @@ function linkActive(href: string, pathname: string) {
 export function AppNav({
   email,
   username,
+  displayName,
   workspaceName,
   plan,
 }: {
   email?: string | null;
   username?: string | null;
+  displayName?: string | null;
   workspaceName?: string | null;
   plan?: string | null;
 }) {
@@ -121,6 +123,10 @@ export function AppNav({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const personLabel = username
+    ? `@${username}`
+    : displayName || (email || "").split("@")[0] || "Member";
+  const personInitial = (displayName || username || email || "M").charAt(0);
 
   async function signOut() {
     const supabase = createClient();
@@ -195,12 +201,12 @@ export function AppNav({
         <div className={`p-4 bg-white border-t border-line/40 overflow-hidden`}>
           <div className={`flex items-center rounded-xl bg-surface-2 border border-line/50 ${collapsed ? "justify-center p-2" : "gap-3 px-3 py-2"}`}>
             <div className="h-8 w-8 rounded-full bg-blue/10 flex items-center justify-center text-blue font-bold text-xs uppercase shrink-0">
-               {(username || email || "U").charAt(0)}
+               {personInitial}
             </div>
             {!collapsed && (
               <div className="min-w-0 flex-1 animate-in fade-in duration-200">
                  <p className="truncate text-[13px] font-bold text-ink leading-tight">
-                   {username ? `@${username}` : workspaceName || (email || "").split("@")[0]}
+                   {personLabel}
                  </p>
                  <p className="truncate text-[11px] text-muted leading-tight">
                    {workspaceName ? `${plan === "solo" ? "Solo" : "Team"} · ` : ""}
@@ -281,11 +287,11 @@ export function AppNav({
             <div className="pt-6 mt-6 border-t border-line/40">
                <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white border border-line/50">
                  <div className="h-10 w-10 rounded-full bg-blue/10 flex items-center justify-center text-blue font-bold text-[14px] uppercase shrink-0">
-                    {(username || email || "U").charAt(0)}
+                    {(personInitial)}
                  </div>
                  <div className="min-w-0 flex-1">
                     <p className="truncate text-[14px] font-bold text-ink leading-tight">
-                      {username ? `@${username}` : workspaceName || (email || "").split("@")[0]}
+                      {personLabel}
                     </p>
                     <p className="truncate text-[12px] text-muted">
                       {workspaceName ? `${plan === "solo" ? "Solo" : "Team"} · ` : ""}

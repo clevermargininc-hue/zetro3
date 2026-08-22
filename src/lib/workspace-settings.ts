@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isValidUsername, normalizeUsername } from "@/lib/display-name";
+import { isValidUsername, nameFromAuthUser, normalizeUsername } from "@/lib/display-name";
 
 export async function getAutoAudit(userId: string) {
   const supabase = createAdminClient();
@@ -24,29 +24,56 @@ export async function updateProfileName(userId: string, fullName: string) {
 
 export async function updateUsername(userId: string, username: string) {
   const value = normalizeUsername(username);
+  if (!value) return;
   if (!isValidUsername(value)) {
     throw new Error("Usernames are 3–24 characters: start with a letter, then letters, numbers, or _.");
   }
   const supabase = createAdminClient();
-  const { data: taken } = await supabase
+  const { data: taken, error: takenError } = await supabase
     .from("profiles")
     .select("id")
     .ilike("username", value)
     .neq("id", userId)
     .maybeSingle();
+  if (takenError && (takenError.code === "PGRST204" || /username/i.test(takenError.message))) {
+    return;
+  }
+  if (takenError) throw new Error(takenError.message);
   if (taken) throw new Error("That username is taken.");
   const { error } = await supabase
     .from("profiles")
     .upsert({ id: userId, username: value }, { onConflict: "id" });
   if (error) {
     if (error.code === "PGRST204" || error.message.toLowerCase().includes("username")) {
-      throw new Error("Run supabase/usernames.sql in the Supabase SQL Editor, then set your username.");
+      return;
     }
     if (/duplicate|unique/i.test(error.message)) {
       throw new Error("That username is taken.");
     }
     throw new Error(error.message);
   }
+}
+
+export async function syncProfileFromAuth(user: {
+  id: string;
+  email?: string | null;
+  user_metadata?: Record<string, unknown> | null;
+}) {
+  const supabase = createAdminClient();
+  const nextName = nameFromAuthUser(user);
+  const email = (user.email || "").toLowerCase();
+  const { data: existing } = await supabase
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", user.id)
+    .maybeSingle();
+  const fullName = (existing?.full_name as string | undefined)?.trim() || nextName;
+  const { error } = await supabase.from("profiles").upsert(
+    { id: user.id, email: email || (existing?.email as string) || "", full_name: fullName },
+    { onConflict: "id" },
+  );
+  if (error) throw new Error(error.message);
+  return fullName;
 }
 
 export async function setAutoAudit(userId: string, autoAudit: boolean) {

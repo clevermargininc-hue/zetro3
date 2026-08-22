@@ -175,7 +175,12 @@ begin
   values (
     new.id,
     new.email,
-    coalesce(new.raw_user_meta_data->>'full_name', '')
+    coalesce(
+      nullif(new.raw_user_meta_data->>'full_name', ''),
+      nullif(new.raw_user_meta_data->>'name', ''),
+      nullif(new.raw_user_meta_data->>'given_name', ''),
+      split_part(coalesce(new.email, ''), '@', 1)
+    )
   );
   return new;
 end;

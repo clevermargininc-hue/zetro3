@@ -39,13 +39,31 @@ export default async function AppLayout({
   }
 
   let username: string | null = null;
+  let displayName: string | null = null;
   const profileRes = await supabase
     .from("profiles")
     .select("username, full_name")
     .eq("id", user.id)
     .maybeSingle();
-  if (!profileRes.error) {
+  if (profileRes.error && /username/i.test(profileRes.error.message)) {
+    const fallback = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .maybeSingle();
+    displayName = (fallback.data?.full_name as string) || null;
+  } else if (!profileRes.error) {
     username = (profileRes.data?.username as string) || null;
+    displayName = (profileRes.data?.full_name as string) || null;
+  }
+  if (!displayName) {
+    const meta = user.user_metadata || {};
+    displayName =
+      [meta.full_name, meta.name, meta.given_name]
+        .map((value) => (typeof value === "string" ? value.trim() : ""))
+        .find(Boolean) ||
+      (user.email || "").split("@")[0] ||
+      null;
   }
 
   return (
@@ -53,6 +71,7 @@ export default async function AppLayout({
       <AppNav
         email={user.email}
         username={username}
+        displayName={displayName}
         workspaceName={workspaceName}
         plan={plan}
       />

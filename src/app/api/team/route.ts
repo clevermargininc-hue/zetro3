@@ -21,6 +21,63 @@ function jsonError(error: unknown, fallback = "Something went wrong") {
   );
 }
 
+type ProfileRow = { id: string; email: string; fullName: string; username: string };
+
+async function loadProfiles(
+  supabase: ReturnType<typeof createAdminClient>,
+  ids: string[],
+): Promise<ProfileRow[]> {
+  if (ids.length === 0) return [];
+  const withUsername = await supabase
+    .from("profiles")
+    .select("id, email, full_name, username")
+    .in("id", ids);
+  let rows = withUsername.data;
+  if (withUsername.error && /username/i.test(withUsername.error.message)) {
+    const fallback = await supabase.from("profiles").select("id, email, full_name").in("id", ids);
+    if (fallback.error) throw new Error(fallback.error.message);
+    rows = fallback.data;
+  } else if (withUsername.error) {
+    throw new Error(withUsername.error.message);
+  }
+
+  const mapped = new Map<string, ProfileRow>(
+    (rows || []).map((row) => [
+      row.id as string,
+      {
+        id: row.id as string,
+        email: (row.email as string) || "",
+        fullName: (row.full_name as string) || "",
+        username: ((row as { username?: string }).username as string) || "",
+      },
+    ]),
+  );
+
+  for (const id of ids) {
+    const current = mapped.get(id);
+    if (current?.fullName && current.email) continue;
+    const { data } = await supabase.auth.admin.getUserById(id);
+    const authUser = data.user;
+    if (!authUser) continue;
+    const meta = authUser.user_metadata || {};
+    const fullName =
+      current?.fullName ||
+      [meta.full_name, meta.name, meta.given_name]
+        .map((value) => (typeof value === "string" ? value.trim() : ""))
+        .find(Boolean) ||
+      (authUser.email || "").split("@")[0] ||
+      "";
+    mapped.set(id, {
+      id,
+      email: current?.email || authUser.email || "",
+      fullName,
+      username: current?.username || "",
+    });
+  }
+
+  return [...mapped.values()];
+}
+
 export async function GET(request: Request) {
   const { user } = await getRequestUser(request);
   if (!user) {
@@ -42,19 +99,17 @@ export async function GET(request: Request) {
     if (memberError) throw new Error(memberError.message);
 
     const memberIds = (memberRows || []).map((row) => row.user_id as string);
-    const { data: profiles } = memberIds.length
-      ? await supabase.from("profiles").select("id, email, full_name, username").in("id", memberIds)
-      : { data: [] };
-    const profileById = new Map((profiles || []).map((row) => [row.id as string, row]));
+    const profiles = await loadProfiles(supabase, memberIds);
+    const profileById = new Map(profiles.map((row) => [row.id, row]));
 
     const members = (memberRows || []).map((row) => {
       const profile = profileById.get(row.user_id as string);
       return {
         userId: row.user_id as string,
         role: row.role as string,
-        email: (profile?.email as string) || "",
-        fullName: (profile?.full_name as string) || "",
-        username: (profile?.username as string) || "",
+        email: profile?.email || "",
+        fullName: profile?.fullName || "",
+        username: profile?.username || "",
       };
     });
 
@@ -76,20 +131,16 @@ export async function GET(request: Request) {
         .order("created_at", { ascending: true });
       if (requestError) throw new Error(requestError.message);
       const requesterIds = (requestRows || []).map((row) => row.user_id as string);
-      const { data: requesterProfiles } = requesterIds.length
-        ? await supabase.from("profiles").select("id, email, full_name, username").in("id", requesterIds)
-        : { data: [] };
-      const requesterById = new Map(
-        (requesterProfiles || []).map((row) => [row.id as string, row]),
-      );
+      const requesterProfiles = await loadProfiles(supabase, requesterIds);
+      const requesterById = new Map(requesterProfiles.map((row) => [row.id, row]));
       requests = (requestRows || []).map((row) => {
         const profile = requesterById.get(row.user_id as string);
         return {
           id: row.id as string,
           userId: row.user_id as string,
-          email: (profile?.email as string) || "",
-          fullName: (profile?.full_name as string) || "",
-          username: (profile?.username as string) || "",
+          email: profile?.email || "",
+          fullName: profile?.fullName || "",
+          username: profile?.username || "",
           createdAt: row.created_at as string,
         };
       });

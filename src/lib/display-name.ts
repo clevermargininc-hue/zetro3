@@ -6,6 +6,18 @@ export function isValidUsername(value: string) {
   return /^[a-z][a-z0-9_]{2,23}$/.test(normalizeUsername(value));
 }
 
+export function nameFromAuthUser(user: {
+  email?: string | null;
+  user_metadata?: Record<string, unknown> | null;
+}) {
+  const meta = user.user_metadata || {};
+  const fromMeta = [meta.full_name, meta.name, meta.given_name]
+    .map((value) => (typeof value === "string" ? value.trim() : ""))
+    .find(Boolean);
+  if (fromMeta) return fromMeta;
+  return (user.email || "").split("@")[0] || "Member";
+}
+
 export function publicName(profile: {
   username?: string | null;
   fullName?: string | null;
@@ -13,9 +25,9 @@ export function publicName(profile: {
 }) {
   const username = normalizeUsername(profile.username || "");
   if (username) return username;
-  const name = (profile.fullName || "").trim().split(/\s+/)[0];
+  const name = (profile.fullName || "").trim();
   if (name) return name;
-  return (profile.email || "").split("@")[0] || "User";
+  return (profile.email || "").split("@")[0] || "Member";
 }
 
 export function suggestUsername(email: string, fullName?: string | null) {

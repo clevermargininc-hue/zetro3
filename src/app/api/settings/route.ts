@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAutoAudit, setAutoAudit, updateProfileName, updateUsername } from "@/lib/workspace-settings";
+import { getAutoAudit, setAutoAudit, syncProfileFromAuth, updateProfileName, updateUsername } from "@/lib/workspace-settings";
 import {
   getMembership,
   isSetupRequired,
@@ -35,6 +35,7 @@ export async function GET(request: Request) {
     }
 
     const supabase = createAdminClient();
+    await syncProfileFromAuth(user);
     let profile: { email?: string; full_name?: string; username?: string } | null = null;
     const withUsername = await supabase
       .from("profiles")

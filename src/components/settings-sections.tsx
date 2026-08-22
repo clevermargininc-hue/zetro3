@@ -9,12 +9,17 @@ export function AccountSettings() {
   return (
     <section>
       <h1 className="text-2xl font-semibold tracking-tight">Account</h1>
-      <p className="mt-1 text-sm text-muted">Your username is what teammates see — not your email.</p>
+      <p className="mt-1 text-sm text-muted">Your name is what teammates see.</p>
       <form
         className="mt-8 flex flex-col gap-4"
         onSubmit={(event) => {
           event.preventDefault();
-          void patch({ full_name: fullName, username }, "profile");
+          void patch(
+            username.trim()
+              ? { full_name: fullName, username }
+              : { full_name: fullName },
+            "profile",
+          );
         }}
       >
         <label className="flex flex-col gap-1.5 text-sm">
@@ -22,15 +27,16 @@ export function AccountSettings() {
           <div className="relative">
             <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">@</span>
             <input
-              required
               minLength={3}
               maxLength={24}
               value={username}
               onChange={(event) => setUsername(event.target.value.replace(/^@+/, ""))}
               className="field pl-7"
               autoComplete="username"
+              placeholder="optional"
             />
           </div>
+          <span className="text-xs text-muted">Optional. Teammates also see your full name.</span>
         </label>
         <label className="flex flex-col gap-1.5 text-sm">
           <span className="font-medium text-ink">Full name</span>

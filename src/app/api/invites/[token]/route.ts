@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
 import { acceptInvite, getInviteByToken } from "@/lib/invites";
 import { setWorkspaceCookie } from "@/lib/workspace-cookie";
+import { syncProfileFromAuth } from "@/lib/workspace-settings";
 
 export const runtime = "nodejs";
 
@@ -42,6 +43,7 @@ export async function POST(
   const { token } = await context.params;
   try {
     await acceptInvite(token, user.id, user.email);
+    await syncProfileFromAuth(user);
     const response = NextResponse.json({ ok: true, next: "/dashboard" });
     setWorkspaceCookie(response);
     return response;
