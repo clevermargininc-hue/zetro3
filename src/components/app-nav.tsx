@@ -211,31 +211,7 @@ export function AppNav({
           </nav>
         </div>
 
-        <div className={`p-4 bg-white border-t border-line/40 overflow-hidden`}>
-          <div className={`flex items-center rounded-xl bg-surface-2 border border-line/50 ${collapsed ? "justify-center p-2" : "gap-3 px-3 py-2"}`}>
-            <div className="h-8 w-8 rounded-full bg-blue/10 flex items-center justify-center text-blue font-bold text-xs uppercase shrink-0">
-               {personInitial}
-            </div>
-            {!collapsed && (
-              <div className="min-w-0 flex-1 animate-in fade-in duration-200">
-                 <p className="truncate text-[13px] font-bold text-ink leading-tight">
-                   {personLabel}
-                 </p>
-                 <p className="truncate text-[11px] text-muted leading-tight">
-                   {workspaceName ? `${plan === "solo" ? "Solo" : "Team"} · ` : ""}
-                   {workspaceName || "Zetro"}
-                 </p>
-                 <button
-                   type="button"
-                   onClick={signOut}
-                   className="text-[11px] font-semibold text-muted hover:text-rose transition-colors duration-200"
-                 >
-                   Sign out
-                 </button>
-              </div>
-            )}
-          </div>
-        </div>
+
       </aside>
 
       {/* Mobile Header */}
