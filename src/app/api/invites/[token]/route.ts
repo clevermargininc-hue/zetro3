@@ -10,20 +10,18 @@ export async function GET(
   context: { params: Promise<{ token: string }> },
 ) {
   const { user } = await getRequestUser(request);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
   const { token } = await context.params;
   try {
     const invite = await getInviteByToken(token);
     if (!invite) {
       return NextResponse.json({ error: "This invitation is invalid or has already been used." }, { status: 404 });
     }
-    const email = (user.email || "").toLowerCase();
+    const email = (user?.email || "").toLowerCase();
     return NextResponse.json({
       workspaceName: invite.workspaceName,
       email: invite.email,
-      match: email === invite.email,
+      signedIn: Boolean(user),
+      match: Boolean(email && email === invite.email),
     });
   } catch (error) {
     return NextResponse.json(
@@ -44,7 +42,7 @@ export async function POST(
   const { token } = await context.params;
   try {
     await acceptInvite(token, user.id, user.email);
-    const response = NextResponse.json({ ok: true, next: "/upload" });
+    const response = NextResponse.json({ ok: true, next: "/dashboard" });
     setWorkspaceCookie(response);
     return response;
   } catch (error) {

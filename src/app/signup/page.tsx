@@ -5,9 +5,9 @@ import { Logo } from "@/components/logo";
 export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; email?: string }>;
 }) {
-  const { next } = await searchParams;
+  const { next, email } = await searchParams;
   const dest = next && next.startsWith("/") && !next.startsWith("//") ? next : undefined;
   const invited = dest?.startsWith("/invite/");
 
@@ -33,16 +33,20 @@ export default async function SignupPage({
           </h1>
           <p className="mt-2 text-sm text-muted">
             {invited
-              ? "Use the email this invitation was sent to."
+              ? "Use the email this invitation was sent to. After you sign in you will join that workspace automatically."
               : "Use your work email. After sign-up you can join a team or start solo."}
           </p>
           <div className="mt-8">
-            <AuthForm mode="signup" next={dest} />
+            <AuthForm mode="signup" next={dest} email={email} />
           </div>
           <p className="mt-6 text-sm text-muted">
             Already have a workspace?{" "}
             <Link
-              href={dest ? `/login?next=${encodeURIComponent(dest)}` : "/login"}
+              href={
+                dest
+                  ? `/login?next=${encodeURIComponent(dest)}${email ? `&email=${encodeURIComponent(email)}` : ""}`
+                  : "/login"
+              }
               className="font-medium text-blue hover:underline"
             >
               Sign in

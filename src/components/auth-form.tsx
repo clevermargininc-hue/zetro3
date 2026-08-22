@@ -10,9 +10,17 @@ function safeNext(value?: string) {
   return value;
 }
 
-export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
+export function AuthForm({
+  mode,
+  next,
+  email: emailPrefill,
+}: {
+  mode: Mode;
+  next?: string;
+  email?: string;
+}) {
   const dest = safeNext(next);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(emailPrefill || "");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [error, setError] = useState<string | null>(null);

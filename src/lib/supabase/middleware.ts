@@ -69,11 +69,13 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const isInvite = path.startsWith("/invite/");
   const isPublic =
     PUBLIC_PATHS.has(path) ||
     path.startsWith("/auth") ||
     path.startsWith("/_next") ||
-    path.startsWith("/api");
+    path.startsWith("/api") ||
+    isInvite;
 
   function safeNext(value: string | null) {
     if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
@@ -101,7 +103,6 @@ export async function updateSession(request: NextRequest) {
   }
 
   const isOnboarding = path.startsWith("/onboarding");
-  const isInvite = path.startsWith("/invite/");
   if (user && isOnboarding) {
     const inviteStep = request.nextUrl.searchParams.get("step") === "invite";
     if (!inviteStep) {

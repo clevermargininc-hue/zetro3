@@ -5,10 +5,11 @@ import { Logo } from "@/components/logo";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; error?: string }>;
+  searchParams: Promise<{ next?: string; error?: string; email?: string }>;
 }) {
-  const { error, next } = await searchParams;
+  const { error, next, email } = await searchParams;
   const dest = next && next.startsWith("/") && !next.startsWith("//") ? next : undefined;
+  const invited = dest?.startsWith("/invite/");
   const decoded = error ? decodeURIComponent(error) : null;
   const oauthError =
     error === "oauth" || error === "oauth_missing_code" || error === "oauth_pkce"
@@ -34,21 +35,29 @@ export default async function LoginPage({
           <div className="lg:hidden">
             <Logo />
           </div>
-          <h1 className="mt-8 text-2xl font-semibold lg:mt-0">Sign in to Zetro</h1>
+          <h1 className="mt-8 text-2xl font-semibold lg:mt-0">
+            {invited ? "Sign in to join your team" : "Sign in to Zetro"}
+          </h1>
           <p className="mt-2 text-sm text-muted">
-            Access your workspace to review calls and agent scores.
+            {invited
+              ? "Use the email this invitation was sent to. You will join that workspace automatically."
+              : "Access your workspace to review calls and agent scores."}
           </p>
           {oauthError ? <p className="alert-error mt-4">{oauthError}</p> : null}
           <div className="mt-8">
-            <AuthForm mode="login" next={dest} />
+            <AuthForm mode="login" next={dest} email={email} />
           </div>
           <p className="mt-6 text-sm text-muted">
-            New organization?{" "}
+            {invited ? "New here? " : "New organization? "}
             <Link
-              href={dest ? `/signup?next=${encodeURIComponent(dest)}` : "/signup"}
+              href={
+                dest
+                  ? `/signup?next=${encodeURIComponent(dest)}${email ? `&email=${encodeURIComponent(email)}` : ""}`
+                  : "/signup"
+              }
               className="font-medium text-blue hover:underline"
             >
-              Create a workspace
+              {invited ? "Create an account" : "Create a workspace"}
             </Link>
           </p>
         </div>
