@@ -1,7 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { chunkText, cosineSimilarity, embedQuery, embedTexts } from "@/lib/embeddings";
-import { QA_KINDS, type QaDocument, type QaKind } from "@/lib/qa-kinds";
+import { ALL_DOCUMENT_KINDS, QA_KINDS, SCRIPT_KINDS, type QaDocument, type QaKind } from "@/lib/qa-kinds";
 import { formatQaContext } from "@/lib/qa-documents";
+import { formatCallScripts } from "@/lib/call-scripts";
 
 type StoredChunk = {
   document_id: string;
@@ -75,13 +76,18 @@ export async function retrieveQaContext(userId: string, transcript: string, docs
     scorecard: 10,
     compliance: 10,
     document: 8,
+    opening: 4,
+    closing: 4,
   };
 
-  const picked = QA_KINDS.flatMap((kind) =>
+  const picked = ALL_DOCUMENT_KINDS.flatMap((kind) =>
     ranked.filter((row) => row.kind === kind).slice(0, limits[kind]),
   );
 
-  if (!picked.length) return formatQaContext(docs);
+  const scriptBlock = formatCallScripts(docs);
+  if (!picked.length) {
+    return [formatQaContext(docs), scriptBlock].filter(Boolean).join("\n\n");
+  }
 
   const byKind = QA_KINDS.map((kind) => {
     const items = picked.filter((row) => row.kind === kind);
@@ -101,5 +107,17 @@ export async function retrieveQaContext(userId: string, transcript: string, docs
       .join("\n\n")}`;
   }).filter(Boolean);
 
-  return byKind.join("\n\n");
+  const scriptChunks = SCRIPT_KINDS.map((kind) => {
+    const items = picked.filter((row) => row.kind === kind);
+    if (!items.length) return "";
+    const heading =
+      kind === "opening"
+        ? "OPENING SCRIPT — retrieved by embeddings"
+        : "CLOSING SCRIPT — retrieved by embeddings";
+    return `## ${heading}\n\n${items
+      .map((row, index) => `### Chunk ${index + 1}\n${row.content}`)
+      .join("\n\n")}`;
+  }).filter(Boolean);
+
+  return [...byKind, scriptBlock || scriptChunks.join("\n\n")].filter(Boolean).join("\n\n");
 }

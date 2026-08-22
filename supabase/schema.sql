@@ -74,6 +74,7 @@ create table if not exists public.call_scores (
   improvements jsonb not null default '[]'::jsonb,
   compliance_findings jsonb not null default '[]'::jsonb,
   standards_used jsonb not null default '[]'::jsonb,
+  metric_evidence jsonb not null default '{}'::jsonb,
   audit_mode text not null default 'documents',
   created_at timestamptz not null default now()
 );
@@ -81,7 +82,7 @@ create table if not exists public.call_scores (
 create table if not exists public.qa_documents (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
-  kind text not null check (kind in ('document', 'scorecard', 'compliance')),
+  kind text not null check (kind in ('document', 'scorecard', 'compliance', 'opening', 'closing')),
   title text not null,
   file_name text not null,
   file_path text not null,

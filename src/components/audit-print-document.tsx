@@ -1,6 +1,6 @@
-import { formatClock, formatDuration, languageLabel, verdictLabel } from "@/lib/format";
+import { formatDuration, languageLabel, verdictLabel } from "@/lib/format";
 import { auditModeLabel, formatReportDate, scoreLabel } from "@/lib/reports";
-import type { Call, CallScore, Utterance } from "@/lib/types";
+import type { Call, CallScore } from "@/lib/types";
 
 function asList(value: string[] | null | undefined) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
@@ -9,11 +9,10 @@ function asList(value: string[] | null | undefined) {
 export function AuditPrintDocument({
   call,
   score,
-  utterances,
 }: {
   call: Call & { agents?: { name: string } | null };
   score: CallScore;
-  utterances: Utterance[];
+  utterances?: unknown;
 }) {
   const agent = call.agents?.name || "Unassigned";
   const strengths = asList(score.strengths);
@@ -102,34 +101,6 @@ export function AuditPrintDocument({
           </ul>
         </section>
       ) : null}
-
-      <section>
-        <h2 className="text-sm font-semibold">Transcript</h2>
-        {utterances.length ? (
-          <table className="data-table mt-3">
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Speaker</th>
-                <th>Text</th>
-              </tr>
-            </thead>
-            <tbody>
-              {utterances.map((row) => (
-                <tr key={row.id}>
-                  <td className="whitespace-nowrap">{formatClock(row.start_ms)}</td>
-                  <td className="capitalize">
-                    {row.role === "unknown" ? row.speaker_label : row.role}
-                  </td>
-                  <td>{row.text}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p className="mt-2 text-sm text-muted">No transcript.</p>
-        )}
-      </section>
     </article>
   );
 }

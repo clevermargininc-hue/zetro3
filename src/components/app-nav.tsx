@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Logo } from "@/components/logo";
 import { createClient } from "@/lib/supabase/client";
 import { clearWorkspaceCookie } from "@/lib/workspace-cookie";
@@ -46,6 +46,13 @@ const Icons = {
       <polyline points="10 9 9 9 8 9" />
     </svg>
   ),
+  analytics: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
+    </svg>
+  ),
   standards: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z" />
@@ -80,6 +87,7 @@ const NAV = [
   {
     label: "Insights",
     items: [
+      { href: "/analytics", label: "Analytics", icon: Icons.analytics },
       { href: "/leaderboard", label: "Agent ranking", icon: Icons.ranking },
       { href: "/reports", label: "Reports", icon: Icons.reports },
     ],
@@ -123,6 +131,11 @@ export function AppNav({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  // Avoid active-link class mismatches before the client pathname is settled.
+  const [navReady, setNavReady] = useState(false);
+  useEffect(() => {
+    setNavReady(true);
+  }, []);
   const personLabel = username
     ? `@${username}`
     : displayName || (email || "").split("@")[0] || "Member";
@@ -171,7 +184,7 @@ export function AppNav({
                 )}
                 <div className="space-y-1">
                   {group.items.map((item) => {
-                    const active = linkActive(item.href, pathname);
+                    const active = navReady && linkActive(item.href, pathname);
                     return (
                       <Link
                         key={item.href}
@@ -260,7 +273,7 @@ export function AppNav({
                   </p>
                   <div className="space-y-1">
                     {group.items.map((item) => {
-                      const active = linkActive(item.href, pathname);
+                      const active = navReady && linkActive(item.href, pathname);
                       return (
                         <Link
                           key={item.href}

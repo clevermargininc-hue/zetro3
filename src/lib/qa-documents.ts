@@ -3,6 +3,7 @@ import {
   MIN_READABLE_CHARS,
   QA_KIND_LABELS,
   QA_KINDS,
+  ALL_DOCUMENT_KINDS,
   type QaDocument,
   type QaReadiness,
   type StandardRef,
@@ -18,13 +19,22 @@ function isMissingTable(error: { message?: string; code?: string } | null) {
   );
 }
 
+function emptyCounts(): Record<(typeof ALL_DOCUMENT_KINDS)[number], number> {
+  return {
+    document: 0,
+    scorecard: 0,
+    compliance: 0,
+    opening: 0,
+    closing: 0,
+  };
+}
+
 export function summarizeDocuments(docs: QaDocument[]): QaReadiness {
   const readable = docs.filter((doc) => (doc.extracted_text || "").trim().length >= MIN_READABLE_CHARS);
-  const counts = {
-    document: readable.filter((d) => d.kind === "document").length,
-    scorecard: readable.filter((d) => d.kind === "scorecard").length,
-    compliance: readable.filter((d) => d.kind === "compliance").length,
-  };
+  const counts = emptyCounts();
+  for (const kind of ALL_DOCUMENT_KINDS) {
+    counts[kind] = readable.filter((d) => d.kind === kind).length;
+  }
   const missing = QA_KINDS.filter((kind) => counts[kind] === 0);
   return {
     ready: missing.length === 0,

@@ -71,7 +71,11 @@ export async function uploadToAssemblyAI(bytes: ArrayBuffer) {
   return json.upload_url;
 }
 
-function transcriptBody(audioUrl: string, languageMode: LanguageMode) {
+function transcriptBody(
+  audioUrl: string,
+  languageMode: LanguageMode,
+  keyterms: string[] = [],
+) {
   const body: Record<string, unknown> = {
     audio_url: audioUrl,
     speaker_labels: true,
@@ -89,31 +93,39 @@ function transcriptBody(audioUrl: string, languageMode: LanguageMode) {
     },
   };
 
+  const defaults =
+    languageMode === "en"
+      ? ["TANESCO", "LUKU", "token", "M-Pesa"]
+      : languageMode === "sw" || languageMode === "mixed"
+        ? ["TANESCO", "LUKU", "tokeni", "umeme", "M-Pesa", "mafundi"]
+        : ["TANESCO", "LUKU", "token", "tokeni", "M-Pesa"];
+
+  const merged: string[] = [];
+  const seen = new Set<string>();
+  for (const term of [...keyterms, ...defaults]) {
+    const cleaned = term.replace(/\s+/g, " ").trim();
+    if (!cleaned) continue;
+    const key = cleaned.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(cleaned);
+    if (merged.length >= 50) break;
+  }
+
   if (languageMode === "en") {
     body.speech_models = ["universal-3-5-pro", "universal-2"];
     body.language_code = "en";
-    body.keyterms_prompt = [
-      "TANESCO",
-      "LUKU",
-      "token",
-      "M-Pesa",
-    ];
+    body.keyterms_prompt = merged;
   } else if (languageMode === "sw" || languageMode === "mixed") {
     body.language_code = "sw";
-    body.keyterms_prompt = [
-      "TANESCO",
-      "LUKU",
-      "tokeni",
-      "umeme",
-      "M-Pesa",
-      "mafundi",
-    ];
+    body.keyterms_prompt = merged;
   } else {
     body.language_detection = true;
     body.language_detection_options = {
       code_switching: true,
       code_switching_confidence_threshold: 0,
     };
+    if (merged.length) body.keyterms_prompt = merged;
   }
 
   return body;
@@ -122,8 +134,9 @@ function transcriptBody(audioUrl: string, languageMode: LanguageMode) {
 export async function submitTranscript(
   audioUrl: string,
   languageMode: LanguageMode,
+  keyterms: string[] = [],
 ) {
-  const payload = transcriptBody(audioUrl, languageMode);
+  const payload = transcriptBody(audioUrl, languageMode, keyterms);
   let res = await assemblyFetch(`${BASE}/v2/transcript`, {
     method: "POST",
     headers: { ...headers(), "content-type": "application/json" },

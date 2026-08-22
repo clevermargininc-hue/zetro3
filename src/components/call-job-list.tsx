@@ -34,9 +34,12 @@ export function CallJobList({
     const supabase = createClient();
 
     async function refresh() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
       const { data } = await supabase
         .from("calls")
         .select("*, agents(name), call_scores(overall_score, verdict, audit_mode)")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       if (!data) return;
       const rows = data as CallRow[];
@@ -157,7 +160,7 @@ export function CallJobList({
                         onClick={() => void startTranscribe(call)}
                         className="btn btn-blue"
                       >
-                        {working ? "Transcribing…" : "Transcribe & diarize"}
+                        {working ? "Preparing…" : "Prepare for audit"}
                       </button>
                     ) : (
                       <AuditActions callId={call.id} status={call.status} compact />
@@ -171,7 +174,7 @@ export function CallJobList({
         {!calls.length && (
           <p className="px-5 py-10 text-center text-sm text-muted">
             {action === "score"
-              ? "No transcripts yet. Transcribe a call first."
+              ? "No prepared calls yet. Prepare a call first."
               : "No recordings yet."}
           </p>
         )}

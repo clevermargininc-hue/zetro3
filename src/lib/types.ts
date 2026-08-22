@@ -16,6 +16,25 @@ export type AuditMode = "documents" | "automatic";
 
 export type Verdict = "excellent" | "good" | "needs_improvement" | "poor";
 
+export type ScoreDimension =
+  | "greeting"
+  | "empathy"
+  | "professionalism"
+  | "resolution"
+  | "communication"
+  | "language_handling";
+
+export type MetricEvidenceVerdict = "hit" | "miss" | "partial";
+
+export type MetricEvidenceItem = {
+  verdict: MetricEvidenceVerdict;
+  quote: string;
+  note: string;
+  start_s: number | null;
+};
+
+export type MetricEvidence = Partial<Record<ScoreDimension, MetricEvidenceItem>>;
+
 export type Agent = {
   id: string;
   user_id: string;
@@ -71,6 +90,7 @@ export type CallScore = {
   improvements: string[];
   compliance_findings: string[];
   standards_used: StandardRef[];
+  metric_evidence?: MetricEvidence | null;
   audit_mode?: AuditMode | null;
   created_at: string;
 };
@@ -108,5 +128,6 @@ export type CallAnalysis = {
   improvements: string[];
   compliance_findings: string[];
   standards_used: StandardRef[];
+  metric_evidence: MetricEvidence;
   audit_mode: AuditMode;
 };

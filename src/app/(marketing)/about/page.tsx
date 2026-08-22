@@ -32,10 +32,10 @@ export default function AboutPage() {
         <section>
           <h2 className="text-2xl font-bold text-ink mb-4">The Bilingual Challenge</h2>
           <p className="mb-4">
-            In East Africa and many emerging markets, conversations aren't neatly confined to one language. A single call can switch fluidly between English and Kiswahili, often in the same sentence. Off-the-shelf transcription tools fail miserably at this "code-switching."
+            In East Africa and many emerging markets, conversations aren't neatly confined to one language. A single call can switch fluidly between English and Kiswahili, often in the same sentence. Off-the-shelf transcription software fails miserably at this "code-switching."
           </p>
           <p>
-            Zetro is built from the ground up to understand this reality. Our proprietary acoustic models are trained on real-world, noisy, bilingual audio to provide unprecedented accuracy in transcription and speaker diarization.
+            Zetro is built from the ground up to understand this reality. Our proprietary acoustic systems are trained on real-world, noisy, bilingual audio to provide unprecedented accuracy in transcription and speaker diarization.
           </p>
         </section>
 

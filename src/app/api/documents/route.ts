@@ -7,7 +7,7 @@ import {
   summarizeDocuments,
 } from "@/lib/qa-documents";
 import { indexQaDocument } from "@/lib/qa-retrieve";
-import { QA_KINDS, type QaKind } from "@/lib/qa-kinds";
+import { ALL_DOCUMENT_KINDS, QA_KINDS, type QaKind } from "@/lib/qa-kinds";
 
 export const runtime = "nodejs";
 
@@ -15,7 +15,7 @@ function emptyReadiness(setupRequired: boolean) {
   return {
     ready: false,
     missing: [...QA_KINDS],
-    counts: { document: 0, scorecard: 0, compliance: 0 },
+    counts: { document: 0, scorecard: 0, compliance: 0, opening: 0, closing: 0 },
     documents: [],
     setupRequired,
   };
@@ -56,9 +56,9 @@ export async function POST(request: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Choose a file to upload." }, { status: 400 });
   }
-  if (!QA_KINDS.includes(kind)) {
+  if (!(ALL_DOCUMENT_KINDS as readonly string[]).includes(kind)) {
     return NextResponse.json(
-      { error: "Choose document, scorecard, or compliance." },
+      { error: "Choose document, scorecard, compliance, opening, or closing." },
       { status: 400 },
     );
   }
@@ -121,11 +121,16 @@ export async function POST(request: Request) {
       insertError.message.toLowerCase().includes("qa_documents") ||
       insertError.code === "PGRST205" ||
       insertError.code === "42P01";
+    const kindConstraint =
+      insertError.message.toLowerCase().includes("kind") ||
+      insertError.message.toLowerCase().includes("check");
     return NextResponse.json(
       {
         error: setup
           ? "Run supabase/qa-standards.sql in the Supabase SQL Editor, then try again."
-          : insertError.message,
+          : kindConstraint && (kind === "opening" || kind === "closing")
+            ? "Run supabase/call-scripts.sql in the Supabase SQL Editor, then upload opening/closing scripts again."
+            : insertError.message,
       },
       { status: 500 },
     );

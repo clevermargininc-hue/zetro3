@@ -31,7 +31,7 @@ export function ScoreWorkspace({
       <div className="no-print flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <Link href={`/calls/${call.id}/transcribe`} className="inline-flex items-center gap-2 text-[13px] font-bold tracking-wide text-muted hover:text-ink transition-colors mb-4">
-            ← Back to Transcript
+            ← Back to call
           </Link>
           <div className="flex items-center gap-3">
              <h1 className="text-3xl font-bold tracking-tight text-ink">Score Report: {call.title}</h1>
@@ -105,12 +105,12 @@ export function ScoreWorkspace({
           <div className="h-20 w-20 rounded-full bg-surface-2 mx-auto flex items-center justify-center mb-6">
              <span className="text-3xl opacity-50">📝</span>
           </div>
-          <h2 className="text-2xl font-bold tracking-tight text-ink">No Transcript Found</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-ink">Call not ready</h2>
           <p className="mt-3 text-[15px] leading-relaxed text-muted">
-            You need to transcribe the call first before you can score it.
+            Prepare the call first (transcription runs in the background), then come back to score.
           </p>
           <Link href={`/calls/${call.id}/transcribe`} className="btn btn-lg btn-blue shadow-lg shadow-blue/20 mt-8 transition-transform hover:-translate-y-1">
-            Go to Transcript Page
+            Open call
           </Link>
         </section>
       ) : null}

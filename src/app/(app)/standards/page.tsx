@@ -7,8 +7,8 @@ export default function StandardsPage() {
         <p className="page-kicker">Configuration</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">Audit Standards</h1>
         <p className="mt-2 max-w-2xl text-[15px] text-muted leading-relaxed">
-          Upload your company's guidelines, rubrics, and compliance rules. 
-          The system uses these documents to accurately evaluate your calls during a custom audit.
+          Upload scorecard files for custom audits, plus organization-wide opening and closing scripts
+          so transcription and scoring pick up your key terms.
         </p>
       </div>
       <StandardsBoard />

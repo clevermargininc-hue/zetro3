@@ -13,10 +13,13 @@ alter table public.call_scores
 alter table public.call_scores
   add column if not exists audit_mode text not null default 'documents';
 
+alter table public.call_scores
+  add column if not exists metric_evidence jsonb not null default '{}'::jsonb;
+
 create table if not exists public.qa_documents (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
-  kind text not null check (kind in ('document', 'scorecard', 'compliance')),
+  kind text not null check (kind in ('document', 'scorecard', 'compliance', 'opening', 'closing')),
   title text not null,
   file_name text not null,
   file_path text not null,
@@ -86,3 +89,11 @@ create policy "qa_documents_delete_own" on storage.objects
     bucket_id = 'qa-documents'
     and split_part(name, '/', 1) = auth.uid()::text
   );
+
+-- Opening / closing scripts (org-wide)
+alter table public.qa_documents
+  drop constraint if exists qa_documents_kind_check;
+
+alter table public.qa_documents
+  add constraint qa_documents_kind_check
+  check (kind in ('document', 'scorecard', 'compliance', 'opening', 'closing'));

@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { formatClock, formatDuration, languageLabel } from "@/lib/format";
+import { formatDuration, languageLabel } from "@/lib/format";
 import { PdfDoc } from "@/lib/report-files";
 import { auditModeLabel, formatReportDate, scoreLabel, verdictCell } from "@/lib/reports";
 import type { Call, CallScore, Utterance } from "@/lib/types";
@@ -55,14 +55,8 @@ function details(pack: AuditedCallExport): Array<[string, string]> {
   ];
 }
 
-function roleLabel(role: string, speaker: string) {
-  if (role === "agent") return "Agent";
-  if (role === "customer") return "Customer";
-  return speaker || "Speaker";
-}
-
 export function callAuditExcel(pack: AuditedCallExport): Buffer {
-  const { score, utterances } = pack;
+  const { score } = pack;
   const wb = XLSX.utils.book_new();
 
   const detailSheet = XLSX.utils.aoa_to_sheet([
@@ -122,24 +116,12 @@ export function callAuditExcel(pack: AuditedCallExport): Buffer {
   standardsSheet["!cols"] = [{ wch: 14 }, { wch: 32 }, { wch: 32 }];
   XLSX.utils.book_append_sheet(wb, standardsSheet, "Standards");
 
-  const transcriptSheet = XLSX.utils.aoa_to_sheet([
-    ["Time", "Speaker", "Role", "Text"],
-    ...utterances.map((row) => [
-      formatClock(row.start_ms),
-      row.speaker_label,
-      roleLabel(row.role, row.speaker_label),
-      row.text,
-    ]),
-  ]);
-  transcriptSheet["!cols"] = [{ wch: 10 }, { wch: 14 }, { wch: 12 }, { wch: 90 }];
-  XLSX.utils.book_append_sheet(wb, transcriptSheet, "Transcript");
-
   const out = XLSX.write(wb, { type: "array", bookType: "xlsx" }) as Uint8Array;
   return Buffer.from(out);
 }
 
 export function callAuditPdf(pack: AuditedCallExport): Buffer {
-  const { score, utterances } = pack;
+  const { score } = pack;
   const doc = new PdfDoc();
   doc.fillBar(806, 28, 0.102, 0.337, 0.859);
   doc.text(40, 816, 12, "ZETRO  ·  AUDITED CALL", "1 1 1");
@@ -218,20 +200,7 @@ export function callAuditPdf(pack: AuditedCallExport): Buffer {
       score.standards_used.map((row) => [row.kind, row.title]),
       [120, 390],
     );
-    doc.gap(10);
   }
-
-  doc.heading("Transcript");
-  doc.table(
-    ["Time", "Speaker", "Text"],
-    utterances.map((row) => [
-      formatClock(row.start_ms),
-      roleLabel(row.role, row.speaker_label),
-      row.text,
-    ]),
-    [50, 70, 390],
-    "No transcript.",
-  );
 
   return doc.build();
 }

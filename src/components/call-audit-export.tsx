@@ -59,7 +59,7 @@ export function CallAuditExport({ callId }: { callId: string }) {
         </button>
       </div>
       <p className="text-sm text-muted">
-        Excel and PDF include scores, compliance, standards, and the full agent/customer script.
+        Excel and PDF include scores, compliance, and standards used for this audit.
         Print opens the browser print dialog for this audit.
       </p>
       {error ? <p className="alert-error">{error}</p> : null}

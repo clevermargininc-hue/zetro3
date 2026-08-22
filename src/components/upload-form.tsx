@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { authFetch } from "@/lib/auth-fetch";
 import { createClient } from "@/lib/supabase/client";
@@ -11,6 +12,7 @@ const ACCEPT =
   "audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/m4a,audio/aac,audio/ogg,audio/webm,video/mp4,.mp3,.wav,.m4a,.mp4,.ogg,.webm,.aac";
 
 export function UploadForm() {
+  const router = useRouter();
   const [agents, setAgents] = useState<{ id: string; name: string }[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [agentName, setAgentName] = useState("");
@@ -118,6 +120,13 @@ export function UploadForm() {
       setFile(null);
       setLoading(false);
       setProgress(null);
+
+      // Kick off background prep so the call is ready to audit after listening.
+      void authFetch(`/api/calls/${call.id}/transcribe`, { method: "POST" }).catch(() => {
+        // User can retry from the call page if this fails.
+      });
+
+      router.push(`/calls/${call.id}/transcribe`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
       setLoading(false);
@@ -223,15 +232,15 @@ export function UploadForm() {
             </div>
 
             <p className="mt-3 text-[15px] text-muted leading-relaxed">
-              <span className="font-bold text-ink">{done.title}</span> is successfully stored in your workspace.
-              The next step is to generate the speaker script.
+              <span className="font-bold text-ink">{done.title}</span> is stored. You can listen to it now —
+              transcription runs in the background so you can audit when ready.
             </p>
 
             <Link
               href={`/calls/${done.id}/transcribe`}
               className="btn btn-lg bg-good text-white hover:bg-good/90 shadow-md shadow-good/20 mt-6 hover:-translate-y-0.5 active:translate-y-0 w-full sm:w-auto text-center block"
             >
-              Transcribe a call
+              Listen & audit
             </Link>
           </section>
         </div>

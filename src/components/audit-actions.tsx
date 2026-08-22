@@ -84,8 +84,8 @@ export function AuditActions({
       {busy ? (
         <p className="text-sm text-muted">
           {pending === "automatic"
-            ? "GPT-5 is scoring from its own quality judgment. Company files are not used."
-            : "GPT-5 is reading your uploaded scorecard, compliance, and process files, then scoring the agent from those files only."}
+            ? "The system is scoring from its own quality judgment. Company files are not used."
+            : "The system is reading your uploaded scorecard, compliance, and process files, then scoring the agent from those files only."}
         </p>
       ) : compact ? null : (
         <div className="grid gap-2 text-sm text-muted sm:grid-cols-2">
@@ -94,7 +94,7 @@ export function AuditActions({
             sent to Standards.
           </p>
           <p>
-            Automatic auditing does not use company files. The model scores greeting, empathy,
+            Automatic auditing does not use company files. The system scores greeting, empathy,
             resolution, and similar service quality from the transcript.
           </p>
         </div>

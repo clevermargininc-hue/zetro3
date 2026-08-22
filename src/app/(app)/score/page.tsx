@@ -26,7 +26,7 @@ export default async function ScorePage() {
           <h1 className="mt-1 text-2xl font-semibold">Score agents</h1>
           <p className="mt-1 max-w-xl text-sm text-muted">
             Pick one path per audit. Documents scoring reads your Standards files first. Automatic
-            auditing scores from the model’s own judgment and does not use those files.
+            auditing scores from its own judgment and does not use those files.
           </p>
         </div>
         <Link href="/standards" className="btn btn-ghost">

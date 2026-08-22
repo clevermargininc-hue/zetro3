@@ -66,13 +66,14 @@ export function collapseAsrLoops(text: string) {
 
 export function collapseTurnList<T extends { text: string }>(
   turns: T[],
-  options?: { bilingual?: boolean },
+  options?: { bilingual?: boolean; extraLexicon?: string[] },
 ): T[] {
   const bilingual = options?.bilingual !== false;
+  const extraLexicon = options?.extraLexicon || [];
   const out: T[] = [];
   for (const turn of turns) {
     const text = collapseAsrLoops(
-      bilingual ? repairSwahiliTranscript(turn.text) : turn.text,
+      bilingual ? repairSwahiliTranscript(turn.text, extraLexicon) : turn.text,
     );
     if (!text) continue;
     const prev = out[out.length - 1];

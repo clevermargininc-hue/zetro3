@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { authFetch } from "@/lib/auth-fetch";
 import { waitForCallStatus } from "@/lib/wait-call-status";
 import { DeleteCallButton } from "@/components/delete-call-button";
 import { StatusPill, useCallLive } from "@/components/use-call-live";
-import { TranscriptView } from "@/components/transcript-view";
 import { AuditActions } from "@/components/audit-actions";
 import type { Call, CallScore, CallStatus, Utterance } from "@/lib/types";
 
@@ -24,52 +23,91 @@ export function TranscribeWorkspace({
     initialUtterances,
     initialScore,
   );
-  const [transcribing, setTranscribing] = useState(false);
+  const [preparing, setPreparing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const autoPrepareStarted = useRef(false);
 
+  const readyForAudit =
+    utterances.length > 0 &&
+    ["transcribed", "analyzing", "completed"].includes(call.status);
+  const preparingBusy =
+    preparing || call.status === "transcribing" || call.status === "queued";
+
+  // Auto-prepare queued calls so users can listen while the backend prepares scoring.
   useEffect(() => {
-    if (call.status !== "transcribing") setTranscribing(false);
-  }, [call.status]);
+    if (call.status !== "queued" || autoPrepareStarted.current) return;
+    autoPrepareStarted.current = true;
+    let cancelled = false;
+    void (async () => {
+      setPreparing(true);
+      setActionError(null);
+      try {
+        const res = await authFetch(`/api/calls/${call.id}/transcribe`, {
+          method: "POST",
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || "Could not prepare call");
+        if (cancelled) return;
+        setCall((prev) => ({
+          ...prev,
+          status: "transcribing" as CallStatus,
+          error_message: null,
+        }));
+        await waitForCallStatus(call.id, ["transcribed", "completed", "failed"]);
+      } catch (error) {
+        if (!cancelled) {
+          autoPrepareStarted.current = false;
+          setActionError(error instanceof Error ? error.message : "Action failed");
+        }
+      } finally {
+        if (!cancelled) setPreparing(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [call.id, call.status, setCall]);
 
-  const transcribeBusy = transcribing || call.status === "transcribing";
-  const hasScript = utterances.length > 0;
-
-  async function transcribe() {
+  async function prepare() {
     setActionError(null);
-    setTranscribing(true);
+    setPreparing(true);
     try {
       const res = await authFetch(`/api/calls/${call.id}/transcribe`, {
         method: "POST",
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || "Could not transcribe");
+      if (!res.ok) throw new Error(body.error || "Could not prepare call");
       setCall((prev) => ({
         ...prev,
         status: "transcribing" as CallStatus,
         error_message: null,
       }));
-      await waitForCallStatus(call.id, ["transcribed", "completed"]);
+      await waitForCallStatus(call.id, ["transcribed", "completed", "failed"]);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Action failed");
-      setTranscribing(false);
+    } finally {
+      setPreparing(false);
     }
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 max-w-[1400px] mx-auto">
+    <div className="space-y-8 animate-in fade-in duration-500 max-w-[900px] mx-auto">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <Link href="/calls" className="inline-flex items-center gap-2 text-[13px] font-bold tracking-wide text-muted hover:text-ink transition-colors mb-4">
+          <Link
+            href="/calls"
+            className="inline-flex items-center gap-2 text-[13px] font-bold tracking-wide text-muted hover:text-ink transition-colors mb-4"
+          >
             ← Back to Inventory
           </Link>
-          <div className="flex items-center gap-3">
-             <h1 className="text-3xl font-bold tracking-tight text-ink">{call.title}</h1>
-             <StatusPill status={call.status} error={call.error_message} />
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-3xl font-bold tracking-tight text-ink">{call.title}</h1>
+            <StatusPill status={call.status} error={call.error_message} />
           </div>
           <p className="mt-3 text-[15px] font-medium text-muted">
             {call.agents?.name || "Unassigned agent"}
-            {call.detected_language ? <span className="opacity-50 mx-2">•</span> : ""}
-            {call.detected_language ? call.detected_language : ""}
+            {call.detected_language ? <span className="opacity-50 mx-2">•</span> : null}
+            {call.detected_language || null}
           </p>
         </div>
         <DeleteCallButton
@@ -84,80 +122,95 @@ export function TranscribeWorkspace({
         <div className="alert-error shadow-sm rounded-xl">{actionError || call.error_message}</div>
       )}
 
-      {!hasScript ? (
-        <section className="panel rounded-3xl p-10 shadow-md text-center max-w-2xl mx-auto mt-12 bg-gradient-to-b from-surface to-surface-2 border-line/40">
-          <div className="h-20 w-20 rounded-full bg-blue/10 flex items-center justify-center mx-auto mb-6 shadow-inner">
-             <span className="text-3xl">🎙️</span>
-          </div>
-          <h2 className="text-2xl font-bold tracking-tight text-ink">Generate Transcript</h2>
-          <p className="mt-4 text-[15px] leading-relaxed text-muted">
-            The system will transcribe the original recording as spoken, separate the speakers, and keep the wording verbatim.
+      <section className="panel rounded-3xl p-6 sm:p-8 shadow-sm space-y-5">
+        <div>
+          <h2 className="text-[18px] font-bold tracking-tight text-ink">Listen to the call</h2>
+          <p className="text-[14px] text-muted mt-1">
+            Play the recording, then audit when preparation finishes.
           </p>
-          <button
-            type="button"
-            disabled={transcribeBusy}
-            onClick={() => void transcribe()}
-            className="btn btn-lg btn-blue shadow-lg shadow-blue/20 hover:-translate-y-1 active:translate-y-0 transition-all mt-8 w-full sm:w-auto px-12 py-4 text-[16px]"
-          >
-            {transcribeBusy ? (
-              <span className="flex items-center justify-center gap-3">
-                <div className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
-                Transcribing...
-              </span>
-            ) : (
-              "Transcribe Call Now"
-            )}
-          </button>
+        </div>
+        {audioUrl ? (
+          <audio controls src={audioUrl} className="w-full" preload="metadata" />
+        ) : (
+          <p className="text-sm text-muted">Loading audio…</p>
+        )}
+      </section>
+
+      {!readyForAudit ? (
+        <section className="panel rounded-3xl p-8 shadow-md text-center bg-gradient-to-b from-surface to-surface-2 border-line/40">
+          <h2 className="text-xl font-bold tracking-tight text-ink">
+            {preparingBusy ? "Preparing audit…" : "Prepare for audit"}
+          </h2>
+          <p className="mt-3 text-[14px] leading-relaxed text-muted max-w-lg mx-auto">
+            {preparingBusy
+              ? "Getting this call ready to score. You can keep listening while this finishes."
+              : "One click prepares this call for scoring in the background."}
+          </p>
+          {!preparingBusy ? (
+            <button
+              type="button"
+              onClick={() => void prepare()}
+              className="btn btn-lg btn-blue shadow-lg shadow-blue/20 mt-6 px-10"
+            >
+              Prepare for audit
+            </button>
+          ) : (
+            <div className="mt-6 flex items-center justify-center gap-3 text-blue text-[14px] font-medium">
+              <div className="h-5 w-5 rounded-full border-2 border-blue/30 border-t-blue animate-spin" />
+              Working…
+            </div>
+          )}
         </section>
       ) : (
-        <div className="space-y-8">
-          {/* Audit Actions Slim Banner */}
-          <section className="panel rounded-2xl p-4 md:p-5 shadow-sm border border-line/50 bg-gradient-to-r from-surface to-surface-2 flex flex-col md:flex-row items-center justify-between gap-4">
-             <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-blue/10 flex items-center justify-center text-blue text-lg">
-                  📊
-                </div>
-                <div>
-                  <h2 className="text-[16px] font-bold tracking-tight text-ink">Ready to Score?</h2>
-                  <p className="text-[13px] text-muted">Choose an auditing path to generate scores.</p>
-                </div>
-             </div>
-             
-             <div className="flex-shrink-0 w-full md:w-auto">
-                <AuditActions
-                  callId={call.id}
-                  status={call.status}
-                  compact={true}
-                  onStatus={(status) =>
-                    setCall((prev) => ({ ...prev, status, error_message: null }))
-                  }
-                />
-                {call.status === "completed" && (
-                  <div className="mt-3">
-                    <Link href={`/calls/${call.id}/score`} className="btn w-full justify-center bg-good/10 text-good hover:bg-good/20 shadow-sm border border-good/20 transition-all">
-                      View Score Report →
-                    </Link>
-                  </div>
-                )}
-             </div>
-          </section>
-
-          <div className="transition-all duration-500">
-            <TranscriptView utterances={utterances} audioUrl={audioUrl} />
-          </div>
-          
-          <div className="flex justify-center pt-4">
-             <button
-                type="button"
-                disabled={transcribeBusy}
-                onClick={() => void transcribe()}
-                className="btn btn-ghost text-[14px] text-muted hover:text-ink hover:bg-surface-2 transition-colors"
+        <section className="panel rounded-2xl p-5 sm:p-6 shadow-sm border border-line/50 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-[16px] font-bold tracking-tight text-ink">Audit this call</h2>
+              <p className="text-[13px] text-muted mt-0.5">
+                Ready to score. Choose an auditing path.
+              </p>
+            </div>
+            {call.status === "completed" ? (
+              <Link
+                href={`/calls/${call.id}/score`}
+                className="btn bg-good/10 text-good hover:bg-good/20 border border-good/20"
               >
-                {transcribeBusy ? "Re-transcribing..." : "Not happy with the transcript? Re-transcribe audio"}
-              </button>
+                View score report →
+              </Link>
+            ) : null}
           </div>
-        </div>
+          <AuditActions
+            callId={call.id}
+            status={call.status}
+            onStatus={(status) =>
+              setCall((prev) => ({ ...prev, status, error_message: null }))
+            }
+          />
+          <div className="pt-1">
+            <button
+              type="button"
+              disabled={preparingBusy}
+              onClick={() => void prepare()}
+              className="btn btn-ghost text-[13px] text-muted"
+            >
+              {preparingBusy ? "Re-preparing…" : "Re-prepare from audio"}
+            </button>
+          </div>
+        </section>
       )}
+
+      {call.status === "failed" && !readyForAudit ? (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            disabled={preparingBusy}
+            onClick={() => void prepare()}
+            className="btn btn-ghost text-[13px] text-muted"
+          >
+            {preparingBusy ? "Re-preparing…" : "Re-prepare from audio"}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

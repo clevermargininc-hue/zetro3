@@ -1,6 +1,9 @@
 export const QA_KINDS = ["document", "scorecard", "compliance"] as const;
+export const SCRIPT_KINDS = ["opening", "closing"] as const;
+export const ALL_DOCUMENT_KINDS = [...QA_KINDS, ...SCRIPT_KINDS] as const;
 
-export type QaKind = (typeof QA_KINDS)[number];
+export type QaKind = (typeof ALL_DOCUMENT_KINDS)[number];
+export type ScriptKind = (typeof SCRIPT_KINDS)[number];
 
 export type QaDocument = {
   id: string;
@@ -25,21 +28,28 @@ export const QA_KIND_LABELS: Record<QaKind, string> = {
   document: "process document",
   scorecard: "scorecard",
   compliance: "compliance file",
+  opening: "opening script",
+  closing: "closing script",
 };
 
 export type QaReadiness = {
   ready: boolean;
-  missing: QaKind[];
+  missing: Array<(typeof QA_KINDS)[number]>;
   counts: Record<QaKind, number>;
-  documents: Array<Omit<QaDocument, "extracted_text" | "user_id" | "file_path" | "mime_type"> & {
-    has_text: boolean;
-  }>;
+  documents: Array<
+    Omit<QaDocument, "extracted_text" | "user_id" | "file_path" | "mime_type"> & {
+      has_text: boolean;
+    }
+  >;
   setupRequired: boolean;
 };
 
 export const MIN_READABLE_CHARS = 20;
 
-export function readinessErrorMessage(missing: QaKind[], setupRequired = false) {
+export function readinessErrorMessage(
+  missing: Array<(typeof QA_KINDS)[number]>,
+  setupRequired = false,
+) {
   if (setupRequired) {
     return "Run supabase/qa-standards.sql in the Supabase SQL Editor, then go to Standards and upload a process document, scorecard, and compliance file.";
   }

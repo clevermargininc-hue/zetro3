@@ -9,6 +9,11 @@ import {
 import { analyzeCall } from "@/lib/openai";
 import { collapseTurnList } from "@/lib/collapse-asr";
 import {
+  extractKeytermsFromScripts,
+  formatCallScripts,
+  lexiconFromScripts,
+} from "@/lib/call-scripts";
+import {
   loadQaDocuments,
   requireReadableStandards,
 } from "@/lib/qa-documents";
@@ -92,7 +97,12 @@ export async function transcribeCall(callId: string) {
 
     const bytes = await file.arrayBuffer();
     const audioUrl = await uploadToAssemblyAI(bytes);
-    const submitted = await submitTranscript(audioUrl, languageMode);
+
+    const orgDocs = await loadQaDocuments(call.user_id).catch(() => []);
+    const keyterms = extractKeytermsFromScripts(orgDocs);
+    const extraLexicon = lexiconFromScripts(orgDocs);
+
+    const submitted = await submitTranscript(audioUrl, languageMode, keyterms);
 
     await supabase
       .from("calls")
@@ -105,7 +115,10 @@ export async function transcribeCall(callId: string) {
       throw new Error("No speakers were detected in this recording");
     }
 
-    const rows = collapseTurnList(utterances, { bilingual: langs.bilingual }).map((u, index) => ({
+    const rows = collapseTurnList(utterances, {
+      bilingual: langs.bilingual,
+      extraLexicon,
+    }).map((u, index) => ({
       call_id: callId,
       sequence: index,
       speaker_label: u.speaker,
@@ -189,8 +202,11 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
 
     let standardsText = "";
     let standards: Awaited<ReturnType<typeof loadQaDocuments>> = [];
+    const orgDocs = await loadQaDocuments(call.user_id).catch(() => []);
+    const scriptsText = formatCallScripts(orgDocs);
+
     if (mode === "documents") {
-      standards = requireReadableStandards(await loadQaDocuments(call.user_id));
+      standards = requireReadableStandards(orgDocs);
     }
 
     await supabase
@@ -233,6 +249,8 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
       standards,
       mode,
       bilingual,
+      scriptsText,
+      orgDocs,
     );
 
     for (const row of stored) {
@@ -257,11 +275,31 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
       improvements: analysis.improvements,
       compliance_findings: analysis.compliance_findings,
       standards_used: analysis.standards_used,
+      metric_evidence: analysis.metric_evidence,
       audit_mode: mode,
     };
     let { error: scoreError } = await supabase.from("call_scores").insert(scoreRow);
+    if (scoreError && /metric_evidence/.test(scoreError.message)) {
+      const withoutEvidence = { ...scoreRow };
+      delete (withoutEvidence as { metric_evidence?: unknown }).metric_evidence;
+      ({ error: scoreError } = await supabase.from("call_scores").insert(withoutEvidence));
+    }
     if (scoreError && /compliance_findings|standards_used|audit_mode/.test(scoreError.message)) {
-      const { compliance_findings: _c, standards_used: _s, audit_mode: _m, ...legacy } = scoreRow;
+      const legacy = {
+        call_id: scoreRow.call_id,
+        overall_score: scoreRow.overall_score,
+        greeting: scoreRow.greeting,
+        empathy: scoreRow.empathy,
+        professionalism: scoreRow.professionalism,
+        resolution: scoreRow.resolution,
+        communication: scoreRow.communication,
+        language_handling: scoreRow.language_handling,
+        verdict: scoreRow.verdict,
+        customer_sentiment: scoreRow.customer_sentiment,
+        summary: scoreRow.summary,
+        strengths: scoreRow.strengths,
+        improvements: scoreRow.improvements,
+      };
       ({ error: scoreError } = await supabase.from("call_scores").insert(legacy));
     }
     if (scoreError) throw new Error(scoreError.message);

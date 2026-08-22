@@ -27,9 +27,12 @@ export function CallsBoard({ initialCalls }: { initialCalls: CallRow[] }) {
     const supabase = createClient();
 
     async function refresh() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
       const { data } = await supabase
         .from("calls")
         .select("*, agents(name), call_scores(overall_score, verdict)")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       if (data) setCalls(data as CallRow[]);
     }

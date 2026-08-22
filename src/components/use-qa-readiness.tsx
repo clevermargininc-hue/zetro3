@@ -21,7 +21,7 @@ export function useQaReadiness() {
           setReadiness({
             ready: false,
             missing: ["document", "scorecard", "compliance"],
-            counts: { document: 0, scorecard: 0, compliance: 0 },
+            counts: { document: 0, scorecard: 0, compliance: 0, opening: 0, closing: 0 },
             documents: [],
             setupRequired: false,
           });

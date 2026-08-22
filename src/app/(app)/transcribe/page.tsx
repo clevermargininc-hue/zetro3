@@ -19,11 +19,11 @@ export default async function TranscribePage() {
     <div className="space-y-5">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="page-kicker">Transcription</p>
-          <h1 className="mt-1 text-2xl font-semibold">Transcribe calls</h1>
+          <p className="page-kicker">Prepare</p>
+          <h1 className="mt-1 text-2xl font-semibold">Prepare calls</h1>
           <p className="mt-1 max-w-xl text-sm text-muted">
-            AssemblyAI transcribes the original recording and splits speakers. The script is kept
-            verbatim so you can check each line against the audio.
+            Build the backend transcript and speaker split so you can listen and audit. The script stays
+            off the main call screen unless you open it.
           </p>
         </div>
         <Link href="/upload" className="btn btn-blue">
@@ -32,19 +32,18 @@ export default async function TranscribePage() {
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <article className="panel rounded-xl p-4">
-          <p className="page-kicker">AssemblyAI</p>
-          <h2 className="mt-2 text-sm font-semibold">Transcription & diarization</h2>
+          <p className="page-kicker">Background</p>
+          <h2 className="mt-2 text-sm font-semibold">Transcript & diarization</h2>
           <p className="mt-1.5 text-sm leading-6 text-muted">
-            Converts speech to text, keeps the language as spoken, and separates the two speakers
-            with Agent / Customer role hints.
+            Speech-to-text and Agent / Customer roles run for scoring and language repair — not as a
+            required UI step.
           </p>
         </article>
         <article className="panel rounded-xl p-4">
-          <p className="page-kicker">Original audio</p>
-          <h2 className="mt-2 text-sm font-semibold">Click a line to hear it</h2>
+          <p className="page-kicker">Audit path</p>
+          <h2 className="mt-2 text-sm font-semibold">Listen, then audit</h2>
           <p className="mt-1.5 text-sm leading-6 text-muted">
-            We do not rewrite or repair the script. Play the original recording next to each line
-            to confirm what was said.
+            Open a call to play the recording and score when preparation finishes.
           </p>
         </article>
       </div>
