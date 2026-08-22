@@ -11,13 +11,23 @@ export type InviteRecord = {
 };
 
 export function appOrigin(request: Request) {
-  const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
-  if (envUrl) return envUrl;
-  return new URL(request.url).origin;
+  return cleanSiteUrl(process.env.NEXT_PUBLIC_SITE_URL, new URL(request.url).origin);
+}
+
+function cleanSiteUrl(raw: string | undefined, fallbackOrigin: string) {
+  const fallback = fallbackOrigin.replace(/\/$/, "");
+  const extracted = raw?.match(/https?:\/\/[^\s]+/i)?.[0] || raw?.trim() || "";
+  try {
+    const parsed = new URL(extracted);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return fallback;
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch {
+    return fallback;
+  }
 }
 
 export function inviteJoinUrl(origin: string, token: string) {
-  return `${origin}/invite/${token}`;
+  return `${origin.replace(/\/$/, "")}/invite/${token}`;
 }
 
 function escapeHtml(value: string) {
@@ -53,13 +63,17 @@ async function postResendEmail(input: {
       subject: `Join ${input.workspaceName} on Zetro`,
       html: `
         <p>You were invited to join <strong>${escapeHtml(input.workspaceName)}</strong> on Zetro.</p>
-        <p>
-          <a href="${input.url}" style="display:inline-block;background:#2563eb;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600">
-            Join ${escapeHtml(input.workspaceName)}
-          </a>
-        </p>
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+          <tr>
+            <td style="background:#2563eb;border-radius:8px;">
+              <a href="${input.url}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 18px;color:#ffffff;text-decoration:none;font-weight:600;font-family:sans-serif;">
+                Join ${escapeHtml(input.workspaceName)}
+              </a>
+            </td>
+          </tr>
+        </table>
         <p>This link adds you to that workspace. Sign in or create an account with <strong>${escapeHtml(input.to)}</strong>, then you will enter it automatically.</p>
-        <p>If the button does not work, open: ${escapeHtml(input.url)}</p>
+        <p>If the button does not work, open this link:<br><a href="${input.url}">${escapeHtml(input.url)}</a></p>
       `,
       text: `You were invited to join ${input.workspaceName} on Zetro.\n\nJoin here: ${input.url}\n\nUse ${input.to}. After you sign in, you will be added to that workspace automatically.`,
     }),

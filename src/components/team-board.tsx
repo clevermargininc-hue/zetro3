@@ -160,7 +160,8 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
                           type="button"
                           className="text-sm text-muted hover:text-ink"
                           onClick={() => {
-                            const origin = (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin).replace(/\/$/, "");
+                            const raw = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+                            const origin = (raw.match(/https?:\/\/[^\s]+/i)?.[0] || raw).replace(/\/$/, "");
                             const url = `${origin}/invite/${invite.token}`;
                             void navigator.clipboard.writeText(url);
                           }}
