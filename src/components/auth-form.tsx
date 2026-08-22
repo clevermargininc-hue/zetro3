@@ -5,7 +5,13 @@ import { createClient } from "@/lib/supabase/client";
 
 type Mode = "login" | "signup";
 
-export function AuthForm({ mode }: { mode: Mode }) {
+function safeNext(value?: string) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/onboarding";
+  return value;
+}
+
+export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
+  const dest = safeNext(next);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -22,15 +28,19 @@ export function AuthForm({ mode }: { mode: Mode }) {
     try {
       const supabase = createClient();
       if (mode === "signup") {
-        const { error: signError } = await supabase.auth.signUp({
+        const { data, error: signError } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: { full_name: fullName },
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(dest)}`,
           },
         });
         if (signError) throw signError;
+        if (data.session) {
+          window.location.href = dest;
+          return;
+        }
         setInfo("Check your email to confirm the account, then sign in.");
       } else {
         const { error: signError } = await supabase.auth.signInWithPassword({
@@ -42,7 +52,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         // Force a hard navigation. This completely clears Next.js router cache 
         // and transitions from the unauthenticated layout to the dashboard layout 
         // much faster than a client-side transition.
-        window.location.href = "/dashboard";
+        window.location.href = dest;
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -60,7 +70,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       const { error: signError } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(dest)}`,
         },
       });
       if (signError) throw signError;
@@ -149,7 +159,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         {error && <p className="alert-error">{error}</p>}
         {info && <p className="alert-ok">{info}</p>}
         <button type="submit" disabled={loading} className="btn btn-lg btn-blue mt-1">
-          {loading ? "Please wait…" : mode === "signup" ? "Create workspace" : "Sign in"}
+          {loading ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
         </button>
       </form>
     </div>

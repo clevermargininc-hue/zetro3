@@ -38,7 +38,7 @@ copy .env.example .env.local
 3. Authentication → URL configuration: add `http://localhost:3000/auth/callback` to Redirect URLs. Site URL: `http://localhost:3000`.
 4. Optional for local testing: Authentication → Providers → Email → turn **off** “Confirm email”.
 5. SQL Editor: paste and run [`supabase/schema.sql`](supabase/schema.sql). That creates tables, RLS, the `call-audio` and `qa-documents` buckets, and realtime.
-6. Existing projects: also run [`supabase/qa-standards.sql`](supabase/qa-standards.sql).
+6. Existing projects: also run [`supabase/qa-standards.sql`](supabase/qa-standards.sql), [`supabase/workspaces.sql`](supabase/workspaces.sql), [`supabase/usernames.sql`](supabase/usernames.sql), and [`supabase/invites.sql`](supabase/invites.sql).
 
 ### 3. AssemblyAI
 

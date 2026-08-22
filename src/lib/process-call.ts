@@ -14,6 +14,7 @@ import {
 } from "@/lib/qa-documents";
 import { retrieveQaContext } from "@/lib/qa-retrieve";
 import type { AssemblyUtterance, AuditMode, LanguageMode, SpeakerRole } from "@/lib/types";
+import { getAutoAudit } from "@/lib/workspace-settings";
 
 function inferRoleFromLabel(label: string): SpeakerRole | null {
   const n = label.trim().toLowerCase();
@@ -123,6 +124,14 @@ export async function transcribeCall(callId: string) {
         completed_at: null,
       })
       .eq("id", callId);
+
+    if (await getAutoAudit(call.user_id)) {
+      try {
+        await scoreCall(callId, "automatic");
+      } catch (err) {
+        console.error("Automatic scoring failed", err);
+      }
+    }
   } catch (err) {
     const message = isAssemblyNetworkError(err)
       ? assemblyNetworkMessage(err)

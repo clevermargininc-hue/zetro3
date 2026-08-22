@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, scoreTone, verdictLabel } from "@/lib/format";
 import type { AgentPerformance, Call, CallScore } from "@/lib/types";
+import { JoinRequestBanner } from "@/components/join-request-banner";
 
 // Clean, enterprise SVG Icons
 const Icons = {
@@ -78,6 +79,8 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      <JoinRequestBanner />
 
       {/* KPIs */}
       <section className="grid gap-4 sm:grid-cols-3">

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/components/logo";
 import { createClient } from "@/lib/supabase/client";
+import { clearWorkspaceCookie } from "@/lib/workspace-cookie";
 
 // Minimal SVG Icons
 const Icons = {
@@ -59,6 +60,12 @@ const Icons = {
       <path d="m19.07 4.93-1.41 1.41" />
     </svg>
   ),
+  settings: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.5 1.1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
+    </svg>
+  ),
 };
 
 const NAV = [
@@ -83,6 +90,12 @@ const NAV = [
       { href: "/standards", label: "Standards", icon: Icons.standards },
     ],
   },
+  {
+    label: "Account",
+    items: [
+      { href: "/settings", label: "Settings", icon: Icons.settings },
+    ],
+  },
 ];
 
 function linkActive(href: string, pathname: string) {
@@ -93,7 +106,17 @@ function linkActive(href: string, pathname: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function AppNav({ email }: { email?: string | null }) {
+export function AppNav({
+  email,
+  username,
+  workspaceName,
+  plan,
+}: {
+  email?: string | null;
+  username?: string | null;
+  workspaceName?: string | null;
+  plan?: string | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -102,6 +125,7 @@ export function AppNav({ email }: { email?: string | null }) {
   async function signOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
+    clearWorkspaceCookie();
     router.push("/login");
     router.refresh();
   }
@@ -171,11 +195,17 @@ export function AppNav({ email }: { email?: string | null }) {
         <div className={`p-4 bg-white border-t border-line/40 overflow-hidden`}>
           <div className={`flex items-center rounded-xl bg-surface-2 border border-line/50 ${collapsed ? "justify-center p-2" : "gap-3 px-3 py-2"}`}>
             <div className="h-8 w-8 rounded-full bg-blue/10 flex items-center justify-center text-blue font-bold text-xs uppercase shrink-0">
-               {email ? email.charAt(0) : "U"}
+               {(username || email || "U").charAt(0)}
             </div>
             {!collapsed && (
               <div className="min-w-0 flex-1 animate-in fade-in duration-200">
-                 <p className="truncate text-[13px] font-bold text-ink leading-tight">{email}</p>
+                 <p className="truncate text-[13px] font-bold text-ink leading-tight">
+                   {username ? `@${username}` : workspaceName || (email || "").split("@")[0]}
+                 </p>
+                 <p className="truncate text-[11px] text-muted leading-tight">
+                   {workspaceName ? `${plan === "solo" ? "Solo" : "Team"} · ` : ""}
+                   {workspaceName || "Zetro"}
+                 </p>
                  <button
                    type="button"
                    onClick={signOut}
@@ -251,10 +281,16 @@ export function AppNav({ email }: { email?: string | null }) {
             <div className="pt-6 mt-6 border-t border-line/40">
                <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white border border-line/50">
                  <div className="h-10 w-10 rounded-full bg-blue/10 flex items-center justify-center text-blue font-bold text-[14px] uppercase shrink-0">
-                    {email ? email.charAt(0) : "U"}
+                    {(username || email || "U").charAt(0)}
                  </div>
                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14px] font-bold text-ink leading-tight">{email}</p>
+                    <p className="truncate text-[14px] font-bold text-ink leading-tight">
+                      {username ? `@${username}` : workspaceName || (email || "").split("@")[0]}
+                    </p>
+                    <p className="truncate text-[12px] text-muted">
+                      {workspaceName ? `${plan === "solo" ? "Solo" : "Team"} · ` : ""}
+                      {workspaceName || "Zetro"}
+                    </p>
                     <button
                       type="button"
                       onClick={signOut}

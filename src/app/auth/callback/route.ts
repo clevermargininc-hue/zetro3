@@ -5,7 +5,7 @@ import { getPublicEnv } from "@/lib/env";
 
 function safeNext(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/dashboard";
+    return "/onboarding";
   }
   return value;
 }

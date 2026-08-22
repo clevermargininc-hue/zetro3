@@ -2,7 +2,15 @@ import Link from "next/link";
 import { AuthForm } from "@/components/auth-form";
 import { Logo } from "@/components/logo";
 
-export default function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+  const dest = next && next.startsWith("/") && !next.startsWith("//") ? next : undefined;
+  const invited = dest?.startsWith("/invite/");
+
   return (
     <div className="grid min-h-screen bg-white lg:grid-cols-2">
       <div className="hidden flex-col justify-between bg-blue p-10 text-white lg:flex">
@@ -20,16 +28,23 @@ export default function SignupPage() {
           <div className="lg:hidden">
             <Logo />
           </div>
-          <h1 className="mt-8 text-2xl font-semibold lg:mt-0">Create your workspace</h1>
+          <h1 className="mt-8 text-2xl font-semibold lg:mt-0">
+            {invited ? "Create your account to join" : "Create your account"}
+          </h1>
           <p className="mt-2 text-sm text-muted">
-            Use a work email. You can invite your operations team later.
+            {invited
+              ? "Use the email this invitation was sent to."
+              : "Use your work email. After sign-up you can join a team or start solo."}
           </p>
           <div className="mt-8">
-            <AuthForm mode="signup" />
+            <AuthForm mode="signup" next={dest} />
           </div>
           <p className="mt-6 text-sm text-muted">
             Already have a workspace?{" "}
-            <Link href="/login" className="font-medium text-blue hover:underline">
+            <Link
+              href={dest ? `/login?next=${encodeURIComponent(dest)}` : "/login"}
+              className="font-medium text-blue hover:underline"
+            >
               Sign in
             </Link>
           </p>

@@ -1,7 +1,26 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { WORKSPACE_COOKIE } from "@/lib/workspace-cookie";
 
 const PUBLIC_PATHS = new Set(["/", "/login", "/signup", "/talk-sales", "/about", "/how-it-works", "/solutions", "/pricing"]);
+
+async function userHasWorkspace(
+  request: NextRequest,
+  supabase: ReturnType<typeof createServerClient>,
+  userId: string,
+): Promise<boolean | null> {
+  if (request.cookies.get(WORKSPACE_COOKIE)?.value === "1") {
+    return true;
+  }
+  const { data, error } = await supabase
+    .from("workspace_members")
+    .select("workspace_id")
+    .eq("user_id", userId)
+    .limit(1)
+    .maybeSingle();
+  if (error) return null;
+  return Boolean(data);
+}
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -39,7 +58,7 @@ export async function updateSession(request: NextRequest) {
     const callback = request.nextUrl.clone();
     callback.pathname = "/auth/callback";
     if (!callback.searchParams.get("next")) {
-      callback.searchParams.set("next", "/dashboard");
+      callback.searchParams.set("next", "/onboarding");
     }
     return NextResponse.redirect(callback);
   }
@@ -50,17 +69,54 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/_next") ||
     path.startsWith("/api");
 
+  function safeNext(value: string | null) {
+    if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
+    return value;
+  }
+
   if (!user && !isPublic) {
     const login = request.nextUrl.clone();
     login.pathname = "/login";
+    login.search = "";
     login.searchParams.set("next", path);
     return NextResponse.redirect(login);
   }
 
   if (user && (path === "/login" || path === "/signup")) {
-    const dashboard = request.nextUrl.clone();
-    dashboard.pathname = "/dashboard";
-    return NextResponse.redirect(dashboard);
+    const next = safeNext(request.nextUrl.searchParams.get("next"));
+    if (next?.startsWith("/invite/")) {
+      return NextResponse.redirect(new URL(next.split("?")[0], request.nextUrl.origin));
+    }
+    const ready = await userHasWorkspace(request, supabase, user.id);
+    const dest = request.nextUrl.clone();
+    dest.pathname = ready === true ? "/dashboard" : "/onboarding";
+    dest.search = "";
+    return NextResponse.redirect(dest);
+  }
+
+  const isOnboarding = path.startsWith("/onboarding");
+  const isInvite = path.startsWith("/invite/");
+  if (user && isOnboarding) {
+    const inviteStep = request.nextUrl.searchParams.get("step") === "invite";
+    if (!inviteStep) {
+      const ready = await userHasWorkspace(request, supabase, user.id);
+      if (ready === true) {
+        const dest = request.nextUrl.clone();
+        dest.pathname = "/dashboard";
+        dest.search = "";
+        return NextResponse.redirect(dest);
+      }
+    }
+  }
+
+  if (user && !isPublic && !isOnboarding && !isInvite) {
+    const ready = await userHasWorkspace(request, supabase, user.id);
+    if (ready === false) {
+      const dest = request.nextUrl.clone();
+      dest.pathname = "/onboarding";
+      dest.search = "";
+      return NextResponse.redirect(dest);
+    }
   }
 
   return response;

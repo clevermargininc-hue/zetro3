@@ -7,7 +7,8 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, next } = await searchParams;
+  const dest = next && next.startsWith("/") && !next.startsWith("//") ? next : undefined;
   const oauthError =
     error === "oauth" || error === "oauth_missing_code"
       ? "Google sign-in did not finish. Try again, or use email."
@@ -38,11 +39,14 @@ export default async function LoginPage({
           </p>
           {oauthError ? <p className="alert-error mt-4">{oauthError}</p> : null}
           <div className="mt-8">
-            <AuthForm mode="login" />
+            <AuthForm mode="login" next={dest} />
           </div>
           <p className="mt-6 text-sm text-muted">
             New organization?{" "}
-            <Link href="/signup" className="font-medium text-blue hover:underline">
+            <Link
+              href={dest ? `/signup?next=${encodeURIComponent(dest)}` : "/signup"}
+              className="font-medium text-blue hover:underline"
+            >
               Create a workspace
             </Link>
           </p>

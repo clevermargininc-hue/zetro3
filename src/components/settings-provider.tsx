@@ -1,0 +1,122 @@
+"use client";
+
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { authFetch } from "@/lib/auth-fetch";
+import { suggestUsername } from "@/lib/display-name";
+
+export type SettingsData = {
+  profile: { email: string; fullName: string; username: string };
+  auto_audit: boolean;
+  workspace: {
+    id: string;
+    name: string;
+    plan: "solo" | "team";
+    domain: string | null;
+    role: "admin" | "member";
+    memberCount: number;
+  };
+  error?: string;
+};
+
+type SettingsContextValue = {
+  data: SettingsData | null;
+  fullName: string;
+  setFullName: (value: string) => void;
+  username: string;
+  setUsername: (value: string) => void;
+  workspaceName: string;
+  setWorkspaceName: (value: string) => void;
+  error: string | null;
+  info: string | null;
+  saving: string | null;
+  patch: (body: Record<string, unknown>, key: string, ok?: string) => Promise<void>;
+};
+
+const SettingsContext = createContext<SettingsContextValue | null>(null);
+
+export function SettingsProvider({ children }: { children: ReactNode }) {
+  const [data, setData] = useState<SettingsData | null>(null);
+  const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
+  const [workspaceName, setWorkspaceName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const settingsRes = await authFetch("/api/settings");
+      const settings = (await settingsRes.json()) as SettingsData;
+      if (!settingsRes.ok) {
+        setError(settings.error || "Could not load settings.");
+        return;
+      }
+      setData(settings);
+      setFullName(settings.profile.fullName);
+      setUsername(
+        settings.profile.username ||
+          suggestUsername(settings.profile.email, settings.profile.fullName),
+      );
+      setWorkspaceName(settings.workspace.name);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load settings.");
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const patch = useCallback(
+    async (body: Record<string, unknown>, key: string, ok = "Saved.") => {
+      setSaving(key);
+      setError(null);
+      setInfo(null);
+      try {
+        const response = await authFetch("/api/settings", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const json = (await response.json()) as SettingsData;
+        if (!response.ok) throw new Error(json.error || "Could not save");
+        setData(json);
+        setFullName(json.profile.fullName);
+        setUsername(json.profile.username || username);
+        setWorkspaceName(json.workspace.name);
+        setInfo(ok);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not save");
+      } finally {
+        setSaving(null);
+      }
+    },
+    [username],
+  );
+
+  const value = useMemo(
+    () => ({
+      data,
+      fullName,
+      setFullName,
+      username,
+      setUsername,
+      workspaceName,
+      setWorkspaceName,
+      error,
+      info,
+      saving,
+      patch,
+    }),
+    [data, fullName, username, workspaceName, error, info, saving, patch],
+  );
+
+  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
+}
+
+export function useSettings() {
+  const value = useContext(SettingsContext);
+  if (!value) throw new Error("useSettings must be used within SettingsProvider");
+  return value;
+}
