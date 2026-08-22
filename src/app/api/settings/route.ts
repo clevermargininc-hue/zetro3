@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAutoAudit, setAutoAudit, syncProfileFromAuth, updateProfileName, updateUsername } from "@/lib/workspace-settings";
+import { displayCountry, workspaceLanguages } from "@/lib/locale";
 import {
   getMembership,
   isSetupRequired,
   renameWorkspace,
+  saveProfileCountry,
+  updateWorkspaceCountry,
   upgradeToTeam,
 } from "@/lib/workspaces";
 
@@ -75,6 +78,8 @@ export async function GET(request: Request) {
         name: membership.name,
         plan: membership.plan,
         domain: membership.domain,
+        country: displayCountry(membership.country),
+        languages: workspaceLanguages(membership.country),
         role: membership.role,
         memberCount: count || 1,
       },
@@ -98,6 +103,7 @@ export async function PATCH(request: Request) {
     full_name?: unknown;
     username?: unknown;
     workspace_name?: unknown;
+    country?: unknown;
     plan?: unknown;
   };
 
@@ -126,6 +132,18 @@ export async function PATCH(request: Request) {
       await renameWorkspace(membership.workspaceId, body.workspace_name);
     }
 
+    if (typeof body.country === "string") {
+      if (membership.role !== "admin") {
+        return NextResponse.json({ error: "Only admins can change the country." }, { status: 403 });
+      }
+      const country = await updateWorkspaceCountry(membership.workspaceId, body.country);
+      try {
+        await saveProfileCountry(user.id, country);
+      } catch {
+        // Profile country is optional.
+      }
+    }
+
     if (body.plan === "team") {
       if (membership.role !== "admin") {
         return NextResponse.json({ error: "Only admins can change the plan." }, { status: 403 });
@@ -140,6 +158,7 @@ export async function PATCH(request: Request) {
       typeof body.full_name !== "string" &&
       typeof body.username !== "string" &&
       typeof body.workspace_name !== "string" &&
+      typeof body.country !== "string" &&
       body.plan !== "team"
     ) {
       return NextResponse.json({ error: "Nothing to update." }, { status: 400 });

@@ -15,6 +15,8 @@ import {
 import { retrieveQaContext } from "@/lib/qa-retrieve";
 import type { AssemblyUtterance, AuditMode, LanguageMode, SpeakerRole } from "@/lib/types";
 import { getAutoAudit } from "@/lib/workspace-settings";
+import { getMembership } from "@/lib/workspaces";
+import { resolvedLanguageMode, workspaceLanguages } from "@/lib/locale";
 
 function inferRoleFromLabel(label: string): SpeakerRole | null {
   const n = label.trim().toLowerCase();
@@ -78,12 +80,19 @@ export async function transcribeCall(callId: string) {
       );
     }
 
-    const bytes = await file.arrayBuffer();
-    const audioUrl = await uploadToAssemblyAI(bytes);
-    const submitted = await submitTranscript(
-      audioUrl,
+    const membership = await getMembership(call.user_id).catch(() => null);
+    const langs = workspaceLanguages(membership?.country);
+    const languageMode = resolvedLanguageMode(
+      membership?.country,
       (call.language_mode || "auto") as LanguageMode,
     );
+    if (languageMode !== call.language_mode) {
+      await supabase.from("calls").update({ language_mode: languageMode }).eq("id", callId);
+    }
+
+    const bytes = await file.arrayBuffer();
+    const audioUrl = await uploadToAssemblyAI(bytes);
+    const submitted = await submitTranscript(audioUrl, languageMode);
 
     await supabase
       .from("calls")
@@ -96,7 +105,7 @@ export async function transcribeCall(callId: string) {
       throw new Error("No speakers were detected in this recording");
     }
 
-    const rows = collapseTurnList(utterances).map((u, index) => ({
+    const rows = collapseTurnList(utterances, { bilingual: langs.bilingual }).map((u, index) => ({
       call_id: callId,
       sequence: index,
       speaker_label: u.speaker,
@@ -214,12 +223,16 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
       }
     }
 
+    const membership = await getMembership(call.user_id).catch(() => null);
+    const bilingual = workspaceLanguages(membership?.country).bilingual;
+
     const analysis = await analyzeCall(
       asAssembly,
       agentName,
       standardsText,
       standards,
       mode,
+      bilingual,
     );
 
     for (const row of stored) {

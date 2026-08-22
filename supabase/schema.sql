@@ -10,6 +10,7 @@ create table if not exists public.profiles (
   email text,
   full_name text,
   username text,
+  country text,
   auto_audit boolean not null default false,
   created_at timestamptz not null default now()
 );
@@ -120,6 +121,7 @@ create table if not exists public.workspaces (
   name text not null,
   plan text not null check (plan in ('solo', 'team')),
   domain text,
+  country text,
   created_by uuid not null references auth.users (id) on delete restrict,
   created_at timestamptz not null default now()
 );

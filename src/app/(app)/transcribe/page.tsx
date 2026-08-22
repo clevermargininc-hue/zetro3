@@ -35,8 +35,8 @@ export default async function TranscribePage() {
           <p className="page-kicker">AssemblyAI</p>
           <h2 className="mt-2 text-sm font-semibold">Transcription & diarization</h2>
           <p className="mt-1.5 text-sm leading-6 text-muted">
-            Converts speech to text, keeps Kiswahili and English as spoken, and separates the two
-            speakers with Agent / Customer role hints.
+            Converts speech to text, keeps the language as spoken, and separates the two speakers
+            with Agent / Customer role hints.
           </p>
         </article>
         <article className="panel rounded-xl p-4">

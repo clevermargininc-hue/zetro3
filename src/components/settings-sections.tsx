@@ -1,5 +1,6 @@
 "use client";
 
+import { CountryRegionPicker } from "@/components/country-region-picker";
 import { useSettings } from "@/components/settings-provider";
 
 export function AccountSettings() {
@@ -60,11 +61,22 @@ export function AccountSettings() {
 }
 
 export function WorkspaceSettings() {
-  const { data, workspaceName, setWorkspaceName, saving, patch } = useSettings();
+  const {
+    data,
+    workspaceName,
+    setWorkspaceName,
+    countryDraft,
+    setCountryDraft,
+    locationMode,
+    setLocationMode,
+    saving,
+    patch,
+  } = useSettings();
   if (!data) return <p className="text-sm text-muted">Loading…</p>;
 
   const isAdmin = data.workspace.role === "admin";
   const isSolo = data.workspace.plan === "solo";
+  const languages = data.workspace.languages;
 
   return (
     <section>
@@ -81,7 +93,8 @@ export function WorkspaceSettings() {
         className="mt-8 flex flex-col gap-4"
         onSubmit={(event) => {
           event.preventDefault();
-          void patch({ workspace_name: workspaceName }, "workspace");
+          const country = locationMode === "tz" ? "Tanzania" : countryDraft;
+          void patch({ workspace_name: workspaceName, country }, "workspace");
         }}
       >
         <label className="flex flex-col gap-1.5 text-sm">
@@ -95,6 +108,23 @@ export function WorkspaceSettings() {
             className="field"
           />
         </label>
+        <div className="flex flex-col gap-3">
+          <span className="text-sm font-medium text-ink">Country / region</span>
+          <CountryRegionPicker
+            mode={locationMode}
+            otherCountry={countryDraft}
+            disabled={!isAdmin}
+            onModeChange={(next) => {
+              setLocationMode(next);
+              if (next === "tz") setCountryDraft("");
+            }}
+            onOtherCountryChange={setCountryDraft}
+          />
+          <p className="text-sm text-muted">
+            Auditing languages: <span className="font-medium text-ink">{languages.label}</span>
+            {data.workspace.country ? ` · ${data.workspace.country}` : null}
+          </p>
+        </div>
         {data.workspace.domain ? (
           <p className="text-sm text-muted">
             Company domain: <span className="font-medium text-ink">{data.workspace.domain}</span>
@@ -109,7 +139,7 @@ export function WorkspaceSettings() {
             {saving === "workspace" ? "Saving…" : "Save workspace"}
           </button>
         ) : (
-          <p className="text-sm text-muted">Ask an admin to rename this workspace.</p>
+          <p className="text-sm text-muted">Ask an admin to change workspace settings.</p>
         )}
       </form>
       {isAdmin && isSolo ? (
@@ -148,6 +178,9 @@ export function AuditingSettings() {
       <h1 className="text-2xl font-semibold tracking-tight">Auditing</h1>
       <p className="mt-1 text-sm text-muted">
         When this is on, Zetro scores a call automatically after transcription finishes.
+        {data.workspace.languages.bilingual
+          ? " This workspace audits Kiswahili and English."
+          : " This workspace audits in English only."}
       </p>
       <div className="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-line bg-white/70 p-5">
         <div>

@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { authFetch } from "@/lib/auth-fetch";
 import { suggestUsername } from "@/lib/display-name";
+import { isTanzania } from "@/lib/locale";
 
 export type SettingsData = {
   profile: { email: string; fullName: string; username: string };
@@ -12,6 +13,8 @@ export type SettingsData = {
     name: string;
     plan: "solo" | "team";
     domain: string | null;
+    country: string;
+    languages: { bilingual: boolean; label: string; defaultMode: string };
     role: "admin" | "member";
     memberCount: number;
   };
@@ -26,6 +29,10 @@ type SettingsContextValue = {
   setUsername: (value: string) => void;
   workspaceName: string;
   setWorkspaceName: (value: string) => void;
+  countryDraft: string;
+  setCountryDraft: (value: string) => void;
+  locationMode: "tz" | "other";
+  setLocationMode: (value: "tz" | "other") => void;
   error: string | null;
   info: string | null;
   saving: string | null;
@@ -39,6 +46,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [workspaceName, setWorkspaceName] = useState("");
+  const [countryDraft, setCountryDraft] = useState("");
+  const [locationMode, setLocationMode] = useState<"tz" | "other">("tz");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
@@ -58,6 +67,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           suggestUsername(settings.profile.email, settings.profile.fullName),
       );
       setWorkspaceName(settings.workspace.name);
+      const country = settings.workspace.country || "Tanzania";
+      if (isTanzania(country)) {
+        setLocationMode("tz");
+        setCountryDraft("");
+      } else {
+        setLocationMode("other");
+        setCountryDraft(country);
+      }
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load settings.");
@@ -85,6 +102,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setFullName(json.profile.fullName);
         setUsername(json.profile.username || username);
         setWorkspaceName(json.workspace.name);
+        const country = json.workspace.country || "Tanzania";
+        if (isTanzania(country)) {
+          setLocationMode("tz");
+          setCountryDraft("");
+        } else {
+          setLocationMode("other");
+          setCountryDraft(country);
+        }
         setInfo(ok);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not save");
@@ -104,12 +129,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setUsername,
       workspaceName,
       setWorkspaceName,
+      countryDraft,
+      setCountryDraft,
+      locationMode,
+      setLocationMode,
       error,
       info,
       saving,
       patch,
     }),
-    [data, fullName, username, workspaceName, error, info, saving, patch],
+    [data, fullName, username, workspaceName, countryDraft, locationMode, error, info, saving, patch],
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

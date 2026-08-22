@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { displayCountry, parseCountryName } from "@/lib/locale";
 
 export type WorkspacePlan = "solo" | "team";
 export type WorkspaceRole = "admin" | "member";
@@ -8,6 +9,7 @@ export type Workspace = {
   name: string;
   plan: WorkspacePlan;
   domain: string | null;
+  country: string | null;
   created_by: string;
   created_at: string;
 };
@@ -115,6 +117,24 @@ function setupError() {
   return setup;
 }
 
+export function isMissingCountryColumn(error: { message?: string } | null) {
+  const message = (error?.message || "").toLowerCase();
+  return (
+    message.includes("country") &&
+    (message.includes("schema cache") ||
+      message.includes("column") ||
+      message.includes("could not find"))
+  );
+}
+
+function countrySetupError() {
+  const setup = new Error(
+    "Run supabase/country.sql in the Supabase SQL Editor, then continue.",
+  );
+  (setup as Error & { setupRequired?: boolean }).setupRequired = true;
+  return setup;
+}
+
 export async function getMembership(userId: string) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
@@ -131,12 +151,20 @@ export async function getMembership(userId: string) {
   }
   if (!data) return null;
 
-  const { data: workspace, error: workspaceError } = await supabase
+  let workspaceQuery = await supabase
     .from("workspaces")
-    .select("id, name, plan, domain")
+    .select("id, name, plan, domain, country")
     .eq("id", data.workspace_id)
     .maybeSingle();
-  if (workspaceError) throw new Error(workspaceError.message);
+  if (workspaceQuery.error && isMissingCountryColumn(workspaceQuery.error)) {
+    workspaceQuery = await supabase
+      .from("workspaces")
+      .select("id, name, plan, domain")
+      .eq("id", data.workspace_id)
+      .maybeSingle();
+  }
+  if (workspaceQuery.error) throw new Error(workspaceQuery.error.message);
+  const workspace = workspaceQuery.data;
   if (!workspace) return null;
 
   return {
@@ -144,6 +172,7 @@ export async function getMembership(userId: string) {
     name: workspace.name as string,
     plan: workspace.plan as WorkspacePlan,
     domain: (workspace.domain as string | null) ?? null,
+    country: displayCountry((workspace as { country?: string | null }).country),
     role: data.role as WorkspaceRole,
   };
 }
@@ -154,22 +183,45 @@ export async function createWorkspace(input: {
   domain: string | null;
   userId: string;
   role?: WorkspaceRole;
+  country?: string | null;
 }) {
   const supabase = createAdminClient();
-  const { data: workspace, error } = await supabase
+  const country = input.country ? parseCountryName(input.country) : "Tanzania";
+  let inserted = await supabase
     .from("workspaces")
     .insert({
       name: input.name.trim(),
       plan: input.plan,
       domain: input.domain,
+      country,
       created_by: input.userId,
     })
     .select("*")
     .single();
 
+  if (inserted.error && isMissingCountryColumn(inserted.error)) {
+    inserted = await supabase
+      .from("workspaces")
+      .insert({
+        name: input.name.trim(),
+        plan: input.plan,
+        domain: input.domain,
+        created_by: input.userId,
+      })
+      .select("*")
+      .single();
+  }
+
+  const { data: workspace, error } = inserted;
   if (error) {
     if (isMissingWorkspaceTable(error)) throw setupError();
     throw new Error(error.message);
+  }
+
+  try {
+    await saveProfileCountry(input.userId, country);
+  } catch {
+    // Profile country is optional; workspace create should still succeed.
   }
 
   const { error: memberError } = await supabase.from("workspace_members").insert({
@@ -182,7 +234,26 @@ export async function createWorkspace(input: {
     throw new Error(memberError.message);
   }
 
-  return workspace as Workspace;
+  return { ...(workspace as Workspace), country };
+}
+
+export async function saveProfileCountry(userId: string, country: string) {
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("profiles").update({ country }).eq("id", userId);
+  if (error && !isMissingCountryColumn(error)) {
+    throw new Error(error.message);
+  }
+}
+
+export async function updateWorkspaceCountry(workspaceId: string, country: string) {
+  const value = parseCountryName(country);
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("workspaces").update({ country: value }).eq("id", workspaceId);
+  if (error) {
+    if (isMissingCountryColumn(error)) throw countrySetupError();
+    throw new Error(error.message);
+  }
+  return value;
 }
 
 export async function findWorkspaceByDomain(domain: string) {

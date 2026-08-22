@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { authFetch } from "@/lib/auth-fetch";
 import { createClient } from "@/lib/supabase/client";
+import { workspaceLanguages } from "@/lib/locale";
 import type { LanguageMode } from "@/lib/types";
 
 const ACCEPT =
@@ -12,6 +14,7 @@ export function UploadForm() {
   const [agents, setAgents] = useState<{ id: string; name: string }[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [agentName, setAgentName] = useState("");
+  const [bilingual, setBilingual] = useState(true);
   const [languageMode, setLanguageMode] = useState<LanguageMode>("sw");
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +28,22 @@ export function UploadForm() {
       .select("id, name")
       .order("name")
       .then(({ data }) => setAgents(data || []));
+
+    void (async () => {
+      try {
+        const response = await authFetch("/api/settings");
+        const data = (await response.json()) as {
+          workspace?: { country?: string; languages?: { bilingual?: boolean; defaultMode?: LanguageMode } };
+        };
+        if (!response.ok) return;
+        const langs =
+          data.workspace?.languages || workspaceLanguages(data.workspace?.country);
+        setBilingual(langs.bilingual !== false);
+        setLanguageMode(langs.defaultMode || (langs.bilingual === false ? "en" : "sw"));
+      } catch {
+        // Keep Tanzania defaults if settings are unavailable.
+      }
+    })();
   }, []);
 
   async function onSubmit(event: React.FormEvent) {
@@ -79,6 +98,7 @@ export function UploadForm() {
       }
 
       const savedTitle = file.name.replace(/\.[^.]+$/, "");
+      const mode: LanguageMode = bilingual ? languageMode : "en";
       const { data: call, error: callError } = await supabase
         .from("calls")
         .insert({
@@ -87,7 +107,7 @@ export function UploadForm() {
           title: savedTitle,
           file_name: file.name,
           audio_path: path,
-          language_mode: languageMode,
+          language_mode: mode,
           status: "queued",
         })
         .select("*")
@@ -134,13 +154,15 @@ export function UploadForm() {
           <p className="mt-2 text-[14px] font-medium text-muted max-w-sm leading-relaxed">
             {file ? (
               <span className="text-good">{file.name}</span>
+            ) : bilingual ? (
+              "Supported formats: MP3, WAV, M4A, MP4. Languages: Kiswahili, English, or Mixed."
             ) : (
-              "Supported formats: MP3, WAV, M4A, MP4. Supported languages: Kiswahili, English, or Mixed."
+              "Supported formats: MP3, WAV, M4A, MP4. Language: English only."
             )}
           </p>
         </label>
 
-        <div className="grid sm:grid-cols-2 gap-6">
+        <div className={`grid gap-6 ${bilingual ? "sm:grid-cols-2" : ""}`}>
           <label className="flex flex-col gap-2 text-sm">
             <span className="font-bold text-[13px] uppercase tracking-wide text-muted">Agent Name</span>
             <input
@@ -157,23 +179,25 @@ export function UploadForm() {
             </datalist>
           </label>
 
-          <label className="flex flex-col gap-2 text-sm">
-            <span className="font-bold text-[13px] uppercase tracking-wide text-muted">Spoken Language</span>
-            <select
-              value={languageMode}
-              onChange={(e) => setLanguageMode(e.target.value as LanguageMode)}
-              className="field bg-surface-2 shadow-inner"
-            >
-              <option value="sw">Kiswahili</option>
-              <option value="mixed">Mixed English + Kiswahili</option>
-              <option value="auto">Auto-detect</option>
-              <option value="en">English</option>
-            </select>
-          </label>
+          {bilingual ? (
+            <label className="flex flex-col gap-2 text-sm">
+              <span className="font-bold text-[13px] uppercase tracking-wide text-muted">Spoken Language</span>
+              <select
+                value={languageMode}
+                onChange={(e) => setLanguageMode(e.target.value as LanguageMode)}
+                className="field bg-surface-2 shadow-inner"
+              >
+                <option value="sw">Kiswahili</option>
+                <option value="mixed">Mixed English + Kiswahili</option>
+                <option value="auto">Auto-detect</option>
+                <option value="en">English</option>
+              </select>
+            </label>
+          ) : null}
         </div>
 
         {error && <div className="alert-error text-[14px] shadow-sm">{error}</div>}
-        
+
         {progress && (
           <div className="flex items-center gap-3 text-[14px] font-medium text-blue bg-blue-soft/50 p-4 rounded-xl">
             <div className="h-4 w-4 rounded-full border-2 border-blue/30 border-t-blue animate-spin"></div>
@@ -194,17 +218,17 @@ export function UploadForm() {
         <div className="animate-in slide-in-from-bottom-4 duration-500">
           <section className="panel rounded-2xl p-8 bg-gradient-to-br from-good/10 to-transparent border-good/20 shadow-good/5">
             <div className="flex items-center gap-3">
-               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-good text-white font-bold shadow-sm">✓</div>
-               <h2 className="text-xl font-bold text-good">Upload complete</h2>
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-good text-white font-bold shadow-sm">✓</div>
+              <h2 className="text-xl font-bold text-good">Upload complete</h2>
             </div>
-            
+
             <p className="mt-3 text-[15px] text-muted leading-relaxed">
-              <span className="font-bold text-ink">{done.title}</span> is successfully stored in your workspace. 
+              <span className="font-bold text-ink">{done.title}</span> is successfully stored in your workspace.
               The next step is to generate the speaker script.
             </p>
-            
-            <Link 
-              href={`/calls/${done.id}/transcribe`} 
+
+            <Link
+              href={`/calls/${done.id}/transcribe`}
               className="btn btn-lg bg-good text-white hover:bg-good/90 shadow-md shadow-good/20 mt-6 hover:-translate-y-0.5 active:translate-y-0 w-full sm:w-auto text-center block"
             >
               Transcribe a call

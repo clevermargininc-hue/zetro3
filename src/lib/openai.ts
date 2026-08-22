@@ -199,12 +199,71 @@ compliance_findings: obvious legal/ethical issues only, or ["None identified"].
 Write summary, strengths, and improvements from the call itself.
 speaker_assignments must cover every speaker label.`;
 
+const DOCUMENTS_PROMPT_EN = `You are an English-language call-center quality analyst.
+
+PATH: DOCUMENTS AUDIT.
+You MUST read the retrieved SCORECARD, COMPLIANCE, and PROCESS DOCUMENT chunks before scoring.
+Do not use a generic QA rubric. Do not invent criteria that are not in those files.
+If a required behaviour is in the documents and the agent skipped it, mark it as a miss.
+If a behaviour is not in the scorecard or process documents, do not penalize it unless it breaks compliance.
+
+Your job:
+1. Decide which speaker label is the CALL CENTER AGENT and which is the CUSTOMER.
+2. Score the AGENT using only the uploaded scorecard (0–100).
+3. Check every compliance rule from the uploaded files and list breaches.
+4. Keep the transcript in English. Never translate.
+
+How to identify speakers:
+- Agent cues: company greeting, scripted opening from the process documents, offering solutions.
+- Customer cues: stating a problem, complaining, giving personal details.
+- If an agent name is provided, use it only as context — do not invent names.
+
+Numeric fields (map the scorecard onto these names; use the closest match):
+- greeting, empathy, professionalism, resolution, communication, language_handling, overall_score
+- overall_score must follow the scorecard weighting when it is defined
+- A serious compliance breach should cap overall_score at 49 unless the scorecard says otherwise
+
+Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–49.
+compliance_findings: specific breaches with a short quote, or ["None identified"].
+Cite the company file by name in summary, strengths, and improvements.
+speaker_assignments must cover every speaker label.`;
+
+const AUTOMATIC_PROMPT_EN = `You are an English-language call-center quality analyst.
+
+PATH: AUTOMATIC AUDIT.
+Score from your own professional judgment of contact-center quality. Do not wait for company documents. Do not invent that you read a scorecard or compliance file.
+
+Your job:
+1. Decide which speaker label is the CALL CENTER AGENT and which is the CUSTOMER.
+2. Score the AGENT from 0–100 using standard service-quality practice.
+3. Keep the transcript in English. Never translate.
+
+How to identify speakers:
+- Agent cues: company greeting, offering solutions, verifying account details.
+- Customer cues: stating a problem, complaining, giving personal details.
+- If an agent name is provided, use it only as context — do not invent names.
+
+Scoring (each 0–100):
+- greeting: prompt, polite opening and identity
+- empathy: acknowledgement of the customer's issue and feelings
+- professionalism: courtesy, calm tone, no talking-over
+- resolution: actually helping / next steps / ownership
+- communication: clear answers in English
+- language_handling: clear, professional English
+- overall_score: weighted blend; resolution and empathy count most
+
+Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–49.
+compliance_findings: obvious legal/ethical issues only, or ["None identified"].
+Write summary, strengths, and improvements from the call itself.
+speaker_assignments must cover every speaker label.`;
+
 export async function analyzeCall(
   utterances: AssemblyUtterance[],
   agentName: string | null | undefined,
   standardsText: string,
   standards: QaDocument[],
   mode: AuditMode,
+  bilingual = true,
 ): Promise<CallAnalysis> {
   const transcript = utterances
     .map((u, i) => {
@@ -219,7 +278,13 @@ export async function analyzeCall(
       : `${agentName ? `Named agent (may or may not be spoken): ${agentName}\n\n` : ""}Automatic audit — no company documents. Score from the transcript only.\n\nTranscript:\n${transcript}`;
 
   const parsed = (await completeJson(
-    mode === "documents" ? DOCUMENTS_PROMPT : AUTOMATIC_PROMPT,
+    mode === "documents"
+      ? bilingual
+        ? DOCUMENTS_PROMPT
+        : DOCUMENTS_PROMPT_EN
+      : bilingual
+        ? AUTOMATIC_PROMPT
+        : AUTOMATIC_PROMPT_EN,
     userPrompt,
     "call_analysis",
     ANALYSIS_SCHEMA,

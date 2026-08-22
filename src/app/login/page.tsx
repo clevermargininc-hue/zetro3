@@ -28,7 +28,7 @@ export default async function LoginPage({
             Quality intelligence for bilingual contact centers.
           </h1>
         </div>
-        <p className="text-sm text-white/70">Kiswahili · English · Mixed language operations</p>
+        <p className="text-sm text-white/70">Used in Tanzania · Kiswahili & English · English only elsewhere</p>
       </div>
       <div className="grid place-items-center bg-white px-5 py-16">
         <div className="w-full max-w-md">

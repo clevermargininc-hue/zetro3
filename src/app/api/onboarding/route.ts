@@ -16,6 +16,7 @@ import {
 } from "@/lib/workspaces";
 
 import { appOrigin, sendWorkspaceInvites } from "@/lib/invites";
+import { parseCountryName } from "@/lib/locale";
 import { setWorkspaceCookie } from "@/lib/workspace-cookie";
 
 export const runtime = "nodejs";
@@ -107,6 +108,7 @@ export async function POST(request: Request) {
     name?: string;
     workspaceId?: string;
     emails?: unknown;
+    country?: string;
   };
 
   try {
@@ -122,12 +124,14 @@ export async function POST(request: Request) {
       if (membership) {
         return json({ ok: true, next: "/upload", workspaceId: membership.workspaceId }, true);
       }
+      const country = parseCountryName(body.country);
       const first = firstNameFrom(profile.fullName, email);
       const workspace = await createWorkspace({
         name: `${first}'s Workspace`,
         plan: "solo",
         domain: null,
         userId: user.id,
+        country,
       });
       return json({ ok: true, next: "/upload", workspaceId: workspace.id }, true);
     }
@@ -159,11 +163,13 @@ export async function POST(request: Request) {
         }
       }
       try {
+        const country = parseCountryName(body.country);
         const workspace = await createWorkspace({
           name,
           plan: "team",
           domain,
           userId: user.id,
+          country,
         });
         return json({
           ok: true,

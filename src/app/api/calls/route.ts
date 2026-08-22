@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
+import { resolvedLanguageMode } from "@/lib/locale";
 import type { LanguageMode } from "@/lib/types";
+import { getMembership } from "@/lib/workspaces";
 
 const MODES: LanguageMode[] = ["auto", "en", "sw", "mixed"];
 
@@ -41,9 +43,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "audio_path is required" }, { status: 400 });
   }
 
-  const languageMode = MODES.includes(body.language_mode || "auto")
+  const requested = MODES.includes(body.language_mode || "auto")
     ? body.language_mode || "auto"
     : "auto";
+  let languageMode = requested;
+  try {
+    const membership = await getMembership(user.id);
+    languageMode = resolvedLanguageMode(membership?.country, requested);
+  } catch {
+    languageMode = requested;
+  }
 
   let agentId: string | null = null;
   const agentName = body.agent_name?.trim();

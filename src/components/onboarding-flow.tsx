@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authFetch } from "@/lib/auth-fetch";
 import { createClient } from "@/lib/supabase/client";
+import { CountryRegionPicker, TanzaniaFlagIcon, WorldFlagIcon } from "@/components/country-region-picker";
+import { parseCountryName } from "@/lib/locale";
 import { clearWorkspaceCookie } from "@/lib/workspace-cookie";
 
 type Match = { id: string; name: string };
@@ -24,18 +26,21 @@ type Status = {
   invite: Invite | null;
 };
 
-type Step = "choice" | "team" | "invite" | "pending";
+type Step = "location" | "choice" | "team" | "invite" | "pending";
 
 export function OnboardingFlow() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<Status | null>(null);
-  const [step, setStep] = useState<Step>("choice");
+  const [step, setStep] = useState<Step>("location");
   const [name, setName] = useState("");
   const [emailDraft, setEmailDraft] = useState("");
   const [emails, setEmails] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [locationMode, setLocationMode] = useState<"tz" | "other" | null>(null);
+  const [otherCountry, setOtherCountry] = useState("");
+  const [pendingAction, setPendingAction] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,10 +62,17 @@ export function OnboardingFlow() {
         }
         if (data.ready) {
           window.location.replace("/dashboard");
+          return;
         }
         if (data.pendingRequest) {
           setStep("pending");
+          return;
         }
+        if (data.invite || data.match) {
+          setStep("team");
+          return;
+        }
+        setStep("location");
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : "Could not load onboarding.");
@@ -76,7 +88,24 @@ export function OnboardingFlow() {
     return status.invite;
   }, [status]);
 
+  function resolvedCountry() {
+    if (locationMode === "tz") return "Tanzania";
+    if (locationMode === "other") return otherCountry.trim();
+    return "";
+  }
+
   async function post(body: Record<string, unknown>) {
+    const needsCountry = body.action === "solo" || body.action === "create-team";
+    if (needsCountry && !body.country) {
+      try {
+        body.country = parseCountryName(resolvedCountry());
+      } catch {
+        setPendingAction(body);
+        setStep("location");
+        setError("Choose where you operate first.");
+        return;
+      }
+    }
     setLoading(true);
     setError(null);
     try {
@@ -133,6 +162,22 @@ export function OnboardingFlow() {
     }
   }
 
+  function continueFromLocation() {
+    setError(null);
+    try {
+      const country = parseCountryName(resolvedCountry());
+      const next = pendingAction;
+      setPendingAction(null);
+      if (next) {
+        void post({ ...next, country });
+        return;
+      }
+      setStep("choice");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Choose where you operate.");
+    }
+  }
+
   function addEmail() {
     const value = emailDraft.trim().toLowerCase();
     if (!value) return;
@@ -159,16 +204,64 @@ export function OnboardingFlow() {
 
   return (
     <div className="flex flex-col gap-6">
-      {step === "choice" ? (
+      {step === "location" ? (
         <>
           <div>
             <p className="page-kicker">Welcome</p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+              Where do you operate?
+            </h1>
+            <p className="mt-2 text-sm text-muted">
+              Same style as choosing your team — pick a region first. You can change this later in
+              Settings. Tanzania uses Kiswahili and English; other countries audit in English only.
+            </p>
+          </div>
+          <CountryRegionPicker
+            mode={locationMode}
+            otherCountry={otherCountry}
+            onModeChange={(next) => {
+              setLocationMode(next);
+              if (next === "tz") setOtherCountry("");
+              setError(null);
+            }}
+            onOtherCountryChange={(value) => {
+              setOtherCountry(value);
+              setError(null);
+            }}
+          />
+          <button
+            type="button"
+            disabled={loading || !locationMode || (locationMode === "other" && otherCountry.trim().length < 2)}
+            onClick={continueFromLocation}
+            className="btn btn-lg btn-blue"
+          >
+            Continue
+          </button>
+        </>
+      ) : null}
+
+      {step === "choice" ? (
+        <>
+          <div>
+            <p className="page-kicker">Workspace</p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight">
               How are you planning to use Zetro?
             </h1>
             <p className="mt-2 text-sm text-muted">
               This sets up the right workspace. You can change it later.
             </p>
+            {locationMode ? (
+              <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1.5 text-sm text-muted">
+                {locationMode === "tz" ? (
+                  <TanzaniaFlagIcon className="h-5 w-5 rounded-sm" />
+                ) : (
+                  <WorldFlagIcon country={otherCountry} className="h-5 w-5" />
+                )}
+                <span>
+                  {locationMode === "tz" ? "Tanzania · Kiswahili & English" : `${otherCountry.trim()} · English only`}
+                </span>
+              </p>
+            ) : null}
           </div>
           <div className="flex flex-col gap-3">
             <button
@@ -213,6 +306,9 @@ export function OnboardingFlow() {
               </span>
             </button>
           </div>
+          <button type="button" onClick={() => setStep("location")} className="text-sm text-muted hover:text-ink">
+            Back
+          </button>
         </>
       ) : null}
 

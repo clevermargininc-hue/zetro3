@@ -24,7 +24,7 @@ export default async function HomePage() {
           </h1>
           
           <p className="mt-6 max-w-2xl text-[18px] leading-relaxed text-muted animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
-            Zetro transcribes bilingual call recordings (Kiswahili & English), separates speakers, and scores service quality automatically so you can coach from evidence.
+            Used in Tanzania for Kiswahili and English contact centers — and English-only auditing elsewhere. Zetro transcribes calls, separates speakers, and scores service quality so you can coach from evidence.
           </p>
           
           <div className="mt-10 flex flex-col sm:flex-row gap-4 w-full sm:w-auto animate-in fade-in slide-in-from-bottom-10 duration-700 delay-300">

@@ -36,6 +36,23 @@ const Icons = {
   )
 };
 
+// Helper functions for modern agent avatars
+function getAvatarGradient(name: string) {
+  const hash = name.split("").reduce((acc, char) => char.charCodeAt(0) + acc, 0);
+  const colors = [
+    "from-blue-500 to-blue-600",
+    "from-teal-400 to-emerald-500",
+    "from-orange-400 to-rose-400",
+    "from-violet-500 to-fuchsia-500",
+    "from-sky-400 to-indigo-500",
+  ];
+  return colors[hash % colors.length];
+}
+
+function getInitials(name: string) {
+  return name.split(" ").slice(0, 2).map(n => n[0]).join("").toUpperCase().substring(0, 2);
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const {
@@ -89,17 +106,22 @@ export default async function DashboardPage() {
         <Stat label="Active Agents" value={String(agents?.length || 0)} />
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
+      <section className="flex flex-col gap-10 relative z-10">
         {/* Recent Audits Panel */}
-        <div className="bg-white rounded-2xl border border-line/40 shadow-sm flex flex-col h-[520px]">
-          <div className="flex items-center justify-between border-b border-line/40 px-6 py-5">
-            <h2 className="text-[14px] font-semibold tracking-tight text-ink">Recent Audits</h2>
-            <Link href="/calls" className="text-[12px] font-semibold text-blue hover:text-blue-2 transition-colors">
+        <div className="panel rounded-3xl flex flex-col overflow-hidden relative group/panel">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-white/10 pointer-events-none" />
+          <div className="relative flex items-center justify-between border-b border-line/40 px-7 py-6 bg-white/40">
+            <div>
+              <h2 className="text-[16px] font-bold tracking-tight text-ink">Recent Audits</h2>
+              <p className="text-[12px] text-muted mt-0.5">Latest evaluated calls</p>
+            </div>
+            <Link href="/calls" className="btn btn-ghost text-[12px] px-4 py-1.5 rounded-lg">
               View All
             </Link>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-            {(calls || []).slice(0, 6).map((call) => {
+          <div className="relative p-5">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {(calls || []).slice(0, 10).map((call) => {
               const score = Array.isArray(call.call_scores)
                 ? call.call_scores[0]
                 : call.call_scores;
@@ -111,72 +133,119 @@ export default async function DashboardPage() {
                       ? `/calls/${call.id}/score`
                       : `/calls/${call.id}/transcribe`
                   }
-                  className="group flex items-center justify-between gap-4 rounded-xl bg-white p-3.5 border border-transparent hover:border-line/60 hover:bg-surface-2/50 transition-all duration-200"
+                  className="group relative flex items-center justify-between gap-4 rounded-2xl bg-white/70 p-4 border border-line/40 hover:border-blue/30 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line/40 bg-surface text-muted group-hover:text-ink transition-colors">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative flex items-center gap-4">
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-inner ${score?.overall_score && score.overall_score >= 80 ? 'bg-good/10 text-good' : score?.overall_score && score.overall_score >= 60 ? 'bg-warn/10 text-warn' : score?.overall_score ? 'bg-rose/10 text-rose' : 'bg-blue/10 text-blue'}`}>
                       {Icons.document}
                     </div>
                     <div>
-                      <p className="text-[14px] font-medium text-ink group-hover:text-blue transition-colors line-clamp-1">{call.title}</p>
-                      <p className="mt-1 text-[12px] text-muted">
-                        {call.agents?.name || "Unassigned"} <span className="opacity-40 mx-1.5">•</span> {formatDate(call.created_at)}
+                      <p className="text-[14px] font-bold text-ink group-hover:text-blue transition-colors line-clamp-1">{call.title}</p>
+                      <p className="mt-1 text-[12px] text-muted flex items-center gap-1.5">
+                        <span className="font-medium text-ink/70">{call.agents?.name || "Unassigned"}</span>
+                        <span className="opacity-40">•</span>
+                        <span>{formatDate(call.created_at)}</span>
                       </p>
                     </div>
                   </div>
-                  <ScoreBadge score={score?.overall_score} verdict={score?.verdict} />
+                  <div className="relative">
+                    <ScoreBadge score={score?.overall_score} verdict={score?.verdict} />
+                  </div>
                 </Link>
               );
             })}
+            </div>
             {!calls?.length && (
-              <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                <div className="mb-4 text-muted">
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="mb-5 text-blue/30 bg-blue/5 p-4 rounded-full">
                   {Icons.emptyFolder}
                 </div>
-                <p className="text-[14px] font-medium text-ink">No audits available</p>
-                <p className="mt-1 text-[13px] text-muted max-w-[200px]">Upload a recording to generate your first audit.</p>
+                <p className="text-[15px] font-bold text-ink">No audits available</p>
+                <p className="mt-2 text-[13px] text-muted max-w-[220px]">Upload a recording to generate your first automated audit.</p>
+                <Link href="/upload" className="mt-6 btn btn-blue text-[13px]">
+                  Upload Call
+                </Link>
               </div>
             )}
           </div>
         </div>
 
         {/* Top Performers Panel */}
-        <div className="bg-white rounded-2xl border border-line/40 shadow-sm flex flex-col h-[520px]">
-          <div className="flex items-center justify-between border-b border-line/40 px-6 py-5">
-            <h2 className="text-[14px] font-semibold tracking-tight text-ink">Agent Performance</h2>
-            <Link href="/leaderboard" className="text-[12px] font-semibold text-blue hover:text-blue-2 transition-colors">
+        <div className="panel rounded-3xl flex flex-col overflow-hidden relative group/panel">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-white/10 pointer-events-none" />
+          <div className="relative flex items-center justify-between border-b border-line/40 px-7 py-6 bg-white/40">
+            <div>
+              <h2 className="text-[16px] font-bold tracking-tight text-ink">Agent Performance</h2>
+              <p className="text-[12px] text-muted mt-0.5">Ranked by average score</p>
+            </div>
+            <Link href="/leaderboard" className="btn btn-ghost text-[12px] px-4 py-1.5 rounded-lg">
               Full Report
             </Link>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-            {board.slice(0, 6).map((agent, index) => {
+          <div className="relative p-5">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {board.slice(0, 9).map((agent, index) => {
               return (
-                <div key={agent.id} className="group flex items-center justify-between gap-4 rounded-xl bg-white p-3.5 border border-transparent hover:border-line/60 hover:bg-surface-2/50 transition-all duration-200">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line/40 bg-surface text-[12px] font-bold text-muted group-hover:text-ink transition-colors">
-                      {String(index + 1).padStart(2, '0')}
+                <div key={agent.id} className="group relative flex items-center justify-between gap-4 rounded-2xl bg-white/70 p-4 border border-line/40 hover:border-blue/30 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative flex items-center gap-4">
+                    <div className="flex items-center justify-center w-6 font-bold text-[14px] text-muted group-hover:text-blue transition-colors">
+                      {index === 0 ? <span className="text-gold text-xl drop-shadow-sm">🥇</span> : 
+                       index === 1 ? <span className="text-slate-400 text-xl drop-shadow-sm">🥈</span> : 
+                       index === 2 ? <span className="text-orange-400 text-xl drop-shadow-sm">🥉</span> : 
+                       `#${index + 1}`}
+                    </div>
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarGradient(agent.name)} text-white font-bold text-[13px] shadow-inner ring-2 ring-white`}>
+                      {getInitials(agent.name)}
                     </div>
                     <div>
-                      <p className="text-[14px] font-medium text-ink">{agent.name}</p>
+                      <p className="text-[14px] font-bold text-ink group-hover:text-blue transition-colors">{agent.name}</p>
                       <p className="mt-1 text-[12px] text-muted">{agent.call_count} calls evaluated</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`text-[16px] font-semibold tabular-nums tracking-tight ${agent.avg_score != null ? (agent.avg_score >= 80 ? 'text-good' : agent.avg_score >= 60 ? 'text-warn' : 'text-rose') : 'text-muted'}`}>
-                      {agent.avg_score ?? "—"}
-                    </p>
-                    <p className="text-[10px] uppercase tracking-wider text-muted mt-0.5 font-medium">Avg Score</p>
+                  <div className="relative flex items-center gap-4">
+                    <div className="text-right">
+                      <p className={`text-[17px] font-bold tabular-nums tracking-tight ${agent.avg_score != null ? (agent.avg_score >= 80 ? 'text-good' : agent.avg_score >= 60 ? 'text-warn' : 'text-rose') : 'text-muted'}`}>
+                        {agent.avg_score ?? "—"}
+                      </p>
+                      <p className="text-[10px] uppercase tracking-wider text-muted mt-0.5 font-bold">Avg Score</p>
+                    </div>
+                    {/* Visual progress ring */}
+                    {agent.avg_score != null && (
+                      <div className="w-10 h-10 relative shrink-0 flex items-center justify-center bg-surface-2 rounded-full shadow-inner border border-line/30">
+                        <svg className="w-8 h-8 transform -rotate-90 drop-shadow-sm" viewBox="0 0 36 36">
+                          <path
+                            className="text-line/40"
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3.5"
+                          />
+                          <path
+                            className={agent.avg_score >= 80 ? 'text-good' : agent.avg_score >= 60 ? 'text-warn' : 'text-rose'}
+                            strokeDasharray={`${agent.avg_score}, 100`}
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3.5"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })}
+            </div>
             {!board.length && (
-              <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                <div className="mb-4 text-muted">
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="mb-5 text-blue/30 bg-blue/5 p-4 rounded-full">
                   {Icons.emptyUsers}
                 </div>
-                <p className="text-[14px] font-medium text-ink">No agents ranked</p>
-                <p className="mt-1 text-[13px] text-muted max-w-[200px]">Assign agents to calls to populate this board.</p>
+                <p className="text-[15px] font-bold text-ink">No agents ranked</p>
+                <p className="mt-2 text-[13px] text-muted max-w-[220px]">Assign agents to calls to populate this leaderboard automatically.</p>
               </div>
             )}
           </div>

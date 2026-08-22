@@ -37,7 +37,7 @@ export default function TalkSalesPage() {
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white border border-line/40 shadow-sm text-blue font-bold">1</div>
                 <div>
                   <h3 className="font-semibold text-ink">Bilingual Mastery</h3>
-                  <p className="text-sm text-muted mt-1">Native support for Kiswahili and English.</p>
+                  <p className="text-sm text-muted mt-1">Used in Tanzania for Kiswahili and English. English only elsewhere.</p>
                 </div>
               </div>
               <div className="flex gap-4">

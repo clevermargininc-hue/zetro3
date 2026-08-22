@@ -64,10 +64,16 @@ export function collapseAsrLoops(text: string) {
   return out.join(" ").replace(/\s+/g, " ").trim();
 }
 
-export function collapseTurnList<T extends { text: string }>(turns: T[]): T[] {
+export function collapseTurnList<T extends { text: string }>(
+  turns: T[],
+  options?: { bilingual?: boolean },
+): T[] {
+  const bilingual = options?.bilingual !== false;
   const out: T[] = [];
   for (const turn of turns) {
-    const text = collapseAsrLoops(repairSwahiliTranscript(turn.text));
+    const text = collapseAsrLoops(
+      bilingual ? repairSwahiliTranscript(turn.text) : turn.text,
+    );
     if (!text) continue;
     const prev = out[out.length - 1];
     if (prev && (sameText(prev.text, text) || nearDuplicate(prev.text, text))) continue;

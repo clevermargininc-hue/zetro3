@@ -1,16 +1,30 @@
 import Link from "next/link";
 import { Metadata } from "next";
+import { TanzaniaFlagIcon, WorldFlagIcon } from "@/components/country-region-picker";
 
 export const metadata: Metadata = {
   title: "How it Works | Zetro",
-  description: "Learn how Zetro automates contact center Quality Assurance in 4 simple steps.",
+  description:
+    "Choose your region, upload calls, transcribe, and audit. Tanzania: Kiswahili and English. Other countries: English only.",
 };
 
 const steps = [
   {
     number: "01",
-    title: "Seamless Audio Ingestion",
-    description: "Connect Zetro to your existing PBX or cloud telephony system via API, or simply upload audio and video files (mp3, wav, mp4) directly to our secure dashboard. The system instantly begins processing the media, extracting the highest quality audio for analysis.",
+    title: "Choose where you operate",
+    description:
+      "At signup you pick Tanzania or another country or region — the same style of choice as picking team or solo. Tanzania workspaces audit in Kiswahili and English. Everywhere else runs English-only. Admins can change this later in Settings → Workspace.",
+    icon: (
+      <svg className="w-8 h-8 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  {
+    number: "02",
+    title: "Seamless audio ingestion",
+    description:
+      "Connect Zetro to your existing PBX or cloud telephony system via API, or upload audio and video files (mp3, wav, mp4) to the dashboard. Processing starts right away so the call is ready to transcribe and score.",
     icon: (
       <svg className="w-8 h-8 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -18,9 +32,10 @@ const steps = [
     ),
   },
   {
-    number: "02",
-    title: "Bilingual Transcription & Diarization",
-    description: "Our proprietary AI models listen to the audio and generate highly accurate transcripts. More importantly, we perform 'Speaker Diarization' — separating the audio into 'Agent' and 'Customer' channels. Zetro handles fluid code-switching between English and Kiswahili natively, capturing the true context of the conversation.",
+    number: "03",
+    title: "Transcription & speaker separation",
+    description:
+      "Zetro turns speech into text and separates Agent vs Customer. In Tanzania it follows Kiswahili, English, or mixed calls. For other countries it stays on English-only — so teams outside Tanzania do not see a Swahili language picker.",
     icon: (
       <svg className="w-8 h-8 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -28,9 +43,10 @@ const steps = [
     ),
   },
   {
-    number: "03",
-    title: "Contextual Auditing against SOPs",
-    description: "You upload your company's actual Standard Operating Procedures (SOPs), manuals, and scorecards as PDF documents. Zetro's intelligence engine reads these documents and uses them as the golden standard to evaluate every single call. It knows your specific rules, not just generic customer service guidelines.",
+    number: "04",
+    title: "Contextual auditing against SOPs",
+    description:
+      "Upload your company's SOPs, manuals, and scorecards. Zetro reads those documents and uses them as the standard to evaluate every call — your rules, not a generic checklist.",
     icon: (
       <svg className="w-8 h-8 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -38,9 +54,10 @@ const steps = [
     ),
   },
   {
-    number: "04",
-    title: "Automated Scoring & Coaching",
-    description: "Within seconds, the call is assigned a definitive score based on your custom metrics (e.g., Empathy, Resolution, Greetings, Compliance). The dashboard highlights exactly where the agent succeeded or failed, providing targeted coaching recommendations backed by timestamped evidence from the transcript.",
+    number: "05",
+    title: "Automated scoring & coaching",
+    description:
+      "Each call gets a score on your metrics (empathy, resolution, greetings, compliance, and more). The dashboard shows where the agent succeeded or missed, with coaching tips tied to the transcript.",
     icon: (
       <svg className="w-8 h-8 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -57,8 +74,30 @@ export default function HowItWorksPage() {
           How <span className="text-blue">Zetro</span> Works
         </h1>
         <p className="text-xl text-muted leading-relaxed">
-          From raw, noisy audio to actionable coaching insights in minutes. Here is how we give you 100% visibility into your contact center.
+          From choosing your country or region, to raw audio, to coaching insights. Used in Tanzania for
+          Kiswahili and English — and English only elsewhere.
         </p>
+      </div>
+
+      <div className="mb-24 grid gap-4 sm:grid-cols-2 max-w-3xl mx-auto">
+        <div className="flex items-start gap-4 rounded-2xl border border-line bg-white p-5 text-left shadow-sm">
+          <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl border border-line bg-white">
+            <TanzaniaFlagIcon className="h-11 w-11" />
+          </span>
+          <div>
+            <p className="text-[15px] font-semibold text-ink">Tanzania</p>
+            <p className="mt-1 text-sm text-muted">Kiswahili and English auditing</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-4 rounded-2xl border border-line bg-white p-5 text-left shadow-sm">
+          <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-blue-soft text-blue">
+            <WorldFlagIcon className="h-7 w-7" />
+          </span>
+          <div>
+            <p className="text-[15px] font-semibold text-ink">Another country / region</p>
+            <p className="mt-1 text-sm text-muted">English only — type yours at signup</p>
+          </div>
+        </div>
       </div>
 
       <div className="relative">
