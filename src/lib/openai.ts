@@ -268,12 +268,13 @@ Your job:
 1. Decide which speaker label is the CALL CENTER AGENT and which is the CUSTOMER.
 2. Score the AGENT using only the uploaded scorecard (0–100).
 3. Check every compliance rule from the uploaded files and list breaches.
-4. Keep original languages. Never translate.
+4. Keep original languages for quotes. Write your analysis (summary, strengths, improvements, notes) in the primary language spoken during the call (e.g. Swahili if they spoke Swahili).
+5. Use the actual names of the Agent, Customer, and Company in your writing instead of generic labels like "Speaker A" or "Speaker B" if they are mentioned in the call.
 
 How to identify speakers:
 - Agent cues: company greeting, scripted opening from the process documents or opening script, offering solutions.
 - Customer cues: stating a problem, complaining, giving personal details.
-- If an agent name is provided, use it only as context — do not invent names.
+- If an agent name is provided, use it as context. Do not invent names if they aren't spoken.
 
 When an OPENING SCRIPT or CLOSING SCRIPT is provided, score greeting and closing against those org-wide scripts (shared by all agents). Note key terms the agent should have used.
 
@@ -296,12 +297,13 @@ Score from your own professional judgment of contact-center quality. Do not wait
 Your job:
 1. Decide which speaker label is the CALL CENTER AGENT and which is the CUSTOMER.
 2. Score the AGENT from 0–100 using standard service-quality practice.
-3. Keep original languages. Never translate.
+3. Keep original languages for quotes. Write your analysis (summary, strengths, improvements, notes) in the primary language spoken during the call.
+4. Use the actual names of the Agent, Customer, and Company in your writing instead of generic labels like "Speaker A" or "Speaker B" if they are mentioned in the call.
 
 How to identify speakers:
 - Agent cues: company greeting, offering solutions, verifying account details.
 - Customer cues: stating a problem, complaining, giving personal details.
-- If an agent name is provided, use it only as context — do not invent names.
+- If an agent name is provided, use it as context. Do not invent names if they aren't spoken.
 
 When an OPENING SCRIPT or CLOSING SCRIPT is provided, use it as the expected greeting/closing for this organization and score adherence (including key terms).
 
@@ -333,11 +335,12 @@ Your job:
 2. Score the AGENT using only the uploaded scorecard (0–100).
 3. Check every compliance rule from the uploaded files and list breaches.
 4. Keep the transcript in English. Never translate.
+5. Use the actual names of the Agent, Customer, and Company in your writing instead of generic labels like "Speaker A" or "Speaker B" if they are mentioned in the call.
 
 How to identify speakers:
 - Agent cues: company greeting, scripted opening from the process documents or opening script, offering solutions.
 - Customer cues: stating a problem, complaining, giving personal details.
-- If an agent name is provided, use it only as context — do not invent names.
+- If an agent name is provided, use it as context. Do not invent names if they aren't spoken.
 
 When an OPENING SCRIPT or CLOSING SCRIPT is provided, score greeting and closing against those org-wide scripts (shared by all agents). Note key terms the agent should have used.
 
@@ -361,11 +364,12 @@ Your job:
 1. Decide which speaker label is the CALL CENTER AGENT and which is the CUSTOMER.
 2. Score the AGENT from 0–100 using standard service-quality practice.
 3. Keep the transcript in English. Never translate.
+4. Use the actual names of the Agent, Customer, and Company in your writing instead of generic labels like "Speaker A" or "Speaker B" if they are mentioned in the call.
 
 How to identify speakers:
 - Agent cues: company greeting, offering solutions, verifying account details.
 - Customer cues: stating a problem, complaining, giving personal details.
-- If an agent name is provided, use it only as context — do not invent names.
+- If an agent name is provided, use it as context. Do not invent names if they aren't spoken.
 
 When an OPENING SCRIPT or CLOSING SCRIPT is provided, use it as the expected greeting/closing for this organization and score adherence (including key terms).
 
