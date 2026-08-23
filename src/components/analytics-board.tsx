@@ -163,37 +163,11 @@ export function AnalyticsBoard() {
   return (
     <div className="space-y-8 animate-in fade-in duration-300 max-w-7xl mx-auto pb-12">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-line/60">
-        <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wider uppercase bg-blue/10 text-blue border border-blue/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue" />
-              Insights Suite
-            </span>
-            <span className="text-[12px] text-muted font-medium">Quality Operations Telemetry</span>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink">Analytics & Performance</h1>
-          <p className="mt-1 text-[13px] text-muted">
-            Cross-sectional evaluation metrics, QA compliance trends, handle times, and coaching priorities.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <Link
-            href="/reports"
-            className="btn bg-white hover:bg-slate-50 text-ink border border-line shadow-sm text-[13px] px-4 py-2"
-          >
-            {Icons.download}
-            <span>Executive Reports</span>
-          </Link>
-          <Link
-            href="/upload"
-            className="btn bg-blue hover:bg-blue-2 text-white shadow-sm text-[13px] px-5 py-2 font-semibold"
-          >
-            {Icons.upload}
-            <span>Upload Call</span>
-          </Link>
-        </div>
+      <div className="pb-5 border-b border-line/60">
+        <h1 className="text-2xl font-bold tracking-tight text-ink">Analytics & Performance</h1>
+        <p className="mt-1 text-[13px] text-muted">
+          Cross-sectional evaluation metrics, QA compliance trends, handle times, and coaching priorities.
+        </p>
       </div>
 
       {/* Filter Control Bar */}
