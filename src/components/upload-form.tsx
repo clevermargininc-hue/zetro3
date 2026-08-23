@@ -11,6 +11,28 @@ import type { LanguageMode } from "@/lib/types";
 const ACCEPT =
   "audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/m4a,audio/aac,audio/ogg,audio/webm,video/mp4,.mp3,.wav,.m4a,.mp4,.ogg,.webm,.aac";
 
+const Icons = {
+  uploadCloud: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+  ),
+  audioFile: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 18V5l12-2v13" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="18" cy="16" r="3" />
+    </svg>
+  ),
+  check: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  ),
+};
+
 export function UploadForm() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
@@ -23,7 +45,6 @@ export function UploadForm() {
   const [done, setDone] = useState<{ id: string; title: string } | null>(null);
 
   useEffect(() => {
-
     void (async () => {
       try {
         const response = await authFetch("/api/settings");
@@ -44,20 +65,20 @@ export function UploadForm() {
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!file) {
-      setError("Choose a recording first.");
+      setError("Please choose a recording to upload.");
       return;
     }
     setError(null);
     setDone(null);
     setLoading(true);
-    setProgress("Uploading audio…");
+    setProgress("Uploading audio to secure storage…");
 
     try {
       const supabase = createClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error("Please sign in again.");
+      if (!user) throw new Error("Authentication expired. Please sign in again.");
 
       const safeName = file.name.replace(/[^\w.\-]+/g, "_");
       const path = `${user.id}/${crypto.randomUUID()}-${safeName}`;
@@ -69,7 +90,7 @@ export function UploadForm() {
         });
       if (uploadError) throw uploadError;
 
-      setProgress("Saving the call record…");
+      setProgress("Registering call metadata…");
       let agentId: string | null = null;
       const trimmedAgent = agentName.trim();
       if (trimmedAgent) {
@@ -121,116 +142,127 @@ export function UploadForm() {
 
       router.push(`/calls/${call.id}/transcribe`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      setError(err instanceof Error ? err.message : "Upload process encountered an error.");
       setLoading(false);
       setProgress(null);
     }
   }
 
   return (
-    <div className="w-full max-w-2xl space-y-6 animate-in fade-in duration-500">
-      <form onSubmit={onSubmit} className="panel space-y-10 rounded-3xl p-10 bg-white border border-line/40 shadow-sm">
-        <label
-          className={`relative flex flex-col items-center justify-center cursor-pointer rounded-3xl border-2 border-dashed transition-all duration-300 px-6 py-20 text-center group ${
-            file
-              ? "border-good/50 bg-good/5 shadow-inner"
-              : "border-blue/30 bg-gradient-to-b from-blue-soft/10 to-blue-soft/30 hover:border-blue hover:bg-blue-soft/40 hover:shadow-inner"
-          }`}
-        >
-          <input
-            type="file"
-            accept={ACCEPT}
-            className="hidden"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-          />
-          <div
-            className={`flex items-center justify-center w-16 h-16 rounded-full mb-6 shadow-sm transition-transform duration-300 group-hover:scale-110 ${
-              file ? "bg-good text-white" : "bg-white text-blue"
+    <div className="space-y-6">
+      <form onSubmit={onSubmit} className="bg-white rounded-xl p-6 sm:p-8 border border-line/70 shadow-sm space-y-6">
+        {/* File Dropzone */}
+        <div>
+          <label
+            className={`relative flex flex-col items-center justify-center cursor-pointer rounded-xl border-2 border-dashed transition-all p-8 text-center group ${
+              file
+                ? "border-emerald-400 bg-emerald-50/40"
+                : "border-slate-300 bg-slate-50/50 hover:border-blue hover:bg-blue/5"
             }`}
           >
-            {file ? "✓" : "🎙️"}
-          </div>
-          <p className="text-[18px] font-extrabold text-ink tracking-tight">
-            {file ? "File ready to upload" : "Select or drop a recording"}
-          </p>
-          <p className="mt-2 text-[14px] font-medium text-muted max-w-sm leading-relaxed">
-            {file ? (
-              <span className="text-good">{file.name}</span>
-            ) : bilingual ? (
-              "Supported formats: MP3, WAV, M4A, MP4. Languages: Kiswahili, English, or Mixed."
-            ) : (
-              "Supported formats: MP3, WAV, M4A, MP4. Language: English only."
-            )}
-          </p>
-        </label>
+            <input
+              type="file"
+              accept={ACCEPT}
+              className="hidden"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+            />
+            <div
+              className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3.5 transition-colors ${
+                file
+                  ? "bg-emerald-500 text-white"
+                  : "bg-white text-slate-600 border border-slate-200 group-hover:text-blue group-hover:border-blue/30"
+              }`}
+            >
+              {file ? Icons.check : Icons.uploadCloud}
+            </div>
 
-        <div className={`grid gap-8 ${bilingual ? "sm:grid-cols-2" : ""}`}>
-          <label className="flex flex-col gap-3 text-sm">
-            <span className="font-bold text-[12px] uppercase tracking-widest text-muted">Agent Name</span>
+            <p className="text-[15px] font-bold text-ink">
+              {file ? file.name : "Select or drag call recording"}
+            </p>
+            <p className="mt-1 text-[12px] text-muted max-w-sm">
+              {file
+                ? `${(file.size / (1024 * 1024)).toFixed(2)} MB · File ready to upload`
+                : "Supported formats: MP3, WAV, M4A, AAC, MP4 (Up to 100MB)"}
+            </p>
+          </label>
+        </div>
+
+        {/* Inputs */}
+        <div className={`grid gap-4 ${bilingual ? "sm:grid-cols-2" : ""}`}>
+          <div className="space-y-1.5">
+            <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500 block">
+              Representative / Agent Name
+            </label>
             <input
               value={agentName}
               onChange={(e) => setAgentName(e.target.value)}
               placeholder="e.g. Amina Mwangi"
-              className="field bg-surface-2 border-line/40 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-blue/20 transition-all shadow-inner"
+              className="field bg-slate-50/70 border-slate-200 text-ink text-[13px]"
               autoComplete="off"
             />
-          </label>
+            <p className="text-[11px] text-muted">Enter agent name to link this call to their scorecard.</p>
+          </div>
 
           {bilingual ? (
-            <label className="flex flex-col gap-3 text-sm">
-              <span className="font-bold text-[12px] uppercase tracking-widest text-muted">Spoken Language</span>
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500 block">
+                Language Model Scope
+              </label>
               <select
                 value={languageMode}
                 onChange={(e) => setLanguageMode(e.target.value as LanguageMode)}
-                className="field bg-surface-2 border-line/40 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-blue/20 transition-all shadow-inner"
+                className="field bg-slate-50/70 border-slate-200 text-ink text-[13px] font-medium"
               >
-                <option value="sw">Kiswahili</option>
-                <option value="mixed">Mixed English + Kiswahili</option>
-                <option value="auto">Auto-detect</option>
-                <option value="en">English</option>
+                <option value="sw">Kiswahili (Primary)</option>
+                <option value="mixed">Bilingual: English + Kiswahili</option>
+                <option value="auto">Auto-detect Language</option>
+                <option value="en">English (Primary)</option>
               </select>
-            </label>
+              <p className="text-[11px] text-muted">Optimizes bilingual diarization and vocabulary.</p>
+            </div>
           ) : null}
         </div>
 
-        {error && <div className="alert-error text-[14px] shadow-sm">{error}</div>}
+        {error && <div className="alert-error text-[13px]">{error}</div>}
 
         {progress && (
-          <div className="flex items-center gap-3 text-[14px] font-medium text-blue bg-blue-soft/50 p-4 rounded-xl">
-            <div className="h-4 w-4 rounded-full border-2 border-blue/30 border-t-blue animate-spin"></div>
-            {progress}
+          <div className="flex items-center gap-3 text-[13px] font-medium text-blue bg-blue/10 p-3.5 rounded-lg border border-blue/20">
+            <div className="h-4 w-4 rounded-full border-2 border-blue/30 border-t-blue animate-spin shrink-0" />
+            <span>{progress}</span>
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={loading || !file}
-          className="btn btn-lg btn-blue w-full shadow-md shadow-blue/20 hover:-translate-y-0.5 active:translate-y-0 text-[16px] py-3.5"
-        >
-          {loading ? "Uploading…" : "Save to workspace"}
-        </button>
+        <div className="pt-2">
+          <button
+            type="submit"
+            disabled={loading || !file}
+            className="btn bg-blue hover:bg-blue-2 text-white shadow-sm w-full py-2.5 text-[14px] font-semibold"
+          >
+            {loading ? "Processing Upload…" : "Upload & Begin Processing"}
+          </button>
+        </div>
       </form>
 
+      {/* Done notification */}
       {done && (
-        <div className="animate-in slide-in-from-bottom-4 duration-500">
-          <section className="panel rounded-2xl p-8 bg-gradient-to-br from-good/10 to-transparent border-good/20 shadow-good/5">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-good text-white font-bold shadow-sm">✓</div>
-              <h2 className="text-xl font-bold text-good">Upload complete</h2>
+        <div className="bg-white rounded-xl p-6 border border-emerald-200 bg-emerald-50/30 shadow-sm space-y-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[12px] font-bold">
+              {Icons.check}
             </div>
-
-            <p className="mt-3 text-[15px] text-muted leading-relaxed">
-              <span className="font-bold text-ink">{done.title}</span> is stored. You can listen to it now —
-              transcription runs in the background so you can audit when ready.
-            </p>
-
+            <h3 className="text-[15px] font-bold text-emerald-900">Recording Uploaded Successfully</h3>
+          </div>
+          <p className="text-[13px] text-slate-700">
+            <span className="font-semibold">{done.title}</span> has been stored. Audio transcription and speaker diarization are running in the background.
+          </p>
+          <div className="pt-1">
             <Link
               href={`/calls/${done.id}/transcribe`}
-              className="btn btn-lg bg-good text-white hover:bg-good/90 shadow-md shadow-good/20 mt-6 hover:-translate-y-0.5 active:translate-y-0 w-full sm:w-auto text-center block"
+              className="btn bg-emerald-600 hover:bg-emerald-700 text-white text-[13px] px-4 py-2 font-semibold inline-flex"
             >
-              Listen & audit
+              View Transcription & Evaluation →
             </Link>
-          </section>
+          </div>
         </div>
       )}
     </div>
