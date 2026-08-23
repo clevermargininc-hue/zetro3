@@ -17,17 +17,72 @@ const PERIOD_LABEL: Record<AnalyticsPeriodMode, string> = {
   weekly: "Weekly",
   monthly: "Monthly",
   annually: "Annually",
-  custom: "Custom range",
+  custom: "Custom Range",
 };
 
 const DIMENSIONS: { key: keyof WorkspaceAnalytics["dimensions"]; label: string }[] = [
-  { key: "greeting", label: "Greeting" },
-  { key: "empathy", label: "Empathy" },
-  { key: "professionalism", label: "Professionalism" },
-  { key: "resolution", label: "Resolution" },
-  { key: "communication", label: "Communication" },
-  { key: "language_handling", label: "Language mix" },
+  { key: "greeting", label: "Greeting & Identity" },
+  { key: "empathy", label: "Empathy & Active Listening" },
+  { key: "professionalism", label: "Professional Demeanor" },
+  { key: "resolution", label: "Issue Resolution" },
+  { key: "communication", label: "Communication Clarity" },
+  { key: "language_handling", label: "Language Mix Handling" },
 ];
+
+const Icons = {
+  calendar: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  ),
+  download: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  ),
+  upload: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+  ),
+  filter: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
+  ),
+  shield: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  ),
+  clock: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  ),
+  alertCircle: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  ),
+  user: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
+};
 
 export function AnalyticsBoard() {
   const [period, setPeriod] = useState<AnalyticsPeriodMode>("monthly");
@@ -106,32 +161,67 @@ export function AnalyticsBoard() {
     data && data.uploaded > 0 ? Math.round((data.audited / data.uploaded) * 100) : null;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-line/40 pb-6">
+    <div className="space-y-8 animate-in fade-in duration-300 max-w-7xl mx-auto pb-12">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-line/60">
         <div>
-          <p className="page-kicker">Insights</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink">Analytics</h1>
-          <p className="mt-2 text-[14px] text-muted max-w-2xl">
-            Track QA volume, compliance, handling time, and coaching needs by period and by any set of
-            agents.
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wider uppercase bg-blue/10 text-blue border border-blue/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue" />
+              Insights Suite
+            </span>
+            <span className="text-[12px] text-muted font-medium">Quality Operations Telemetry</span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-ink">Analytics & Performance</h1>
+          <p className="mt-1 text-[13px] text-muted">
+            Cross-sectional evaluation metrics, QA compliance trends, handle times, and coaching priorities.
           </p>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <Link href="/reports" className="btn btn-ghost text-[13px]">
-            Downloadable reports
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/reports"
+            className="btn bg-white hover:bg-slate-50 text-ink border border-line shadow-sm text-[13px] px-4 py-2"
+          >
+            {Icons.download}
+            <span>Executive Reports</span>
           </Link>
-          <Link href="/upload" className="btn bg-ink text-white hover:bg-ink/90 text-[13px] px-5">
-            Upload call
+          <Link
+            href="/upload"
+            className="btn bg-blue hover:bg-blue-2 text-white shadow-sm text-[13px] px-5 py-2 font-semibold"
+          >
+            {Icons.upload}
+            <span>Upload Call</span>
           </Link>
         </div>
       </div>
 
-      <section className="panel rounded-2xl p-6 shadow-sm space-y-5">
+      {/* Filter Control Bar */}
+      <section className="bg-white rounded-xl p-5 border border-line/70 shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2 text-[13px] font-bold text-ink">
+            <span className="text-blue">{Icons.filter}</span>
+            <span>Analytics Filters</span>
+          </div>
+          {data?.filter && (
+            <div className="text-[12px] text-muted flex items-center gap-1.5">
+              <span>Scope:</span>
+              <span className="font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                {data.filter.period_label} · {data.filter.agent_label}
+              </span>
+              {loading && <span className="text-blue font-medium animate-pulse ml-1">Updating…</span>}
+            </div>
+          )}
+        </div>
+
         <div className="grid gap-4 md:grid-cols-3 items-end">
-          <label className="block">
-            <span className="mb-2 block text-[13px] font-semibold text-muted">Time period</span>
+          {/* Period selector */}
+          <div>
+            <label className="block text-[12px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              Period Type
+            </label>
             <select
-              className="field bg-surface-2 shadow-inner"
+              className="field bg-slate-50/70 border-slate-200 text-ink text-[13px] font-medium"
               value={period}
               onChange={(event) => setPeriod(event.target.value as AnalyticsPeriodMode)}
             >
@@ -142,79 +232,89 @@ export function AnalyticsBoard() {
               ))}
               <option value="custom">{PERIOD_LABEL.custom}</option>
             </select>
-          </label>
+          </div>
 
+          {/* Date Range inputs */}
           {period === "custom" ? (
             <>
-              <label className="block">
-                <span className="mb-2 block text-[13px] font-semibold text-muted">From</span>
+              <div>
+                <label className="block text-[12px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Start Date
+                </label>
                 <input
                   type="date"
-                  className="field bg-surface-2 shadow-inner"
+                  className="field bg-slate-50/70 border-slate-200 text-ink text-[13px]"
                   value={from}
                   onChange={(event) => {
                     if (event.target.value) setFrom(event.target.value);
                   }}
                 />
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-[13px] font-semibold text-muted">To</span>
+              </div>
+              <div>
+                <label className="block text-[12px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  End Date
+                </label>
                 <input
                   type="date"
-                  className="field bg-surface-2 shadow-inner"
+                  className="field bg-slate-50/70 border-slate-200 text-ink text-[13px]"
                   value={to}
                   onChange={(event) => {
                     if (event.target.value) setTo(event.target.value);
                   }}
                 />
-              </label>
+              </div>
             </>
           ) : (
-            <label className="block md:col-span-2">
-              <span className="mb-2 block text-[13px] font-semibold text-muted">
-                Date in period
-              </span>
+            <div className="md:col-span-2">
+              <label className="block text-[12px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                Reference Date (Africa/Nairobi)
+              </label>
               <input
                 type="date"
-                className="field bg-surface-2 shadow-inner max-w-xs"
+                className="field bg-slate-50/70 border-slate-200 text-ink text-[13px] max-w-sm"
                 value={date}
                 onChange={(event) => {
                   if (event.target.value) setDate(event.target.value);
                 }}
               />
-            </label>
+            </div>
           )}
         </div>
 
-        <div>
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-            <p className="text-[13px] font-semibold text-muted">Agents</p>
-            <div className="flex flex-wrap gap-2">
+        {/* Agent filter chips */}
+        <div className="pt-2">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[12px] font-bold uppercase tracking-wider text-slate-500">
+              Agent Cohort Selection
+            </span>
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                className={`btn text-[12px] px-3 py-1.5 ${allAgents ? "btn-blue" : "btn-ghost border border-line"}`}
+                className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${
+                  allAgents ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
                 onClick={selectAllAgents}
               >
-                All agents
+                All Agents
               </button>
               <button
                 type="button"
-                className={`btn text-[12px] px-3 py-1.5 ${
+                className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${
                   !allAgents && includeUnassigned
-                    ? "btn-blue"
-                    : "btn-ghost border border-line"
+                    ? "bg-slate-900 text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
                 onClick={() => {
                   setAllAgents(false);
                   setIncludeUnassigned((v) => !v);
                 }}
               >
-                Unassigned
+                Unassigned Calls
               </button>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {agentOptions.map((agent) => {
               const active = !allAgents && selectedAgentIds.includes(agent.id);
               return (
@@ -222,284 +322,315 @@ export function AnalyticsBoard() {
                   key={agent.id}
                   type="button"
                   onClick={() => toggleAgent(agent.id)}
-                  className={`rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                  className={`px-3 py-1 rounded-md text-[12px] font-medium border transition-all ${
                     active
-                      ? "border-blue bg-blue text-white"
-                      : "border-line/70 bg-surface-2 text-ink hover:border-blue/40"
+                      ? "border-blue bg-blue text-white shadow-xs"
+                      : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white"
                   }`}
                 >
                   {agent.name}
                 </button>
               );
             })}
-            {!agentOptions.length ? (
-              <p className="text-[13px] text-muted">No agents yet. Assign names at upload.</p>
-            ) : null}
+            {!agentOptions.length && (
+              <span className="text-[12px] text-muted italic">No agents registered in workspace.</span>
+            )}
           </div>
-          <p className="mt-3 text-[12px] text-muted">
-            Select one agent, several agents, or keep All agents. Custom range uses inclusive start and
-            end dates (Africa/Nairobi).
-          </p>
         </div>
       </section>
 
-      {error ? <p className="alert-error">{error}</p> : null}
+      {error && <p className="alert-error">{error}</p>}
 
-      {data?.filter ? (
-        <p className="text-[13px] text-muted">
-          Showing <span className="font-semibold text-ink">{data.filter.period_label}</span>
-          {" · "}
-          <span className="font-semibold text-ink">{data.filter.agent_label}</span>
-          {loading ? " · Updating…" : null}
-        </p>
-      ) : null}
+      {loading && !data && (
+        <div className="p-12 text-center text-muted text-[14px]">
+          <span className="animate-pulse">Loading analytics dataset…</span>
+        </div>
+      )}
 
-      {loading && !data ? (
-        <p className="text-[14px] text-muted">Loading analytics…</p>
-      ) : null}
-
-      {data ? (
+      {data && (
         <>
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Stat label="Total Calls" value={String(data.uploaded)} hint="Uploaded in period" />
-            <Stat
-              label="Audited"
-              value={String(data.audited)}
-              hint={auditCoverage != null ? `${auditCoverage}% coverage` : undefined}
-            />
-            <Stat
-              label="Team Avg Score"
-              value={data.avg_score == null ? "—" : String(data.avg_score)}
+          {/* Top 4 Executive KPI Cards */}
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {/* KPI 1: Quality Score */}
+            <StatCard
+              label="Team QA Score"
+              value={data.avg_score != null ? `${data.avg_score}%` : "—"}
               tone={scoreTone(data.avg_score)}
+              subtitle={data.avg_score != null ? verdictLabel(scoreTone(data.avg_score)) : "No score available"}
+              footer={`Coverage: ${auditCoverage != null ? `${auditCoverage}%` : "0%"} of uploaded calls`}
             />
-            <Stat
-              label="Compliance Rate"
-              value={data.compliance_rate == null ? "—" : `${data.compliance_rate}%`}
+
+            {/* KPI 2: Evaluated Volume */}
+            <StatCard
+              label="Audited Volume"
+              value={String(data.audited)}
+              subtitle={`${data.uploaded} calls total`}
+              footer={`${data.not_audited} pending in queue`}
+            />
+
+            {/* KPI 3: Compliance Rate */}
+            <StatCard
+              label="Compliance Pass Rate"
+              value={data.compliance_rate != null ? `${data.compliance_rate}%` : "—"}
               tone={scoreTone(data.compliance_rate)}
-              hint={
-                data.audited
-                  ? `${data.compliance_issues} calls with findings`
-                  : undefined
-              }
+              subtitle={data.compliance_issues > 0 ? `${data.compliance_issues} calls flagged` : "Zero compliance breaches"}
+              footer="Based on organization SOP rules"
             />
-          </section>
 
-          <section className="grid gap-4 sm:grid-cols-3">
-            <Stat
-              label="Avg Handle Time"
+            {/* KPI 4: Handling Time */}
+            <StatCard
+              label="Avg Handle Time (AHT)"
               value={formatHandlingTime(data.avg_handling_seconds)}
-            />
-            <Stat
-              label="Total Time"
-              value={formatHandlingTime(data.total_handling_seconds)}
-            />
-            <Stat
-              label="Queue Status"
-              value={String(data.not_audited)}
-              hint={`${data.preparing} prep · ${data.failed} failed`}
+              subtitle={`Total: ${formatHandlingTime(data.total_handling_seconds)}`}
+              footer="Audited audio interaction duration"
             />
           </section>
 
-          <section className="grid gap-6 lg:grid-cols-2">
-            <Panel title="Verdict mix" subtitle="Across audited calls in this filter">
-              {data.audited ? (
-                <div className="space-y-3">
-                  {(
-                    [
-                      ["excellent", data.verdicts.excellent],
-                      ["good", data.verdicts.good],
-                      ["needs_improvement", data.verdicts.needs_improvement],
-                      ["poor", data.verdicts.poor],
-                    ] as const
-                  ).map(([key, count]) => (
-                    <BarRow
-                      key={key}
-                      label={verdictLabel(key)}
-                      value={count}
-                      max={data.audited}
-                      tone={
-                        key === "excellent" || key === "good"
-                          ? "good"
-                          : key === "needs_improvement"
-                            ? "warn"
-                            : "rose"
-                      }
-                    />
-                  ))}
-                </div>
-              ) : (
-                <Empty text="No audited calls in this period/agent filter." href="/upload" cta="Upload a call" />
-              )}
-            </Panel>
+          {/* Core Visual Breakdown: Dimensions & Verdict Mix */}
+          <section className="grid gap-6 lg:grid-cols-12">
+            {/* Left 7 cols: Category Performance (6 Dimensions) */}
+            <div className="lg:col-span-7">
+              <Panel
+                title="Quality Dimensions Benchmark"
+                subtitle="Evaluation score breakdown across the 6 core customer service pillars"
+              >
+                {data.audited > 0 ? (
+                  <div className="space-y-4 pt-1">
+                    {DIMENSIONS.map((dim) => {
+                      const value = data.dimensions[dim.key];
+                      const dimTone = value != null ? scoreTone(value) : undefined;
+                      const barColor =
+                        dimTone === "excellent" || dimTone === "good"
+                          ? "bg-emerald-500"
+                          : dimTone === "warn"
+                          ? "bg-amber-500"
+                          : dimTone === "poor"
+                          ? "bg-rose-500"
+                          : "bg-slate-200";
 
-            <Panel title="Audit paths" subtitle="How calls were scored">
-              {data.audited ? (
-                <div className="space-y-3">
-                  <BarRow
-                    label="Documents audit"
-                    value={data.documents_audits}
-                    max={data.audited}
-                    tone="good"
-                  />
-                  <BarRow
-                    label="Automatic audit"
-                    value={data.automatic_audits}
-                    max={data.audited}
-                    tone="warn"
-                  />
-                  <div className="pt-2 grid grid-cols-2 gap-3 text-[13px]">
-                    <MiniStat label="Preparing" value={String(data.preparing)} />
-                    <MiniStat label="Failed prep" value={String(data.failed)} />
+                      return (
+                        <div key={dim.key} className="space-y-1.5">
+                          <div className="flex justify-between items-center text-[13px]">
+                            <span className="font-medium text-slate-700">{dim.label}</span>
+                            <span className="font-bold tabular-nums text-ink">{value != null ? `${value}/100` : "—"}</span>
+                          </div>
+                          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${barColor} transition-all duration-500`}
+                              style={{ width: `${value ?? 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
-              ) : (
-                <Empty text="Audit a call to populate path mix." href="/calls" cta="Open calls" />
-              )}
-            </Panel>
-          </section>
+                ) : (
+                  <Empty text="Dimension averages will appear after calls are scored." href="/calls" cta="Open Call Audits" />
+                )}
+              </Panel>
+            </div>
 
-          <Panel title="Category Performance" subtitle="Average scores across audited calls">
-            {data.audited ? (
-              <div className="grid gap-x-12 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-                {DIMENSIONS.map((dim) => {
-                  const value = data.dimensions[dim.key];
-                  const dimTone = value != null ? scoreTone(value) : undefined;
-                  const barColor =
-                    dimTone === "excellent" || dimTone === "good"
-                      ? "bg-good"
-                      : dimTone === "warn"
-                        ? "bg-warn"
-                        : dimTone === "poor"
-                          ? "bg-rose"
-                          : "bg-surface-3";
+            {/* Right 5 cols: Verdict Mix & Audit Paths */}
+            <div className="lg:col-span-5 space-y-6">
+              {/* Verdict Distribution */}
+              <Panel title="Score Verdict Distribution" subtitle="Proportion of calls by quality band">
+                {data.audited > 0 ? (
+                  <div className="space-y-3 pt-1">
+                    {(
+                      [
+                        ["excellent", data.verdicts.excellent, "bg-emerald-500"],
+                        ["good", data.verdicts.good, "bg-blue-500"],
+                        ["needs_improvement", data.verdicts.needs_improvement, "bg-amber-500"],
+                        ["poor", data.verdicts.poor, "bg-rose-500"],
+                      ] as const
+                    ).map(([key, count, color]) => {
+                      const pct = data.audited > 0 ? Math.round((count / data.audited) * 100) : 0;
+                      return (
+                        <div key={key}>
+                          <div className="mb-1 flex items-center justify-between text-[12px]">
+                            <span className="font-medium text-slate-700">{verdictLabel(key)}</span>
+                            <span className="tabular-nums font-bold text-ink">
+                              {count} <span className="text-slate-400 font-normal">({pct}%)</span>
+                            </span>
+                          </div>
+                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <Empty text="No audited calls found for this filter." href="/upload" cta="Upload Call" />
+                )}
+              </Panel>
 
-                  return (
-                    <div key={dim.key} className="space-y-2.5">
-                      <div className="flex justify-between items-end">
-                        <span className="text-[13px] font-bold uppercase tracking-wide text-muted">
-                          {dim.label}
-                        </span>
-                        <span className="text-[16px] font-bold tabular-nums text-ink">{value ?? "—"}</span>
-                      </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-surface-2 border border-line/50">
-                        <div
-                          className={`h-full rounded-full ${barColor} transition-all duration-1000 ease-out`}
-                          style={{ width: `${value ?? 0}%` }}
-                        />
+              {/* Audit Methods & Language Breakdown */}
+              <Panel title="Evaluation Methodology & Languages" subtitle="Breakdown of audit paths and language context">
+                <div className="space-y-4 pt-1">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">SOP Document Audits</span>
+                      <span className="text-xl font-bold tabular-nums text-ink">{data.documents_audits}</span>
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Standard AI Audits</span>
+                      <span className="text-xl font-bold tabular-nums text-ink">{data.automatic_audits}</span>
+                    </div>
+                  </div>
+
+                  {data.languages.length > 0 && (
+                    <div className="pt-2 border-t border-slate-100">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">Detected Language Mix</span>
+                      <div className="flex flex-wrap gap-2">
+                        {data.languages.map((lang) => (
+                          <span
+                            key={lang.label}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium bg-slate-100 text-slate-700 border border-slate-200"
+                          >
+                            <span>{lang.label}:</span>
+                            <span className="font-bold">{lang.count} calls</span>
+                          </span>
+                        ))}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <Empty text="Dimension averages appear after scoring." href="/score" cta="Score queue" />
-            )}
-          </Panel>
+                  )}
+                </div>
+              </Panel>
+            </div>
+          </section>
 
+          {/* Performance Cohorts: Top Performers vs Coaching Needed */}
           <section className="grid gap-6 lg:grid-cols-2">
-            <Panel title="Top performers" subtitle="Highest averages in this filter">
-              <AgentList
+            <Panel title="Top Performing Representatives" subtitle="Highest average evaluation scores in current period">
+              <CohortList
                 rows={data.top_performers}
-                empty="No top performers in this filter."
+                empty="No top performers detected in this filter selection."
                 mode="top"
               />
             </Panel>
-            <Panel title="Needs coaching" subtitle="Lower averages or weak verdicts">
-              <AgentList
+
+            <Panel title="Coaching & Remediation Priorities" subtitle="Agents with lower scores or flagged compliance issues">
+              <CohortList
                 rows={data.coaching_needed}
-                empty="No coaching flags in this filter."
+                empty="No coaching remediation flags detected in this period."
                 mode="coach"
               />
             </Panel>
           </section>
 
-          <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-            <Panel title="Agent table" subtitle="Agents with audited calls in this filter">
-              {data.agents.length ? (
-                <div className="overflow-x-auto">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Agent</th>
-                        <th>Avg</th>
-                        <th>Calls</th>
-                        <th>Excellent</th>
-                        <th>Coaching flags</th>
-                        <th>Handle time</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.agents.map((row) => (
-                        <tr key={row.id}>
-                          <td className="font-medium text-ink">{row.name}</td>
-                          <td className="tabular-nums">{row.avg_score ?? "—"}</td>
-                          <td className="tabular-nums">{row.call_count}</td>
-                          <td className="tabular-nums">{row.excellent}</td>
-                          <td className="tabular-nums">{row.needs_coaching}</td>
-                          <td className="tabular-nums">
-                            {formatHandlingTime(row.total_handling_seconds)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <Empty text="No agent analytics in this filter." href="/upload" cta="Upload with agent name" />
-              )}
-            </Panel>
+          {/* Comprehensive Agent Evaluation Matrix */}
+          <section className="bg-white rounded-xl border border-line/70 shadow-sm overflow-hidden">
+            <div className="px-6 py-4.5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
+              <div>
+                <h2 className="text-[15px] font-bold text-ink">Agent Performance Matrix</h2>
+                <p className="text-[12px] text-muted mt-0.5">Detailed evaluation breakdown per agent for the selected timeframe</p>
+              </div>
+              <span className="text-[12px] font-semibold text-slate-500">{data.agents.length} representatives tracked</span>
+            </div>
 
-            <Panel title="Language mix" subtitle="Detected / selected languages">
-              {data.languages.length ? (
-                <div className="space-y-3">
-                  {data.languages.map((row) => (
-                    <BarRow
-                      key={row.label}
-                      label={row.label}
-                      value={row.count}
-                      max={data.uploaded || 1}
-                      tone="good"
-                    />
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    <th className="px-6 py-3">Agent Representative</th>
+                    <th className="px-6 py-3 text-right">Avg QA Score</th>
+                    <th className="px-6 py-3 text-right">Audited Calls</th>
+                    <th className="px-6 py-3 text-right">Excellent (&gt;85%)</th>
+                    <th className="px-6 py-3 text-right">Coaching Flags</th>
+                    <th className="px-6 py-3 text-right">Total Talk Time</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-[13px]">
+                  {data.agents.map((row) => (
+                    <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="px-6 py-3.5 font-semibold text-ink">{row.name}</td>
+                      <td className="px-6 py-3.5 text-right whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold tabular-nums border ${
+                            row.avg_score != null
+                              ? row.avg_score >= 80
+                                ? "bg-good/10 text-good border-good/20"
+                                : row.avg_score >= 60
+                                ? "bg-warn/10 text-warn border-warn/20"
+                                : "bg-rose/10 text-rose border-rose/20"
+                              : "bg-slate-100 text-slate-500 border-slate-200"
+                          }`}
+                        >
+                          {row.avg_score != null ? `${row.avg_score}%` : "—"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3.5 text-right font-medium text-slate-700 tabular-nums">
+                        {row.call_count}
+                      </td>
+                      <td className="px-6 py-3.5 text-right font-medium text-emerald-600 tabular-nums">
+                        {row.excellent}
+                      </td>
+                      <td className="px-6 py-3.5 text-right font-medium tabular-nums">
+                        <span className={row.needs_coaching > 0 ? "text-amber-600 font-bold" : "text-slate-400"}>
+                          {row.needs_coaching}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3.5 text-right text-slate-600 tabular-nums whitespace-nowrap">
+                        {formatHandlingTime(row.total_handling_seconds)}
+                      </td>
+                    </tr>
                   ))}
+                </tbody>
+              </table>
+
+              {!data.agents.length && (
+                <div className="py-12 text-center text-muted text-[13px]">
+                  No agent data available for this filter period.
                 </div>
-              ) : (
-                <Empty text="No calls in this filter." href="/upload" cta="Upload" />
               )}
-            </Panel>
+            </div>
           </section>
         </>
-      ) : null}
+      )}
     </div>
   );
 }
 
-function Stat({
+function StatCard({
   label,
   value,
-  hint,
+  subtitle,
+  footer,
   tone,
 }: {
   label: string;
   value: string;
-  hint?: string;
-  tone?: ReturnType<typeof scoreTone> | "warn";
+  subtitle?: string;
+  footer?: string;
+  tone?: ReturnType<typeof scoreTone>;
 }) {
-  const color =
-    tone === "excellent" || tone === "good"
-      ? "text-good"
-      : tone === "warn"
-        ? "text-warn"
-        : tone === "poor"
-          ? "text-rose"
-          : "text-ink";
+  const isGood = tone === "excellent" || tone === "good";
+  const isWarn = tone === "warn";
+  const isPoor = tone === "poor";
+
+  const color = isGood
+    ? "text-good"
+    : isWarn
+    ? "text-warn"
+    : isPoor
+    ? "text-rose"
+    : "text-ink";
 
   return (
-    <div className="bg-white rounded-3xl p-6 border border-line/40 shadow-sm flex flex-col justify-between">
-      <p className="text-[13px] font-bold text-muted uppercase tracking-wide">{label}</p>
-      <div className="mt-4">
-        <p className={`text-4xl font-bold tracking-tight tabular-nums ${color}`}>{value}</p>
-        {hint ? <p className="mt-2 text-[13px] font-medium text-muted/80">{hint}</p> : null}
+    <div className="bg-white rounded-xl p-5 border border-line/70 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
+      <div>
+        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">{label}</span>
+        <div className="flex items-baseline gap-2">
+          <span className={`text-3xl font-bold tracking-tight tabular-nums ${color}`}>{value}</span>
+        </div>
+        {subtitle && <p className="mt-1 text-[12px] font-medium text-slate-600">{subtitle}</p>}
       </div>
+      {footer && (
+        <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-muted font-medium truncate">
+          {footer}
+        </div>
+      )}
     </div>
   );
 }
@@ -514,9 +645,9 @@ function Panel({
   children: ReactNode;
 }) {
   return (
-    <section className="panel rounded-3xl overflow-hidden border border-line/40">
-      <div className="border-b border-line/40 px-6 py-5 bg-white/50">
-        <h2 className="text-[16px] font-bold tracking-tight text-ink">{title}</h2>
+    <section className="bg-white rounded-xl border border-line/70 shadow-sm overflow-hidden">
+      <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+        <h2 className="text-[15px] font-bold tracking-tight text-ink">{title}</h2>
         <p className="text-[12px] text-muted mt-0.5">{subtitle}</p>
       </div>
       <div className="p-6">{children}</div>
@@ -524,44 +655,7 @@ function Panel({
   );
 }
 
-function BarRow({
-  label,
-  value,
-  max,
-  tone,
-}: {
-  label: string;
-  value: number;
-  max: number;
-  tone: "good" | "warn" | "rose";
-}) {
-  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
-  const bar = tone === "good" ? "bg-good" : tone === "warn" ? "bg-warn" : "bg-rose";
-  return (
-    <div>
-      <div className="mb-1.5 flex items-center justify-between text-[13px]">
-        <span className="font-medium text-ink">{label}</span>
-        <span className="tabular-nums text-muted">
-          {value} · {pct}%
-        </span>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-surface-2 border border-line/40">
-        <div className={`h-full rounded-full ${bar}`} style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function MiniStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-line/40 bg-surface-2/50 px-3 py-3">
-      <p className="text-[11px] uppercase tracking-wide text-muted font-bold">{label}</p>
-      <p className="mt-1 text-xl font-semibold tabular-nums text-ink">{value}</p>
-    </div>
-  );
-}
-
-function AgentList({
+function CohortList({
   rows,
   empty,
   mode,
@@ -571,43 +665,53 @@ function AgentList({
   mode: "top" | "coach";
 }) {
   if (!rows.length) {
-    return <p className="text-[14px] text-muted">{empty}</p>;
+    return <p className="text-[13px] text-muted py-4 text-center">{empty}</p>;
   }
 
   return (
-    <ul className="flex flex-col">
+    <div className="divide-y divide-slate-100">
       {rows.map((row, index) => (
-        <li
-          key={row.id}
-          className="flex items-center justify-between gap-3 py-3 border-b border-line/40 last:border-0"
-        >
-          <div className="min-w-0">
-            <p className="text-[14px] font-bold text-ink truncate">
-              {index + 1}. {row.name}
-            </p>
-            <p className="text-[13px] text-muted mt-0.5">
-              {row.call_count} audited · {row.excellent} excellent
-              {mode === "coach" ? ` · ${row.needs_coaching} coaching flags` : ""}
-            </p>
+        <div key={row.id} className="py-3 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+          <div className="flex items-center gap-3 min-w-0">
+            <div
+              className={`w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                mode === "top" ? "bg-slate-900 text-white" : "bg-rose/10 text-rose border border-rose/20"
+              }`}
+            >
+              {index + 1}
+            </div>
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-ink truncate">{row.name}</p>
+              <p className="text-[11px] text-muted">
+                {row.call_count} audited · {row.excellent} excellent
+                {mode === "coach" && row.needs_coaching > 0 ? (
+                  <span className="text-rose font-medium ml-1">({row.needs_coaching} flags)</span>
+                ) : null}
+              </p>
+            </div>
           </div>
-          <p
-            className={`text-[18px] font-bold tabular-nums ${
-              (row.avg_score ?? 0) >= 70 ? "text-good" : "text-rose"
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold tabular-nums border ${
+              (row.avg_score ?? 0) >= 80
+                ? "bg-good/10 text-good border-good/20"
+                : (row.avg_score ?? 0) >= 60
+                ? "bg-warn/10 text-warn border-warn/20"
+                : "bg-rose/10 text-rose border-rose/20"
             }`}
           >
-            {row.avg_score ?? "—"}
-          </p>
-        </li>
+            {row.avg_score ?? "—"}%
+          </span>
+        </div>
       ))}
-    </ul>
+    </div>
   );
 }
 
 function Empty({ text, href, cta }: { text: string; href: string; cta: string }) {
   return (
     <div className="text-center py-6">
-      <p className="text-[14px] text-muted">{text}</p>
-      <Link href={href} className="btn btn-blue mt-4 text-[13px]">
+      <p className="text-[13px] text-muted">{text}</p>
+      <Link href={href} className="btn bg-blue hover:bg-blue-2 text-white mt-4 text-[12px] px-4 py-1.5 font-semibold">
         {cta}
       </Link>
     </div>
