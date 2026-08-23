@@ -1,101 +1,127 @@
-import type { CSSProperties } from "react";
 import { scoreTone, verdictLabel } from "@/lib/format";
 import type { CallScore, ScoreDimension } from "@/lib/types";
 
 const DIMENSIONS: { key: ScoreDimension; label: string }[] = [
-  { key: "greeting", label: "Greeting" },
-  { key: "empathy", label: "Empathy" },
-  { key: "professionalism", label: "Professionalism" },
-  { key: "resolution", label: "Resolution" },
-  { key: "communication", label: "Communication" },
-  { key: "language_handling", label: "Language mix" },
+  { key: "greeting", label: "Greeting & Identity" },
+  { key: "empathy", label: "Empathy & Active Listening" },
+  { key: "professionalism", label: "Professional Demeanor" },
+  { key: "resolution", label: "Issue Resolution & Next Steps" },
+  { key: "communication", label: "Communication Clarity" },
+  { key: "language_handling", label: "Language Mix Handling" },
 ];
+
+const Icons = {
+  check: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  ),
+  target: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" />
+    </svg>
+  ),
+  shieldAlert: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  ),
+  file: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+    </svg>
+  ),
+};
 
 export function ScoreCard({ score }: { score: CallScore }) {
   const tone = scoreTone(score.overall_score);
+  const isGood = tone === "excellent" || tone === "good";
+  const isWarn = tone === "warn";
 
-  const ringColor =
-    tone === "excellent" || tone === "good"
-      ? "var(--color-good)"
-      : tone === "warn"
-        ? "var(--color-warn)"
-        : "var(--color-rose)";
+  const scoreBadgeBg = isGood
+    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+    : isWarn
+    ? "bg-amber-50 text-amber-700 border-amber-200"
+    : "bg-rose-50 text-rose-700 border-rose-200";
 
-  const textColor =
-    tone === "excellent" || tone === "good"
-      ? "text-good"
-      : tone === "warn"
-        ? "text-warn"
-        : "text-rose";
+  const scoreTextColor = isGood
+    ? "text-emerald-600"
+    : isWarn
+    ? "text-amber-600"
+    : "text-rose-600";
 
   return (
-    <div className="space-y-8">
-      <section className={`panel flex flex-col md:flex-row items-center md:items-start gap-8 rounded-3xl p-10 bg-white shadow-md border-t-[6px] border-x border-b border-line/40 ${
-        tone === "excellent" || tone === "good" ? "border-t-good/80" : tone === "warn" ? "border-t-warn/80" : "border-t-rose/80"
-      }`}>
-        <div className="shrink-0 flex flex-col items-center justify-center">
-          <div
-            className="score-ring relative grid h-40 w-40 place-items-center rounded-full p-1"
-            style={
-              {
-                "--p": score.overall_score,
-                "--ring-color": ringColor,
-              } as CSSProperties
-            }
+    <div className="space-y-6">
+      {/* Executive Hero Evaluation Card */}
+      <section className="bg-white rounded-xl p-6 sm:p-8 border border-line/70 shadow-sm flex flex-col md:flex-row items-center md:items-start gap-8">
+        {/* Score Gauge */}
+        <div className="shrink-0 flex flex-col items-center justify-center p-6 bg-slate-50/80 rounded-xl border border-slate-200 text-center min-w-[160px]">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+            Overall QA Score
+          </span>
+          <span className={`text-5xl font-bold tracking-tight tabular-nums ${scoreTextColor}`}>
+            {score.overall_score}%
+          </span>
+          <span
+            className={`mt-2 inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider border ${scoreBadgeBg}`}
           >
-            <div className="grid h-full w-full place-items-center rounded-full bg-surface-2 shadow-inner">
-              <div className="text-center mt-2">
-                <p className={`text-5xl font-bold tracking-tight tabular-nums ${textColor}`}>
-                  {score.overall_score}
-                </p>
-                <p className="mt-1 text-[12px] font-bold uppercase tracking-wider text-muted opacity-80">
-                  {verdictLabel(score.verdict)}
-                </p>
-              </div>
-            </div>
-          </div>
+            {verdictLabel(score.verdict)}
+          </span>
         </div>
 
-        <div className="flex flex-col justify-center md:pt-4 text-center md:text-left">
-          <div className="inline-flex flex-wrap items-center justify-center md:justify-start gap-2 mb-4">
-            <span className="badge bg-surface-2 text-ink border border-line/50 font-medium shadow-sm px-3 py-1">
-              {score.audit_mode === "automatic" ? "🤖 Automatic Audit" : "📄 Documents Audit"}
+        {/* Evaluation Summary & Tags */}
+        <div className="flex-1 min-w-0 space-y-3 text-center md:text-left">
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+              {score.audit_mode === "automatic" ? "Autonomous AI Audit" : "SOP Standards Audit"}
             </span>
-            <span className="badge bg-surface-2 text-muted border border-line/50 shadow-sm px-3 py-1">
-              Sentiment: {score.customer_sentiment}
-            </span>
+            {score.customer_sentiment && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-slate-50 text-slate-600 border border-slate-200 capitalize">
+                Customer Sentiment: {score.customer_sentiment}
+              </span>
+            )}
           </div>
 
-          <h2 className="text-[18px] sm:text-[20px] font-medium leading-relaxed text-ink/90 max-w-3xl">
+          <h2 className="text-[15px] sm:text-[16px] font-medium leading-relaxed text-slate-800">
             {score.summary}
           </h2>
         </div>
       </section>
 
-      <section className="panel rounded-3xl p-10 bg-gradient-to-br from-surface to-surface-2 shadow-sm border border-line/30">
-        <h3 className="text-[16px] font-bold tracking-tight text-ink mb-6">Category Breakdown</h3>
-        <div className="grid gap-x-12 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Quality Dimensions Matrix */}
+      <section className="bg-white rounded-xl p-6 border border-line/70 shadow-sm space-y-4">
+        <div className="pb-3 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 className="text-[15px] font-bold text-ink">Category Scorecard Matrix</h3>
+            <p className="text-[12px] text-muted mt-0.5">Evaluation performance breakdown across the 6 core customer service dimensions</p>
+          </div>
+        </div>
+
+        <div className="grid gap-x-10 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 pt-2">
           {DIMENSIONS.map((dim) => {
             const value = Number(score[dim.key] ?? 0);
             const dimTone = scoreTone(value);
             const barColor =
               dimTone === "excellent" || dimTone === "good"
-                ? "bg-good"
+                ? "bg-emerald-500"
                 : dimTone === "warn"
-                  ? "bg-warn"
-                  : "bg-rose";
+                ? "bg-amber-500"
+                : "bg-rose-500";
 
             return (
-              <div key={dim.key} className="space-y-2.5">
-                <div className="flex justify-between items-end">
-                  <span className="text-[13px] font-bold uppercase tracking-wide text-muted">
-                    {dim.label}
-                  </span>
-                  <span className="text-[16px] font-bold tabular-nums text-ink">{value}</span>
+              <div key={dim.key} className="space-y-1.5">
+                <div className="flex justify-between items-center text-[13px]">
+                  <span className="font-medium text-slate-700">{dim.label}</span>
+                  <span className="font-bold tabular-nums text-ink">{value}/100</span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-surface-2 border border-line/50">
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full ${barColor} transition-all duration-1000 ease-out`}
+                    className={`h-full rounded-full ${barColor} transition-all duration-500`}
                     style={{ width: `${value}%` }}
                   />
                 </div>
@@ -105,61 +131,70 @@ export function ScoreCard({ score }: { score: CallScore }) {
         </div>
       </section>
 
+      {/* Key Strengths & Coaching Analysis Grid */}
       <section className="grid gap-6 lg:grid-cols-2 items-start">
-        <List
-          title="Strengths"
-          icon="✓"
+        {/* Strengths */}
+        <AnalysisCard
+          title="Demonstrated Strengths"
+          subtitle="Observed positive behaviors and compliance adherence during the interaction"
+          icon={Icons.check}
+          iconColor="bg-emerald-50 text-emerald-700 border-emerald-200"
           items={score.strengths}
-          tone="good"
-          note={
-            score.audit_mode === "automatic"
-              ? "From the call, using the system's own quality judgment."
-              : "From the call, judged against your uploaded scorecard."
-          }
+          emptyText="No specific strengths recorded for this call."
+          bulletColor="bg-emerald-500"
         />
+
         <div className="space-y-6">
-          <List
-            title="Recommendations"
-            icon="🎯"
+          {/* Coaching Recommendations */}
+          <AnalysisCard
+            title="Coaching & Improvement Focus"
+            subtitle="Actionable areas where agent performance can be enhanced"
+            icon={Icons.target}
+            iconColor="bg-amber-50 text-amber-700 border-amber-200"
             items={score.improvements}
-            tone="warn"
-            note={
-              score.audit_mode === "automatic"
-                ? "Coaching notes from the call. Company files were not used."
-                : "Gaps against the scorecard and process documents."
-            }
+            emptyText="No critical improvement gaps noted."
+            bulletColor="bg-amber-500"
           />
-          <List
-            title="Compliance findings"
-            icon="⚠️"
-            items={score.compliance_findings}
-            tone="rose"
-            note={
-              score.audit_mode === "automatic"
-                ? "Obvious legal or ethical issues only. Not scored from a company compliance file."
-                : "Read from your uploaded compliance files."
+
+          {/* Compliance Findings */}
+          <AnalysisCard
+            title="Compliance & Risk Adherence"
+            subtitle="Verification of required disclosures, SLA statements, and prohibited behaviors"
+            icon={Icons.shieldAlert}
+            iconColor={
+              (score.compliance_findings || []).some(
+                (f) => f && f.toLowerCase() !== "none identified" && f.trim().length > 0
+              )
+                ? "bg-rose-50 text-rose-700 border-rose-200"
+                : "bg-emerald-50 text-emerald-700 border-emerald-200"
             }
+            items={score.compliance_findings}
+            emptyText="✓ Zero compliance breaches or regulatory risks detected."
+            bulletColor="bg-rose-500"
           />
         </div>
       </section>
 
+      {/* Standards Referenced */}
       {score.standards_used?.length ? (
-        <section className="panel rounded-3xl p-8 bg-white border border-line/40 shadow-sm mt-8">
-          <p className="text-[12px] font-bold uppercase tracking-widest text-muted mb-4">
-            Standards this audit read
-          </p>
-          <div className="flex flex-wrap gap-3 mt-4">
+        <section className="bg-white rounded-xl p-6 border border-line/70 shadow-sm space-y-3">
+          <div className="pb-2 border-b border-slate-100">
+            <h4 className="text-[13px] font-bold uppercase tracking-wider text-slate-500">
+              Standards & Rubrics Referenced During Audit
+            </h4>
+          </div>
+          <div className="flex flex-wrap gap-2.5 pt-1">
             {score.standards_used.map((doc) => (
               <div
                 key={doc.id}
-                className="flex items-center gap-3 bg-surface-2 border border-line/60 rounded-xl px-4 py-3 shadow-sm"
+                className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[12px]"
               >
-                <span className="text-xl">📄</span>
+                <span className="text-slate-400">{Icons.file}</span>
                 <div>
-                  <p className="text-[12px] font-bold uppercase tracking-widest text-muted leading-none mb-1.5">
+                  <span className="font-bold uppercase tracking-wider text-slate-400 text-[10px] block">
                     {doc.kind}
-                  </p>
-                  <p className="text-[14px] font-medium text-ink leading-none">{doc.title}</p>
+                  </span>
+                  <span className="font-semibold text-ink">{doc.title}</span>
                 </div>
               </div>
             ))}
@@ -170,52 +205,53 @@ export function ScoreCard({ score }: { score: CallScore }) {
   );
 }
 
-function List({
+function AnalysisCard({
   title,
+  subtitle,
   icon,
+  iconColor,
   items,
-  tone,
-  note,
+  emptyText,
+  bulletColor,
 }: {
   title: string;
-  icon: string;
+  subtitle: string;
+  icon: React.ReactNode;
+  iconColor: string;
   items: string[] | null;
-  tone: "good" | "warn" | "rose";
-  note: string;
+  emptyText: string;
+  bulletColor: string;
 }) {
-  const list = Array.isArray(items) ? items : [];
-  const iconColor =
-    tone === "good" ? "text-good" : tone === "warn" ? "text-warn" : "text-rose";
+  const list = (Array.isArray(items) ? items : []).filter(
+    (item) => item && item.toLowerCase() !== "none identified" && item.trim().length > 0
+  );
 
   return (
-    <div className="bg-white rounded-3xl p-10 border border-line/40 shadow-sm transition-shadow hover:shadow-md">
-      <div className="flex items-center gap-3 mb-2">
-        <div
-          className={`h-8 w-8 rounded-full bg-surface-2 border border-line/50 flex items-center justify-center font-bold shadow-sm ${iconColor}`}
-        >
+    <div className="bg-white rounded-xl p-6 border border-line/70 shadow-sm space-y-4">
+      <div className="flex items-start gap-3">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${iconColor}`}>
           {icon}
         </div>
-        <h3 className="text-[18px] font-bold tracking-tight text-ink">{title}</h3>
+        <div>
+          <h3 className="text-[15px] font-bold text-ink">{title}</h3>
+          <p className="text-[12px] text-muted mt-0.5 leading-relaxed">{subtitle}</p>
+        </div>
       </div>
-      <p className="mb-6 text-[13px] font-medium text-muted pl-11">{note}</p>
 
-      <ul className="space-y-4 pl-3">
-        {list.map((item) => (
-          <li key={item} className="flex gap-4">
-            <span
-              className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${
-                tone === "good" ? "bg-good" : tone === "warn" ? "bg-warn" : "bg-rose"
-              } opacity-60`}
-            />
-            <span className="text-[14px] font-medium leading-relaxed text-ink/90">{item}</span>
-          </li>
-        ))}
-        {!list.length && (
-          <li className="text-[14px] font-medium opacity-70 italic text-muted ml-4">
-            No notes for this call.
-          </li>
+      <div className="pt-2 border-t border-slate-100">
+        {list.length > 0 ? (
+          <ul className="space-y-3">
+            {list.map((item, idx) => (
+              <li key={idx} className="flex items-start gap-2.5 text-[13px] text-slate-800 leading-relaxed">
+                <span className={`w-1.5 h-1.5 rounded-full ${bulletColor} shrink-0 mt-2`} />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-[13px] text-slate-500 italic py-1">{emptyText}</p>
         )}
-      </ul>
+      </div>
     </div>
   );
 }
