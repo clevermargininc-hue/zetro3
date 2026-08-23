@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { authFetch } from "@/lib/auth-fetch";
-import { scoreTone } from "@/lib/format";
+import { scoreTone, verdictLabel } from "@/lib/format";
 import {
   REPORT_PERIODS,
   todayInNairobi,
@@ -12,10 +12,48 @@ import {
 } from "@/lib/reports";
 
 const PERIOD_LABEL: Record<ReportPeriod, string> = {
-  daily: "Daily",
-  weekly: "Weekly",
-  monthly: "Monthly",
-  annually: "Annually",
+  daily: "Daily Report",
+  weekly: "Weekly Report",
+  monthly: "Monthly Report",
+  annually: "Annual Report",
+};
+
+const Icons = {
+  excel: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="8" y1="13" x2="16" y2="17" />
+      <line x1="16" y1="13" x2="8" y2="17" />
+    </svg>
+  ),
+  pdf: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+    </svg>
+  ),
+  filter: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
+  ),
+  shield: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  ),
+  emptyBox: (
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted/40">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+    </svg>
+  ),
 };
 
 export function ReportsBoard({ compact = false }: { compact?: boolean }) {
@@ -94,35 +132,43 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
   const summary = report?.summary;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="page-kicker">Reports</p>
-          {!compact ? (
-            <>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight">Score & Compliance Reports</h1>
-              <p className="mt-2 max-w-2xl text-[15px] text-muted">
-                Daily, weekly, monthly, and annual QA reports for one agent or the whole team.
-              </p>
-            </>
-          ) : (
-            <h2 className="mt-2 text-xl font-bold">Downloadable QA reports</h2>
+    <div className="space-y-8 animate-in fade-in duration-300 max-w-7xl mx-auto pb-12">
+      {/* Header */}
+      {!compact && (
+        <div className="pb-5 border-b border-line/60">
+          <h1 className="text-2xl font-bold tracking-tight text-ink">Score & Compliance Reports</h1>
+          <p className="mt-1 text-[13px] text-muted">
+            Formal quality evaluation reports, compliance audit summaries, and multi-format downloadable records.
+          </p>
+        </div>
+      )}
+
+      {/* Filter & Export Bar */}
+      <section className="bg-white rounded-xl p-5 border border-line/70 shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2 text-[13px] font-bold text-ink">
+            <span className="text-blue">{Icons.filter}</span>
+            <span>Report Parameters</span>
+          </div>
+          {report && (
+            <div className="text-[12px] text-muted flex items-center gap-1.5">
+              <span>Selected Scope:</span>
+              <span className="font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                {report.period_label} · {report.agent_label}
+              </span>
+            </div>
           )}
         </div>
-        {compact ? (
-          <Link href="/reports" className="btn btn-ghost">
-            Open full report
-          </Link>
-        ) : null}
-      </div>
 
-      <section className="panel rounded-2xl p-6 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="flex-1 grid gap-4 md:grid-cols-3 items-end">
-            <label className="block">
-              <span className="mb-2 block text-[13px] font-semibold text-muted">Time Period</span>
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-5">
+          <div className="flex-1 grid gap-4 sm:grid-cols-3 items-end">
+            {/* Period selector */}
+            <div>
+              <label className="block text-[12px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                Report Period
+              </label>
               <select
-                className="field bg-surface-2 shadow-inner"
+                className="field bg-slate-50/70 border-slate-200 text-ink text-[13px] font-medium"
                 value={period}
                 onChange={(event) => setPeriod(event.target.value as ReportPeriod)}
               >
@@ -132,102 +178,130 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                   </option>
                 ))}
               </select>
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-[13px] font-semibold text-muted">Date In Period</span>
+            </div>
+
+            {/* Date selector */}
+            <div>
+              <label className="block text-[12px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                Date in Period
+              </label>
               <input
                 type="date"
-                className="field bg-surface-2 shadow-inner"
+                className="field bg-slate-50/70 border-slate-200 text-ink text-[13px]"
                 value={date}
                 onChange={(event) => {
                   if (event.target.value) setDate(event.target.value);
                 }}
               />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-[13px] font-semibold text-muted">Agent Filter</span>
+            </div>
+
+            {/* Agent filter */}
+            <div>
+              <label className="block text-[12px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                Workforce Scope
+              </label>
               <select
-                className="field bg-surface-2 shadow-inner"
+                className="field bg-slate-50/70 border-slate-200 text-ink text-[13px] font-medium"
                 value={agentId}
                 onChange={(event) => setAgentId(event.target.value)}
               >
-                <option value="all">All Agents</option>
+                <option value="all">All Workforce (Team-wide)</option>
                 {agents.map((agent) => (
                   <option key={agent.id} value={agent.id}>
                     {agent.name}
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
           </div>
-          
-          <div className="flex flex-col sm:flex-row gap-3">
+
+          {/* Export Action Buttons */}
+          <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
             <button
               type="button"
-              className="btn btn-blue shadow-md shadow-blue/20 hover:-translate-y-0.5 active:translate-y-0"
+              className="btn bg-white hover:bg-slate-50 text-slate-700 border border-line shadow-sm text-[13px] px-4 py-2 font-medium"
               disabled={Boolean(downloading) || loading}
               onClick={() => void download("xlsx")}
             >
-              {downloading === "xlsx" ? "Preparing Excel…" : "↓ Download Excel"}
+              {Icons.excel}
+              <span>{downloading === "xlsx" ? "Generating…" : "Export Excel"}</span>
             </button>
             <button
               type="button"
-              className="btn btn-ghost border border-line hover:bg-surface-2 hover:-translate-y-0.5 active:translate-y-0"
+              className="btn bg-blue hover:bg-blue-2 text-white shadow-sm text-[13px] px-4 py-2 font-semibold"
               disabled={Boolean(downloading) || loading}
               onClick={() => void download("pdf")}
             >
-              {downloading === "pdf" ? "Preparing PDF…" : "↓ Download PDF"}
+              {Icons.pdf}
+              <span>{downloading === "pdf" ? "Generating…" : "Export PDF"}</span>
             </button>
           </div>
         </div>
       </section>
 
-      {error ? <p className="alert-error">{error}</p> : null}
+      {error && <p className="alert-error">{error}</p>}
 
+      {/* Summary KPI Cards */}
       {summary ? (
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label="Calls Audited" value={String(summary.calls_audited)} />
-          <Stat
-            label="Average Score"
-            value={summary.avg_overall == null ? "—" : String(summary.avg_overall)}
+          <StatCard
+            label="Audited Calls"
+            value={String(summary.calls_audited)}
+            subtitle="Evaluated interactions"
+            footer={`Range: ${report?.range_start} to ${report?.range_end}`}
+          />
+          <StatCard
+            label="Average QA Score"
+            value={summary.avg_overall != null ? `${summary.avg_overall}%` : "—"}
             tone={scoreTone(summary.avg_overall)}
+            subtitle={summary.avg_overall != null ? verdictLabel(scoreTone(summary.avg_overall)) : "No score"}
+            footer="Aggregate team quality index"
           />
-          <Stat
-            label="Compliance Issues"
+          <StatCard
+            label="Compliance Integrity"
             value={`${summary.calls_with_compliance_issue} calls`}
-            hint={`${summary.total_compliance_findings} total findings`}
             tone={summary.calls_with_compliance_issue > 0 ? "poor" : "good"}
+            subtitle={summary.calls_with_compliance_issue === 0 ? "Zero compliance breaches" : "Flagged compliance risks"}
+            footer={`${summary.total_compliance_findings} total findings logged`}
           />
-          <Stat
-            label="Scope"
+          <StatCard
+            label="Evaluation Scope"
             value={report?.agent_label || "All agents"}
-            hint={report?.period_label}
+            subtitle={report?.period_label}
+            footer="Timezone: Africa/Nairobi"
           />
         </section>
       ) : null}
 
-      {loading ? (
-        <div className="panel p-10 flex items-center justify-center rounded-2xl">
-          <div className="h-5 w-5 rounded-full border-2 border-line border-t-blue animate-spin"></div>
-          <span className="ml-3 text-muted">Loading report data…</span>
+      {/* Loading state */}
+      {loading && (
+        <div className="bg-white rounded-xl p-10 border border-line/70 flex items-center justify-center shadow-sm">
+          <div className="h-5 w-5 rounded-full border-2 border-slate-200 border-t-blue animate-spin mr-3" />
+          <span className="text-muted text-[13px] font-medium">Generating structured report dataset…</span>
         </div>
-      ) : null}
+      )}
 
-      {!compact && report && !loading ? (
-        <div className="panel rounded-2xl overflow-hidden shadow-sm">
-          <div className="flex border-b border-line/50 px-6 pt-4 gap-8">
+      {/* Tabbed Report Explorer */}
+      {!compact && report && !loading && (
+        <section className="bg-white rounded-xl border border-line/70 shadow-sm overflow-hidden">
+          {/* Tab navigation */}
+          <div className="flex border-b border-slate-200 px-6 bg-slate-50/50 gap-6">
             <button
               onClick={() => setActiveTab("scores")}
-              className={`pb-3 font-bold text-[14px] transition-colors border-b-2 ${
-                activeTab === "scores" ? "border-blue text-blue" : "border-transparent text-muted hover:text-ink"
+              className={`py-3.5 font-bold text-[13px] transition-colors border-b-2 ${
+                activeTab === "scores"
+                  ? "border-blue text-blue"
+                  : "border-transparent text-slate-500 hover:text-ink"
               }`}
             >
-              Call Scores ({report.calls.length})
+              Evaluated Call Scores ({report.calls.length})
             </button>
             <button
               onClick={() => setActiveTab("compliance")}
-              className={`pb-3 font-bold text-[14px] transition-colors border-b-2 ${
-                activeTab === "compliance" ? "border-blue text-blue" : "border-transparent text-muted hover:text-ink"
+              className={`py-3.5 font-bold text-[13px] transition-colors border-b-2 ${
+                activeTab === "compliance"
+                  ? "border-blue text-blue"
+                  : "border-transparent text-slate-500 hover:text-ink"
               }`}
             >
               Compliance Findings ({report.compliance.length})
@@ -235,70 +309,91 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
             {(report.agents.length > 1 || (report.agent_id == null && report.agents.length > 0)) && (
               <button
                 onClick={() => setActiveTab("agents")}
-                className={`pb-3 font-bold text-[14px] transition-colors border-b-2 ${
-                  activeTab === "agents" ? "border-blue text-blue" : "border-transparent text-muted hover:text-ink"
+                className={`py-3.5 font-bold text-[13px] transition-colors border-b-2 ${
+                  activeTab === "agents"
+                    ? "border-blue text-blue"
+                    : "border-transparent text-slate-500 hover:text-ink"
                 }`}
               >
-                By Agent
+                Workforce Breakdown ({report.agents.length})
               </button>
             )}
           </div>
 
-          <div className="p-0 overflow-x-auto">
+          <div className="overflow-x-auto">
+            {/* Tab 1: Scores Table */}
             {activeTab === "scores" && (
-              <table className="data-table w-full text-left">
-                <thead className="bg-surface/50 text-[12px] uppercase tracking-wider text-muted">
-                  <tr>
-                    <th className="px-6 py-4 font-semibold">When</th>
-                    <th className="px-6 py-4 font-semibold">Call</th>
-                    <th className="px-6 py-4 font-semibold">Agent</th>
-                    <th className="px-6 py-4 font-semibold">Score</th>
-                    <th className="px-6 py-4 font-semibold">Verdict</th>
-                    <th className="px-6 py-4 font-semibold">Path</th>
-                    <th className="px-6 py-4 font-semibold">Compliance</th>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    <th className="px-6 py-3">Timestamp</th>
+                    <th className="px-6 py-3">Call Title / Recording</th>
+                    <th className="px-6 py-3">Representative</th>
+                    <th className="px-6 py-3 text-right">Score</th>
+                    <th className="px-6 py-3">Verdict</th>
+                    <th className="px-6 py-3">Audit Method</th>
+                    <th className="px-6 py-3 text-right">Compliance</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-line/30">
+                <tbody className="divide-y divide-slate-100 text-[13px]">
                   {report.calls.map((row) => (
-                    <tr key={row.call_id} className="hover:bg-surface-2/30 transition-colors">
-                      <td className="px-6 py-4 text-[13px] text-muted whitespace-nowrap">
+                    <tr key={row.call_id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="px-6 py-3.5 text-slate-500 whitespace-nowrap text-[12px]">
                         {new Intl.DateTimeFormat("en-KE", {
                           dateStyle: "medium",
                           timeStyle: "short",
                         }).format(new Date(row.audited_at))}
                       </td>
-                      <td className="px-6 py-4">
-                        <Link href={`/calls/${row.call_id}/score`} className="font-semibold text-ink hover:text-blue transition-colors">
+                      <td className="px-6 py-3.5">
+                        <Link
+                          href={`/calls/${row.call_id}/score`}
+                          className="font-semibold text-ink hover:text-blue transition-colors line-clamp-1 max-w-xs"
+                        >
                           {row.title}
                         </Link>
                       </td>
-                      <td className="px-6 py-4 text-[14px] text-ink">{row.agent_name}</td>
-                      <td className="px-6 py-4">
-                        <span className={`font-bold tabular-nums ${row.overall_score >= 80 ? 'text-good' : row.overall_score >= 60 ? 'text-warn' : 'text-rose'}`}>
-                          {row.overall_score}
+                      <td className="px-6 py-3.5 font-medium text-slate-700">
+                        {row.agent_name || <span className="text-slate-400 italic">Unassigned</span>}
+                      </td>
+                      <td className="px-6 py-3.5 text-right whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold tabular-nums border ${
+                            row.overall_score >= 80
+                              ? "bg-good/10 text-good border-good/20"
+                              : row.overall_score >= 60
+                              ? "bg-warn/10 text-warn border-warn/20"
+                              : "bg-rose/10 text-rose border-rose/20"
+                          }`}
+                        >
+                          {row.overall_score}%
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="capitalize badge bg-surface-2 text-ink">
+                      <td className="px-6 py-3.5 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200 capitalize">
                           {String(row.verdict).replace(/_/g, " ")}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-[13px] text-muted">{row.audit_mode || "—"}</td>
-                      <td className="px-6 py-4">
-                        {row.compliance_findings.length ? (
-                          <span className="badge bg-rose/10 text-rose border border-rose/20">
-                            {row.compliance_findings.length} Finding{row.compliance_findings.length === 1 ? "" : "s"}
+                      <td className="px-6 py-3.5 text-slate-500 text-[12px] whitespace-nowrap capitalize">
+                        {row.audit_mode || "Standard"}
+                      </td>
+                      <td className="px-6 py-3.5 text-right whitespace-nowrap">
+                        {row.compliance_findings.length > 0 ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-rose/10 text-rose border border-rose/20">
+                            {row.compliance_findings.length} Flagged
                           </span>
                         ) : (
-                          <span className="text-muted text-[13px]">None</span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-good/10 text-good border border-good/20">
+                            Clean
+                          </span>
                         )}
                       </td>
                     </tr>
                   ))}
+
                   {!report.calls.length && (
                     <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-[14px] text-muted italic">
-                        No audited calls in this period for the selected agent.
+                      <td colSpan={7} className="px-6 py-12 text-center text-muted text-[13px] italic">
+                        No audited call evaluations logged for this timeframe.
                       </td>
                     </tr>
                   )}
@@ -306,38 +401,47 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
               </table>
             )}
 
+            {/* Tab 2: Compliance Findings */}
             {activeTab === "compliance" && (
-              <table className="data-table w-full text-left">
-                <thead className="bg-surface/50 text-[12px] uppercase tracking-wider text-muted">
-                  <tr>
-                    <th className="px-6 py-4 font-semibold">When</th>
-                    <th className="px-6 py-4 font-semibold">Call</th>
-                    <th className="px-6 py-4 font-semibold">Agent</th>
-                    <th className="px-6 py-4 font-semibold">Finding</th>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    <th className="px-6 py-3">Timestamp</th>
+                    <th className="px-6 py-3">Call Title</th>
+                    <th className="px-6 py-3">Representative</th>
+                    <th className="px-6 py-3">Compliance Finding / Breach Description</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-line/30">
+                <tbody className="divide-y divide-slate-100 text-[13px]">
                   {report.compliance.map((row, index) => (
-                    <tr key={`${row.call_id}-${index}`} className="hover:bg-surface-2/30 transition-colors">
-                      <td className="px-6 py-4 text-[13px] text-muted whitespace-nowrap">
+                    <tr key={`${row.call_id}-${index}`} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="px-6 py-3.5 text-slate-500 whitespace-nowrap text-[12px]">
                         {new Intl.DateTimeFormat("en-KE", {
                           dateStyle: "medium",
                           timeStyle: "short",
                         }).format(new Date(row.audited_at))}
                       </td>
-                      <td className="px-6 py-4">
-                        <Link href={`/calls/${row.call_id}/score`} className="font-semibold text-ink hover:text-blue transition-colors">
+                      <td className="px-6 py-3.5">
+                        <Link
+                          href={`/calls/${row.call_id}/score`}
+                          className="font-semibold text-ink hover:text-blue transition-colors"
+                        >
                           {row.title}
                         </Link>
                       </td>
-                      <td className="px-6 py-4 text-[14px] text-ink">{row.agent_name}</td>
-                      <td className="px-6 py-4 text-[14px] text-rose font-medium leading-relaxed">{row.finding}</td>
+                      <td className="px-6 py-3.5 font-medium text-slate-700">{row.agent_name}</td>
+                      <td className="px-6 py-3.5 text-rose font-medium leading-relaxed max-w-lg">
+                        <div className="p-2.5 bg-rose/5 rounded border border-rose/15 text-[12px]">
+                          {row.finding}
+                        </div>
+                      </td>
                     </tr>
                   ))}
+
                   {!report.compliance.length && (
                     <tr>
-                      <td colSpan={4} className="px-6 py-12 text-center text-[14px] text-muted italic">
-                        No compliance findings in this period!
+                      <td colSpan={4} className="px-6 py-12 text-center text-good font-medium text-[13px]">
+                        ✓ Zero compliance findings recorded for this evaluation period.
                       </td>
                     </tr>
                   )}
@@ -345,32 +449,54 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
               </table>
             )}
 
+            {/* Tab 3: Agent Breakdown */}
             {activeTab === "agents" && (
-              <table className="data-table w-full text-left">
-                <thead className="bg-surface/50 text-[12px] uppercase tracking-wider text-muted">
-                  <tr>
-                    <th className="px-6 py-4 font-semibold">Agent</th>
-                    <th className="px-6 py-4 font-semibold">Calls Audited</th>
-                    <th className="px-6 py-4 font-semibold">Avg Score</th>
-                    <th className="px-6 py-4 font-semibold">Excellent</th>
-                    <th className="px-6 py-4 font-semibold">Poor</th>
-                    <th className="px-6 py-4 font-semibold">Compliance Findings</th>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    <th className="px-6 py-3">Representative</th>
+                    <th className="px-6 py-3 text-right">Calls Audited</th>
+                    <th className="px-6 py-3 text-right">Avg QA Score</th>
+                    <th className="px-6 py-3 text-right">Excellent (&gt;85%)</th>
+                    <th className="px-6 py-3 text-right">Poor (&lt;50%)</th>
+                    <th className="px-6 py-3 text-right">Compliance Findings</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-line/30">
+                <tbody className="divide-y divide-slate-100 text-[13px]">
                   {report.agents.map((row) => (
-                    <tr key={row.agent_id || row.agent_name} className="hover:bg-surface-2/30 transition-colors">
-                      <td className="px-6 py-4 font-semibold text-ink">{row.agent_name}</td>
-                      <td className="px-6 py-4 text-[14px] text-ink">{row.call_count}</td>
-                      <td className="px-6 py-4">
-                         <span className={`font-bold tabular-nums ${row.avg_score != null ? (row.avg_score >= 80 ? 'text-good' : row.avg_score >= 60 ? 'text-warn' : 'text-rose') : 'text-muted'}`}>
-                          {row.avg_score ?? "—"}
-                         </span>
+                    <tr key={row.agent_id || row.agent_name} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="px-6 py-3.5 font-semibold text-ink">{row.agent_name}</td>
+                      <td className="px-6 py-3.5 text-right font-medium text-slate-700 tabular-nums">
+                        {row.call_count}
                       </td>
-                      <td className="px-6 py-4 text-good font-semibold">{row.excellent}</td>
-                      <td className="px-6 py-4 text-rose font-semibold">{row.poor}</td>
-                      <td className="px-6 py-4 text-[13px] text-muted">
-                        <span className={row.compliance_findings > 0 ? "text-rose font-semibold" : ""}>{row.compliance_findings} findings</span> in {row.compliance_calls} calls
+                      <td className="px-6 py-3.5 text-right whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold tabular-nums border ${
+                            row.avg_score != null
+                              ? row.avg_score >= 80
+                                ? "bg-good/10 text-good border-good/20"
+                                : row.avg_score >= 60
+                                ? "bg-warn/10 text-warn border-warn/20"
+                                : "bg-rose/10 text-rose border-rose/20"
+                              : "bg-slate-100 text-slate-500 border-slate-200"
+                          }`}
+                        >
+                          {row.avg_score != null ? `${row.avg_score}%` : "—"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3.5 text-right font-medium text-emerald-600 tabular-nums">
+                        {row.excellent}
+                      </td>
+                      <td className="px-6 py-3.5 text-right font-medium tabular-nums">
+                        <span className={row.poor > 0 ? "text-rose font-bold" : "text-slate-400"}>
+                          {row.poor}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3.5 text-right text-slate-600 tabular-nums whitespace-nowrap">
+                        <span className={row.compliance_findings > 0 ? "text-rose font-semibold" : ""}>
+                          {row.compliance_findings} findings
+                        </span>{" "}
+                        <span className="text-slate-400">in {row.compliance_calls} calls</span>
                       </td>
                     </tr>
                   ))}
@@ -378,44 +504,51 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
               </table>
             )}
           </div>
-        </div>
-      ) : null}
+        </section>
+      )}
     </div>
   );
 }
 
-function Stat({
+function StatCard({
   label,
   value,
-  hint,
+  subtitle,
+  footer,
   tone,
 }: {
   label: string;
   value: string;
-  hint?: string;
+  subtitle?: string;
+  footer?: string;
   tone?: ReturnType<typeof scoreTone>;
 }) {
-  const color =
-    tone === "excellent" || tone === "good"
-      ? "text-good"
-      : tone === "warn"
-        ? "text-warn"
-        : tone === "poor"
-          ? "text-rose"
-          : "text-ink";
-          
-  const bgGradient = 
-    tone === "excellent" || tone === "good"
-      ? "from-good/5 to-transparent border-good/20 shadow-good/5"
-      : tone === "poor"
-          ? "from-rose/5 to-transparent border-rose/20 shadow-rose/5"
-          : "bg-surface";
+  const isGood = tone === "excellent" || tone === "good";
+  const isWarn = tone === "warn";
+  const isPoor = tone === "poor";
+
+  const color = isGood
+    ? "text-good"
+    : isWarn
+    ? "text-warn"
+    : isPoor
+    ? "text-rose"
+    : "text-ink";
 
   return (
-    <div className={`panel rounded-2xl p-6 transition-all duration-300 bg-gradient-to-br ${bgGradient}`}>
-      <p className="text-[13px] font-bold uppercase tracking-wide text-muted">{label}</p>
-      <p className={`mt-3 text-3xl font-bold tabular-nums tracking-tight ${color}`}>{value}</p>
-      {hint ? <p className="mt-2 text-[13px] font-medium text-muted/80">{hint}</p> : null}
+    <div className="bg-white rounded-xl p-5 border border-line/70 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
+      <div>
+        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">{label}</span>
+        <div className="flex items-baseline gap-2">
+          <span className={`text-3xl font-bold tracking-tight tabular-nums ${color}`}>{value}</span>
+        </div>
+        {subtitle && <p className="mt-1 text-[12px] font-medium text-slate-600">{subtitle}</p>}
+      </div>
+      {footer && (
+        <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-muted font-medium truncate">
+          {footer}
+        </div>
+      )}
     </div>
   );
 }
