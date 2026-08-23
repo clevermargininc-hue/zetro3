@@ -22,10 +22,18 @@ function redirectUrl(request: NextRequest, next: string) {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
+  const tokenHash = searchParams.get("token_hash");
+  const type = searchParams.get("type");
   const next = safeNext(searchParams.get("next"));
   const origin = new URL(request.url).origin;
 
-  if (!code) {
+  const isPasswordRecovery = next === "/reset-password" || type === "recovery";
+
+  // If neither code nor token_hash is present, redirect with an error
+  if (!code && !tokenHash) {
+    if (isPasswordRecovery) {
+      return NextResponse.redirect(`${origin}/forgot-password?error=missing_code`);
+    }
     return NextResponse.redirect(`${origin}/login?error=oauth`);
   }
 
@@ -47,8 +55,32 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  // Handle token_hash flow (used by Supabase email links for recovery, signup confirmation, etc.)
+  if (tokenHash && type) {
+    const { error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: type as "recovery" | "signup" | "email",
+    });
+    if (error) {
+      if (isPasswordRecovery) {
+        return NextResponse.redirect(
+          `${origin}/forgot-password?error=${encodeURIComponent("Reset link expired or already used. Please request a new one.")}`,
+        );
+      }
+      return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`);
+    }
+    return redirect;
+  }
+
+  // Handle code exchange flow (PKCE)
+  const { error } = await supabase.auth.exchangeCodeForSession(code!);
   if (error) {
+    if (isPasswordRecovery) {
+      // For password recovery, redirect back to forgot-password with a friendly message
+      return NextResponse.redirect(
+        `${origin}/forgot-password?error=${encodeURIComponent("Reset link expired or was opened in a different browser. Please request a new one.")}`,
+      );
+    }
     const message = /pkce|verifier/i.test(error.message)
       ? "oauth_pkce"
       : error.message;

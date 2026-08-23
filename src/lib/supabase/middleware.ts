@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { WORKSPACE_COOKIE } from "@/lib/workspace-cookie";
 
-const PUBLIC_PATHS = new Set(["/", "/login", "/signup", "/talk-sales", "/about", "/how-it-works", "/solutions", "/pricing"]);
+const PUBLIC_PATHS = new Set(["/", "/login", "/signup", "/talk-sales", "/about", "/how-it-works", "/solutions", "/pricing", "/forgot-password", "/reset-password"]);
 
 async function userHasWorkspace(
   request: NextRequest,

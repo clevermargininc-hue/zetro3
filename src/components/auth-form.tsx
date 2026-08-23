@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "login" | "signup";
@@ -153,9 +154,21 @@ export function AuthForm({
             className="field"
           />
         </label>
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-ink">Password</span>
+        <div className="flex flex-col gap-1.5 text-sm">
+          <div className="flex items-center justify-between">
+            <label htmlFor="password-input" className="font-medium text-ink">Password</label>
+            {mode === "login" && (
+              <Link
+                href="/forgot-password"
+                className="text-blue hover:underline font-medium text-xs"
+                tabIndex={-1}
+              >
+                Forgot password?
+              </Link>
+            )}
+          </div>
           <input
+            id="password-input"
             required
             minLength={6}
             type="password"
@@ -163,7 +176,7 @@ export function AuthForm({
             onChange={(e) => setPassword(e.target.value)}
             className="field"
           />
-        </label>
+        </div>
         {error && <p className="alert-error">{error}</p>}
         {info && <p className="alert-ok">{info}</p>}
         <button type="submit" disabled={loading} className="btn btn-lg btn-blue mt-1">

@@ -269,12 +269,12 @@ Your job:
 2. Score the AGENT using only the uploaded scorecard (0–100).
 3. Check every compliance rule from the uploaded files and list breaches.
 4. Keep original languages for quotes. Write your analysis (summary, strengths, improvements, notes) in the primary language spoken during the call (e.g. Swahili if they spoke Swahili).
-5. Use the actual names of the Agent, Customer, and Company in your writing instead of generic labels like "Speaker A" or "Speaker B" if they are mentioned in the call.
+5. Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. For the Company Name and key terms, rely strictly on the provided company documents. Only use the Customer's name if clearly spoken.
 
 How to identify speakers:
 - Agent cues: company greeting, scripted opening from the process documents or opening script, offering solutions.
 - Customer cues: stating a problem, complaining, giving personal details.
-- If an agent name is provided, use it as context. Do not invent names if they aren't spoken.
+- Always assume the submitted agent name belongs to the Agent speaker. Do not invent names.
 
 When an OPENING SCRIPT or CLOSING SCRIPT is provided, score greeting and closing against those org-wide scripts (shared by all agents). Note key terms the agent should have used.
 
@@ -298,12 +298,12 @@ Your job:
 1. Decide which speaker label is the CALL CENTER AGENT and which is the CUSTOMER.
 2. Score the AGENT from 0–100 using standard service-quality practice.
 3. Keep original languages for quotes. Write your analysis (summary, strengths, improvements, notes) in the primary language spoken during the call.
-4. Use the actual names of the Agent, Customer, and Company in your writing instead of generic labels like "Speaker A" or "Speaker B" if they are mentioned in the call.
+4. Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. Only use the Customer's name if clearly spoken. Do not invent names.
 
 How to identify speakers:
 - Agent cues: company greeting, offering solutions, verifying account details.
 - Customer cues: stating a problem, complaining, giving personal details.
-- If an agent name is provided, use it as context. Do not invent names if they aren't spoken.
+- Always assume the submitted agent name belongs to the Agent speaker.
 
 When an OPENING SCRIPT or CLOSING SCRIPT is provided, use it as the expected greeting/closing for this organization and score adherence (including key terms).
 
@@ -335,12 +335,12 @@ Your job:
 2. Score the AGENT using only the uploaded scorecard (0–100).
 3. Check every compliance rule from the uploaded files and list breaches.
 4. Keep the transcript in English. Never translate.
-5. Use the actual names of the Agent, Customer, and Company in your writing instead of generic labels like "Speaker A" or "Speaker B" if they are mentioned in the call.
+5. Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. For the Company Name and key terms, rely strictly on the provided company documents. Only use the Customer's name if clearly spoken.
 
 How to identify speakers:
 - Agent cues: company greeting, scripted opening from the process documents or opening script, offering solutions.
 - Customer cues: stating a problem, complaining, giving personal details.
-- If an agent name is provided, use it as context. Do not invent names if they aren't spoken.
+- Always assume the submitted agent name belongs to the Agent speaker. Do not invent names.
 
 When an OPENING SCRIPT or CLOSING SCRIPT is provided, score greeting and closing against those org-wide scripts (shared by all agents). Note key terms the agent should have used.
 
@@ -364,12 +364,12 @@ Your job:
 1. Decide which speaker label is the CALL CENTER AGENT and which is the CUSTOMER.
 2. Score the AGENT from 0–100 using standard service-quality practice.
 3. Keep the transcript in English. Never translate.
-4. Use the actual names of the Agent, Customer, and Company in your writing instead of generic labels like "Speaker A" or "Speaker B" if they are mentioned in the call.
+4. Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. Only use the Customer's name if clearly spoken. Do not invent names.
 
 How to identify speakers:
 - Agent cues: company greeting, offering solutions, verifying account details.
 - Customer cues: stating a problem, complaining, giving personal details.
-- If an agent name is provided, use it as context. Do not invent names if they aren't spoken.
+- Always assume the submitted agent name belongs to the Agent speaker.
 
 When an OPENING SCRIPT or CLOSING SCRIPT is provided, use it as the expected greeting/closing for this organization and score adherence (including key terms).
 
@@ -411,8 +411,8 @@ export async function analyzeCall(
 
   const userPrompt =
     mode === "documents"
-      ? `${agentName ? `Named agent (may or may not be spoken): ${agentName}\n\n` : ""}WORKSPACE STANDARDS (you have read these files; score only from them):\n${standardsText}${scriptsBlock}\n\nTranscript:\n${transcript}`
-      : `${agentName ? `Named agent (may or may not be spoken): ${agentName}\n\n` : ""}Automatic audit — no company scorecard required.${scriptsBlock}\n\nTranscript:\n${transcript}`;
+      ? `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}WORKSPACE STANDARDS (you have read these files; score only from them; use company names/key terms from here):\n${standardsText}${scriptsBlock}\n\nTranscript:\n${transcript}`
+      : `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}Automatic audit — no company scorecard required.${scriptsBlock}\n\nTranscript:\n${transcript}`;
 
   const parsed = (await completeJson(
     mode === "documents"
