@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { AppNav } from "@/components/app-nav";
-import { UserMenu } from "@/components/user-menu";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -77,18 +76,7 @@ export default async function AppLayout({
         plan={plan}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Top Header for Desktop User Profile */}
-        <header className="hidden lg:flex items-center justify-end px-10 pt-6 pb-2">
-          <UserMenu
-            email={user.email}
-            username={username}
-            displayName={displayName}
-            workspaceName={workspaceName}
-            plan={plan}
-          />
-        </header>
-        
-        <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-6 print:max-w-none print:px-0 print:py-0 lg:px-10">
+        <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 print:max-w-none print:px-0 print:py-0 lg:px-10">
           {children}
         </main>
       </div>
