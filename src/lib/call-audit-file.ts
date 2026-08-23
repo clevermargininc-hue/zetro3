@@ -60,7 +60,7 @@ export function callAuditExcel(pack: AuditedCallExport): Buffer {
   const wb = XLSX.utils.book_new();
 
   const detailSheet = XLSX.utils.aoa_to_sheet([
-    ["Zetro audited call"],
+    ["ZETRO CALL AUDIT REPORT"],
     [],
     ["Field", "Value"],
     ...details(pack),
@@ -123,13 +123,14 @@ export function callAuditExcel(pack: AuditedCallExport): Buffer {
 export function callAuditPdf(pack: AuditedCallExport): Buffer {
   const { score } = pack;
   const doc = new PdfDoc();
-  doc.fillBar(806, 28, 0.102, 0.337, 0.859);
-  doc.text(40, 816, 12, "ZETRO  ·  AUDITED CALL", "1 1 1");
-  doc.y = 780;
+  doc.fillBar(790, 52, 0.04, 0.06, 0.12);
+  doc.text(40, 810, 22, "ZETRO", "0.2 0.6 1.0");
+  doc.text(125, 810, 16, " |  CALL AUDIT REPORT", "1 1 1");
+  doc.y = 750;
   doc.heading(pack.call.title || "Untitled call");
   doc.line("Agent", agentName(pack.call));
   doc.line("Generated", formatReportDate(new Date().toISOString()));
-  doc.gap(6);
+  doc.gap(12);
 
   doc.heading("Call properties");
   doc.table(

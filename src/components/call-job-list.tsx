@@ -99,21 +99,21 @@ export function CallJobList({
   }
 
   return (
-    <div className="space-y-3">
-      {error ? <p className="alert-error">{error}</p> : null}
-      <div className="panel overflow-x-auto rounded-xl">
-        <table className="data-table">
-          <thead>
+    <div className="space-y-3 animate-in fade-in duration-500">
+      {error ? <p className="alert-error mb-4 shadow-sm rounded-xl">{error}</p> : null}
+      <div className="panel overflow-x-auto rounded-3xl shadow-sm border border-line/40">
+        <table className="data-table w-full text-left">
+          <thead className="bg-surface/50 text-[12px] uppercase tracking-wider text-muted">
             <tr>
-              <th>Call</th>
-              <th>Agent</th>
-              <th>Language</th>
-              {action === "score" ? <th>Score</th> : null}
-              <th>Status</th>
-              <th>Process</th>
+              <th className="px-6 py-5 font-bold">Call</th>
+              <th className="px-6 py-5 font-bold">Agent</th>
+              <th className="px-6 py-5 font-bold">Language</th>
+              {action === "score" ? <th className="px-6 py-5 font-bold">Score</th> : null}
+              <th className="px-6 py-5 font-bold">Status</th>
+              <th className="px-6 py-5 font-bold text-right">Action</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-line/40">
             {calls.map((call) => {
               const score = scoreOf(call);
               const href =
@@ -126,44 +126,57 @@ export function CallJobList({
                   ? call.status === "transcribing"
                   : call.status === "analyzing");
               return (
-                <tr key={call.id}>
-                  <td>
-                    <Link href={href} className="font-medium text-ink hover:text-blue">
+                <tr key={call.id} className="hover:bg-surface-2/30 transition-colors group">
+                  <td className="px-6 py-5">
+                    <Link href={href} className="text-[14px] font-bold text-ink group-hover:text-blue transition-colors">
                       {call.title}
                     </Link>
-                    <p className="text-xs text-muted">{formatDate(call.created_at)}</p>
+                    <p className="mt-1 text-[12px] font-medium text-muted">{formatDate(call.created_at)}</p>
                   </td>
-                  <td className="text-ink">{call.agents?.name || "—"}</td>
-                  <td className="text-ink">
+                  <td className="px-6 py-5 text-[14px] font-medium text-ink">{call.agents?.name || "—"}</td>
+                  <td className="px-6 py-5 text-[13px] font-medium text-ink">
                     {languageLabel(call.detected_language || call.language_mode)}
                   </td>
                   {action === "score" ? (
-                    <td className="tabular-nums text-ink">
-                      {score
-                        ? `${score.overall_score} · ${verdictLabel(score.verdict)}${
-                            score.audit_mode === "automatic" ? " · auto" : score.audit_mode === "documents" ? " · docs" : ""
-                          }`
-                        : "—"}
+                    <td className="px-6 py-5">
+                      {score ? (
+                        <span className={`font-bold tabular-nums ${score.overall_score >= 80 ? 'text-good' : score.overall_score >= 60 ? 'text-warn' : 'text-rose'}`}>
+                          {score.overall_score} <span className="opacity-40 text-ink mx-1">|</span> <span className="capitalize">{verdictLabel(score.verdict)}</span>
+                          <span className="block mt-1 text-[11px] font-semibold text-muted uppercase tracking-wider">
+                            {score.audit_mode === "automatic" ? "Auto" : score.audit_mode === "documents" ? "Docs" : ""}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-muted text-[13px] font-bold">—</span>
+                      )}
                     </td>
                   ) : null}
-                  <td>
-                    <span className="badge bg-blue-soft text-blue">{statusLabel(call.status)}</span>
+                  <td className="px-6 py-5">
+                    <span className="badge border shadow-sm bg-blue-soft text-blue border-blue/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider">
+                      {statusLabel(call.status)}
+                    </span>
                     {call.error_message ? (
-                      <p className="mt-1 text-xs text-rose">{call.error_message}</p>
+                      <p className="mt-2 text-[12px] font-medium text-rose max-w-[150px] leading-relaxed">{call.error_message}</p>
                     ) : null}
                   </td>
-                  <td>
+                  <td className="px-6 py-5 text-right">
                     {action === "transcribe" ? (
                       <button
                         type="button"
                         disabled={working}
                         onClick={() => void startTranscribe(call)}
-                        className="btn btn-blue"
+                        className={`btn px-5 py-2 text-[13px] rounded-xl shadow-sm transition-all ${
+                          working 
+                            ? "bg-surface-2 text-muted border border-line cursor-not-allowed" 
+                            : "btn-blue shadow-blue/20 hover:-translate-y-0.5 active:translate-y-0"
+                        }`}
                       >
                         {working ? "Preparing…" : "Prepare for audit"}
                       </button>
                     ) : (
-                      <AuditActions callId={call.id} status={call.status} compact />
+                      <div className="flex justify-end">
+                        <AuditActions callId={call.id} status={call.status} compact />
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -172,11 +185,26 @@ export function CallJobList({
           </tbody>
         </table>
         {!calls.length && (
-          <p className="px-5 py-10 text-center text-sm text-muted">
-            {action === "score"
-              ? "No prepared calls yet. Prepare a call first."
-              : "No recordings yet."}
-          </p>
+          <div className="px-6 py-20 text-center bg-surface/30">
+            <div className="h-16 w-16 rounded-full bg-surface-2 mx-auto flex items-center justify-center mb-5 shadow-inner">
+              <span className="text-2xl opacity-50">{action === "score" ? "📊" : "🎙️"}</span>
+            </div>
+            <p className="text-[16px] font-bold tracking-tight text-ink">
+              {action === "score"
+                ? "No prepared calls yet"
+                : "No recordings yet"}
+            </p>
+            <p className="mt-2 text-[14px] text-muted max-w-[250px] mx-auto">
+              {action === "score"
+                ? "Go to the Transcribe page to prepare a call for auditing first."
+                : "Upload a recording to begin transcribing."}
+            </p>
+            {action === "score" ? (
+              <Link href="/transcribe" className="btn btn-blue mt-6 text-[13px] shadow-md shadow-blue/20">
+                Go to preparation
+              </Link>
+            ) : null}
+          </div>
         )}
       </div>
     </div>

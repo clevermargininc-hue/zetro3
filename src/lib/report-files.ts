@@ -18,7 +18,7 @@ export function excelBuffer(report: QaReport): Buffer {
   const summary = report.summary;
 
   const summarySheet = XLSX.utils.aoa_to_sheet([
-    ["Zetro quality report"],
+    ["ZETRO QUALITY OPERATIONS REPORT"],
     ["Period", report.period_label],
     ["From", report.range_start],
     ["To", report.range_end],
@@ -339,14 +339,15 @@ export class PdfDoc {
 
 export function pdfBuffer(report: QaReport): Buffer {
   const doc = new PdfDoc();
-  doc.fillBar(802, 32, 0.063, 0.082, 0.114);
-  doc.text(40, 814, 13, "ZETRO  ·  QUALITY OPERATIONS REPORT", "1 1 1");
-  doc.y = 770;
+  doc.fillBar(790, 52, 0.04, 0.06, 0.12);
+  doc.text(40, 810, 22, "ZETRO", "0.2 0.6 1.0");
+  doc.text(125, 810, 16, " |  QUALITY OPERATIONS REPORT", "1 1 1");
+  doc.y = 750;
   doc.heading(report.period_label);
   doc.line("Scope", report.agent_label);
   doc.line("Range", `${report.range_start} to ${report.range_end} (Africa/Nairobi)`);
   doc.line("Generated", formatReportDate(report.generated_at));
-  doc.gap(8);
+  doc.gap(12);
 
   const s = report.summary;
   doc.heading("Score summary");

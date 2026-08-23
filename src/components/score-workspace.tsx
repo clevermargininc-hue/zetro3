@@ -28,23 +28,28 @@ export function ScoreWorkspace({
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-[1200px] mx-auto">
-      <div className="no-print flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div className="no-print flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-6 rounded-3xl border border-line/40 shadow-sm">
         <div>
-          <Link href={`/calls/${call.id}/transcribe`} className="inline-flex items-center gap-2 text-[13px] font-bold tracking-wide text-muted hover:text-ink transition-colors mb-4">
+          <Link href={`/calls/${call.id}/transcribe`} className="inline-flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-muted hover:text-blue transition-colors mb-3">
             ← Back to call
           </Link>
-          <div className="flex items-center gap-3">
-             <h1 className="text-3xl font-bold tracking-tight text-ink">Score Report: {call.title}</h1>
+          <div className="flex flex-wrap items-center gap-3">
+             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-ink">{call.title}</h1>
              <StatusPill status={call.status} error={call.error_message} />
           </div>
-          <p className="mt-3 text-[15px] font-medium text-muted">
-            {call.agents?.name || "Unassigned agent"}
-            {call.detected_language ? <span className="opacity-50 mx-2">•</span> : ""}
-            {call.detected_language ? call.detected_language : ""}
-          </p>
+          <div className="flex items-center gap-2 mt-3 text-[14px] font-medium text-muted">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-2">
+              <span className="opacity-60">👤</span> {call.agents?.name || "Unassigned agent"}
+            </span>
+            {call.detected_language && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-2 capitalize">
+                <span className="opacity-60">🌐</span> {call.detected_language}
+              </span>
+            )}
+          </div>
         </div>
         
-        <div className="no-print flex flex-wrap items-center gap-3">
+        <div className="no-print flex flex-wrap items-center gap-2 lg:ml-auto">
           {score ? <CallAuditExport callId={call.id} /> : null}
           <DeleteCallButton
             callId={call.id}
@@ -93,7 +98,7 @@ export function ScoreWorkspace({
 
       {score ? (
         <>
-          <div className="no-print mt-4 transition-all duration-500 hover:transform hover:-translate-y-1">
+          <div className="no-print mt-8">
             <ScoreCard score={score} />
           </div>
           <AuditPrintDocument call={call} score={score} utterances={utterances} />

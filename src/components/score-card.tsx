@@ -30,7 +30,9 @@ export function ScoreCard({ score }: { score: CallScore }) {
 
   return (
     <div className="space-y-8">
-      <section className="panel flex flex-col md:flex-row items-center md:items-start gap-8 rounded-3xl p-8 bg-white shadow-sm border border-line/40">
+      <section className={`panel flex flex-col md:flex-row items-center md:items-start gap-8 rounded-3xl p-10 bg-white shadow-md border-t-[6px] border-x border-b border-line/40 ${
+        tone === "excellent" || tone === "good" ? "border-t-good/80" : tone === "warn" ? "border-t-warn/80" : "border-t-rose/80"
+      }`}>
         <div className="shrink-0 flex flex-col items-center justify-center">
           <div
             className="score-ring relative grid h-40 w-40 place-items-center rounded-full p-1"
@@ -70,7 +72,7 @@ export function ScoreCard({ score }: { score: CallScore }) {
         </div>
       </section>
 
-      <section className="panel rounded-3xl p-8 bg-white shadow-sm border border-line/40">
+      <section className="panel rounded-3xl p-10 bg-gradient-to-br from-surface to-surface-2 shadow-sm border border-line/30">
         <h3 className="text-[16px] font-bold tracking-tight text-ink mb-6">Category Breakdown</h3>
         <div className="grid gap-x-12 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
           {DIMENSIONS.map((dim) => {
@@ -186,7 +188,7 @@ function List({
     tone === "good" ? "text-good" : tone === "warn" ? "text-warn" : "text-rose";
 
   return (
-    <div className="bg-white rounded-3xl p-8 border border-line/40 shadow-sm">
+    <div className="bg-white rounded-3xl p-10 border border-line/40 shadow-sm transition-shadow hover:shadow-md">
       <div className="flex items-center gap-3 mb-2">
         <div
           className={`h-8 w-8 rounded-full bg-surface-2 border border-line/50 flex items-center justify-center font-bold shadow-sm ${iconColor}`}

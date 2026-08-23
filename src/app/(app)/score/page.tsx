@@ -20,17 +20,19 @@ export default async function ScorePage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
         <div>
-          <p className="page-kicker">Quality audit</p>
-          <h1 className="mt-1 text-2xl font-semibold">Score agents</h1>
-          <p className="mt-1 max-w-xl text-sm text-muted">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue/10 text-blue font-bold text-[11px] tracking-[0.2em] uppercase mb-4">
+             Quality Audit
+          </div>
+          <h1 className="text-4xl font-extrabold tracking-tight text-ink">Score agents</h1>
+          <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
             Pick one path per audit. Documents scoring reads your Standards files first. Automatic
-            auditing scores from its own judgment and does not use those files.
+            auditing scores from its own professional judgment and does not use those files.
           </p>
         </div>
-        <Link href="/standards" className="btn btn-ghost">
-          Standards
+        <Link href="/standards" className="btn bg-surface-2 text-ink border border-line/50 hover:border-blue/30 hover:shadow-sm transition-all px-5 py-2.5 rounded-xl font-bold text-[13px]">
+          View Standards
         </Link>
       </div>
       <CallJobList

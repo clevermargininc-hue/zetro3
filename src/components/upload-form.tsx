@@ -13,7 +13,6 @@ const ACCEPT =
 
 export function UploadForm() {
   const router = useRouter();
-  const [agents, setAgents] = useState<{ id: string; name: string }[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [agentName, setAgentName] = useState("");
   const [bilingual, setBilingual] = useState(true);
@@ -24,12 +23,6 @@ export function UploadForm() {
   const [done, setDone] = useState<{ id: string; title: string } | null>(null);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from("agents")
-      .select("id, name")
-      .order("name")
-      .then(({ data }) => setAgents(data || []));
 
     void (async () => {
       try {
@@ -136,12 +129,12 @@ export function UploadForm() {
 
   return (
     <div className="w-full max-w-2xl space-y-6 animate-in fade-in duration-500">
-      <form onSubmit={onSubmit} className="panel space-y-8 rounded-2xl p-8 shadow-sm">
+      <form onSubmit={onSubmit} className="panel space-y-10 rounded-3xl p-10 bg-white border border-line/40 shadow-sm">
         <label
-          className={`flex flex-col items-center justify-center cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-300 px-6 py-16 text-center group ${
+          className={`relative flex flex-col items-center justify-center cursor-pointer rounded-3xl border-2 border-dashed transition-all duration-300 px-6 py-20 text-center group ${
             file
               ? "border-good/50 bg-good/5 shadow-inner"
-              : "border-line/80 bg-surface-2 hover:border-blue hover:bg-blue-soft/50 hover:shadow-inner"
+              : "border-blue/30 bg-gradient-to-b from-blue-soft/10 to-blue-soft/30 hover:border-blue hover:bg-blue-soft/40 hover:shadow-inner"
           }`}
         >
           <input
@@ -151,13 +144,13 @@ export function UploadForm() {
             onChange={(e) => setFile(e.target.files?.[0] || null)}
           />
           <div
-            className={`flex items-center justify-center w-14 h-14 rounded-full mb-4 shadow-sm transition-transform duration-300 group-hover:scale-110 ${
+            className={`flex items-center justify-center w-16 h-16 rounded-full mb-6 shadow-sm transition-transform duration-300 group-hover:scale-110 ${
               file ? "bg-good text-white" : "bg-white text-blue"
             }`}
           >
-            {file ? "✓" : "↑"}
+            {file ? "✓" : "🎙️"}
           </div>
-          <p className="text-[17px] font-bold text-ink">
+          <p className="text-[18px] font-extrabold text-ink tracking-tight">
             {file ? "File ready to upload" : "Select or drop a recording"}
           </p>
           <p className="mt-2 text-[14px] font-medium text-muted max-w-sm leading-relaxed">
@@ -171,30 +164,25 @@ export function UploadForm() {
           </p>
         </label>
 
-        <div className={`grid gap-6 ${bilingual ? "sm:grid-cols-2" : ""}`}>
-          <label className="flex flex-col gap-2 text-sm">
-            <span className="font-bold text-[13px] uppercase tracking-wide text-muted">Agent Name</span>
+        <div className={`grid gap-8 ${bilingual ? "sm:grid-cols-2" : ""}`}>
+          <label className="flex flex-col gap-3 text-sm">
+            <span className="font-bold text-[12px] uppercase tracking-widest text-muted">Agent Name</span>
             <input
-              list="agent-names"
               value={agentName}
               onChange={(e) => setAgentName(e.target.value)}
               placeholder="e.g. Amina Mwangi"
-              className="field bg-surface-2 shadow-inner"
+              className="field bg-surface-2 border-line/40 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-blue/20 transition-all shadow-inner"
+              autoComplete="off"
             />
-            <datalist id="agent-names">
-              {agents.map((agent) => (
-                <option key={agent.id} value={agent.name} />
-              ))}
-            </datalist>
           </label>
 
           {bilingual ? (
-            <label className="flex flex-col gap-2 text-sm">
-              <span className="font-bold text-[13px] uppercase tracking-wide text-muted">Spoken Language</span>
+            <label className="flex flex-col gap-3 text-sm">
+              <span className="font-bold text-[12px] uppercase tracking-widest text-muted">Spoken Language</span>
               <select
                 value={languageMode}
                 onChange={(e) => setLanguageMode(e.target.value as LanguageMode)}
-                className="field bg-surface-2 shadow-inner"
+                className="field bg-surface-2 border-line/40 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-blue/20 transition-all shadow-inner"
               >
                 <option value="sw">Kiswahili</option>
                 <option value="mixed">Mixed English + Kiswahili</option>

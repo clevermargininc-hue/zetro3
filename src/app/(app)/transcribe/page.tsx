@@ -17,32 +17,37 @@ export default async function TranscribePage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
         <div>
-          <p className="page-kicker">Prepare</p>
-          <h1 className="mt-1 text-2xl font-semibold">Prepare calls</h1>
-          <p className="mt-1 max-w-xl text-sm text-muted">
-            Build the backend transcript and speaker split so you can listen and audit. The script stays
-            off the main call screen unless you open it.
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue/10 text-blue font-bold text-[11px] tracking-[0.2em] uppercase mb-4">
+             Preparation
+          </div>
+          <h1 className="text-4xl font-extrabold tracking-tight text-ink">Transcribe Calls</h1>
+          <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
+            Process audio to generate transcripts, detect languages, and separate speakers. This is required before scoring.
           </p>
         </div>
-        <Link href="/upload" className="btn btn-blue">
-          Upload
+        <Link href="/upload" className="btn bg-blue text-white shadow-md shadow-blue/20 hover:-translate-y-0.5 transition-all px-6 py-3 rounded-xl font-bold text-[13px]">
+          Upload Call
         </Link>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <article className="panel rounded-xl p-4">
-          <p className="page-kicker">Background</p>
-          <h2 className="mt-2 text-sm font-semibold">Transcript & diarization</h2>
-          <p className="mt-1.5 text-sm leading-6 text-muted">
+      <div className="grid gap-4 sm:grid-cols-2 mb-8">
+        <article className="panel rounded-3xl p-6 bg-gradient-to-br from-surface to-surface-2 border border-line/40">
+          <div className="h-10 w-10 rounded-full bg-blue/10 flex items-center justify-center mb-4">
+            <span className="text-lg opacity-80">🎙️</span>
+          </div>
+          <h2 className="text-[15px] font-bold text-ink">Transcript & diarization</h2>
+          <p className="mt-2 text-[14px] leading-relaxed text-muted">
             Speech-to-text and Agent / Customer roles run for scoring and language repair — not as a
             required UI step.
           </p>
         </article>
-        <article className="panel rounded-xl p-4">
-          <p className="page-kicker">Audit path</p>
-          <h2 className="mt-2 text-sm font-semibold">Listen, then audit</h2>
-          <p className="mt-1.5 text-sm leading-6 text-muted">
+        <article className="panel rounded-3xl p-6 bg-gradient-to-br from-surface to-surface-2 border border-line/40">
+          <div className="h-10 w-10 rounded-full bg-blue/10 flex items-center justify-center mb-4">
+            <span className="text-lg opacity-80">🎧</span>
+          </div>
+          <h2 className="text-[15px] font-bold text-ink">Listen, then audit</h2>
+          <p className="mt-2 text-[14px] leading-relaxed text-muted">
             Open a call to play the recording and score when preparation finishes.
           </p>
         </article>
