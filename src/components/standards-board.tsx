@@ -11,17 +11,78 @@ import {
 } from "@/lib/qa-kinds";
 
 const KIND_HELP: Record<QaKind, string> = {
-  document: "Scripts, product facts, and standard steps that agents must follow during calls.",
-  scorecard: "The scoring rubric used to evaluate the conversation. Required to start a custom audit.",
-  compliance: "Rules, disclosures, and prohibited behaviors. Any breaches are flagged on the audit.",
+  document: "Product documentation, service protocols, and standard operating procedures (SOPs) agents must follow.",
+  scorecard: "The evaluation rubric, weightings, and grading criteria used to score conversations.",
+  compliance: "Mandatory regulatory disclosures, risk rules, and prohibited statements flagged during audits.",
   opening:
-    "Organization-wide opening script. Shared by all agents. Key terms here improve transcription and greeting scoring.",
+    "Standardized opening greeting and identity verification script. Key terms improve transcription accuracy.",
   closing:
-    "Organization-wide closing script. Shared by all agents. Key terms here improve transcription and wrap-up scoring.",
+    "Standardized closing statement and resolution confirmation script. Key terms improve wrap-up scoring.",
 };
 
 const FILE_ACCEPT =
   ".pdf,.docx,.txt,.md,.csv,.xml,.xlsx,.xls,.xlsm,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/xml,text/xml,text/plain";
+
+const Icons = {
+  document: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+    </svg>
+  ),
+  scorecard: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 11l3 3L22 4" />
+      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+    </svg>
+  ),
+  compliance: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  ),
+  script: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  ),
+  upload: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+  ),
+  trash: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  ),
+  checkCircle: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
+  ),
+};
+
+function getKindIcon(kind: QaKind) {
+  switch (kind) {
+    case "scorecard":
+      return Icons.scorecard;
+    case "compliance":
+      return Icons.compliance;
+    case "opening":
+    case "closing":
+      return Icons.script;
+    default:
+      return Icons.document;
+  }
+}
 
 function KindSection({
   kind,
@@ -42,51 +103,72 @@ function KindSection({
 
   return (
     <div
-      className={`panel rounded-2xl p-6 transition-all duration-300 ${
-        ok ? "border-l-4 border-l-blue shadow-sm" : "border-l-4 border-l-line shadow-none hover:shadow-sm"
+      className={`bg-white rounded-xl p-5 border shadow-sm transition-all duration-200 ${
+        ok ? "border-line/70 hover:border-slate-300" : "border-slate-200"
       }`}
     >
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-5">
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <div
-              className={`flex items-center justify-center w-7 h-7 rounded-full text-sm font-bold shadow-inner ${
-                ok ? "bg-blue text-white" : "bg-surface-2 text-muted/50 border border-line"
+              className={`flex items-center justify-center w-8 h-8 rounded-lg text-sm shrink-0 ${
+                ok
+                  ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                  : required
+                  ? "bg-slate-100 text-slate-600 border border-slate-200"
+                  : "bg-slate-50 text-slate-400 border border-slate-200"
               }`}
             >
-              {ok ? "✓" : required ? "!" : "·"}
+              {getKindIcon(kind)}
             </div>
-            <h3 className="text-[18px] font-bold capitalize">{QA_KIND_LABELS[kind]}</h3>
-            {!required ? (
-              <span className="text-[11px] font-bold uppercase tracking-wide text-muted bg-surface-2 px-2 py-0.5 rounded-full">
-                Optional
-              </span>
-            ) : null}
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-[15px] font-bold text-ink capitalize">{QA_KIND_LABELS[kind]}</h3>
+                {required ? (
+                  <span className="text-[11px] font-semibold px-2 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                    Required
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-medium px-2 py-0.2 rounded bg-slate-50 text-slate-500 border border-slate-200">
+                    Optional Script
+                  </span>
+                )}
+                {ok && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.2 rounded border border-emerald-200">
+                    {Icons.checkCircle}
+                    <span>Active ({rows.length})</span>
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-[13px] text-muted leading-relaxed">
+                {KIND_HELP[kind]}
+              </p>
+            </div>
           </div>
-          <p className="mt-2 text-[14px] text-muted md:ml-10 max-w-xl leading-relaxed">
-            {KIND_HELP[kind]}
-          </p>
 
+          {/* Uploaded Documents List */}
           {rows.length > 0 && (
-            <div className="mt-5 md:ml-10 flex flex-wrap gap-2">
+            <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
               {rows.map((doc) => (
                 <div
                   key={doc.id}
-                  className="flex items-center gap-2 bg-white/60 border border-line/50 rounded-full px-3 py-1.5 text-[13px] shadow-sm hover:shadow-md transition-shadow"
+                  className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[12px] hover:bg-white hover:border-slate-300 transition-all"
                 >
                   <span
-                    className={`font-medium truncate max-w-[200px] ${doc.has_text ? "text-ink" : "text-rose/80 line-through"}`}
-                    title={`${doc.title} ${!doc.has_text ? "(Unreadable text)" : ""}`}
+                    className={`font-semibold truncate max-w-[240px] ${
+                      doc.has_text ? "text-slate-800" : "text-rose-600 line-through"
+                    }`}
+                    title={`${doc.title} ${!doc.has_text ? "(Unreadable content)" : ""}`}
                   >
                     {doc.title}
                   </span>
                   <button
                     type="button"
                     onClick={() => onRemove(doc.id)}
-                    className="text-rose/70 hover:text-rose font-bold px-1 ml-1"
+                    className="text-slate-400 hover:text-rose-600 p-0.5 rounded transition-colors ml-1"
                     title="Remove document"
                   >
-                    ✕
+                    {Icons.trash}
                   </button>
                 </div>
               ))}
@@ -94,8 +176,9 @@ function KindSection({
           )}
         </div>
 
-        <div className="md:w-64 flex-shrink-0 h-[100px] md:h-auto">
-          <label className="flex h-full items-center justify-center cursor-pointer rounded-xl border border-dashed border-line/80 bg-surface-2 px-4 py-4 text-center transition-all duration-200 hover:border-blue hover:bg-blue-soft/50 hover:shadow-inner group">
+        {/* Upload Button / Dropzone */}
+        <div className="md:w-56 shrink-0">
+          <label className="flex h-full min-h-[52px] items-center justify-center cursor-pointer rounded-lg border border-dashed border-slate-300 bg-slate-50/60 px-4 py-3 text-center transition-all duration-200 hover:border-blue hover:bg-blue/5 hover:text-blue group">
             <input
               type="file"
               accept={FILE_ACCEPT}
@@ -107,9 +190,10 @@ function KindSection({
                 if (file) onUpload(kind, file);
               }}
             />
-            <p className="text-[14px] font-semibold text-blue group-hover:scale-105 transition-transform">
-              {pendingKind === kind ? "Reading file…" : "+ Upload File"}
-            </p>
+            <div className="flex items-center gap-2 text-[12px] font-semibold text-slate-700 group-hover:text-blue transition-colors">
+              {Icons.upload}
+              <span>{pendingKind === kind ? "Processing file…" : "Upload Document"}</span>
+            </div>
           </label>
         </div>
       </div>
@@ -167,44 +251,57 @@ export function StandardsBoard() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-6">
       {readiness?.setupRequired ? (
-        <div className="panel rounded-2xl p-6 bg-gradient-to-br from-blue-soft/50 to-transparent">
-          <p className="page-kicker">One-time setup</p>
-          <h2 className="mt-3 text-[17px] font-bold">Enable standards storage</h2>
-          <p className="mt-2 text-[14px] leading-6 text-muted">
-            Paste and run <code className="text-ink font-mono bg-white/50 px-1 rounded">supabase/qa-standards.sql</code> then{" "}
-            <code className="text-ink font-mono bg-white/50 px-1 rounded">supabase/call-scripts.sql</code> in the
-            Supabase SQL Editor, then come back and upload the files below.
+        <div className="bg-white rounded-xl p-5 border border-amber-200 bg-amber-50/50 shadow-sm">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700 block mb-1">
+            Database Setup Required
+          </span>
+          <h2 className="text-[15px] font-bold text-ink">Enable standards storage</h2>
+          <p className="mt-1 text-[13px] text-slate-600 leading-relaxed">
+            Run <code className="text-ink font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">supabase/qa-standards.sql</code> and{" "}
+            <code className="text-ink font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">supabase/call-scripts.sql</code> in the
+            Supabase SQL Editor, then refresh this page.
           </p>
         </div>
       ) : null}
 
+      {/* System Readiness Banner */}
       <section
-        className={`panel p-6 rounded-2xl flex items-center justify-between transition-colors duration-500 ${
+        className={`bg-white rounded-xl p-5 border shadow-sm flex items-center justify-between transition-colors ${
           readiness?.ready
-            ? "bg-gradient-to-r from-good/10 to-transparent border-good/20 shadow-good/5"
-            : "bg-gradient-to-r from-rose/5 to-transparent border-rose/10 shadow-rose/5"
+            ? "border-emerald-200 bg-emerald-50/30"
+            : "border-slate-200"
         }`}
       >
         <div>
-          <h2 className={`text-[18px] font-bold ${readiness?.ready ? "text-good" : "text-rose/80"}`}>
-            {readiness?.ready ? "✓ All systems ready" : "Setup incomplete"}
-          </h2>
-          <p className="text-[14px] text-muted mt-1">
+          <div className="flex items-center gap-2">
+            <span
+              className={`w-2 h-2 rounded-full ${
+                readiness?.ready ? "bg-emerald-500" : "bg-amber-500 animate-pulse"
+              }`}
+            />
+            <h2 className={`text-[15px] font-bold ${readiness?.ready ? "text-emerald-800" : "text-ink"}`}>
+              {readiness?.ready
+                ? "Organization QA Standards Active"
+                : "Custom Audit Setup Incomplete"}
+            </h2>
+          </div>
+          <p className="text-[13px] text-muted mt-1">
             {readiness?.ready
-              ? "Your custom audit pipeline has all the required context documents and is ready to score calls."
-              : "You must upload at least one document for each required category below to enable custom audits."}
+              ? "All required rubric standards and compliance documents are configured for custom AI evaluations."
+              : "Upload at least one document for each required category below to enable standard-specific audits."}
           </p>
         </div>
       </section>
 
-      {error ? <p className="alert-error">{error}</p> : null}
+      {error && <p className="alert-error">{error}</p>}
 
-      <div className="space-y-4">
+      {/* Required Scorecard Standards */}
+      <div className="space-y-3.5">
         <div>
-          <p className="page-kicker">Required for documents audit</p>
-          <h2 className="mt-1 text-[17px] font-bold">Scorecard standards</h2>
+          <h2 className="text-[15px] font-bold text-ink">Evaluation Scorecards & Governance</h2>
+          <p className="text-[12px] text-muted">Required files for SOP-driven quality evaluations</p>
         </div>
         {QA_KINDS.map((kind) => (
           <KindSection
@@ -218,12 +315,12 @@ export function StandardsBoard() {
         ))}
       </div>
 
-      <div className="space-y-4 pt-2">
+      {/* Organization Scripts */}
+      <div className="space-y-3.5 pt-4 border-t border-slate-100">
         <div>
-          <p className="page-kicker">Organization-wide</p>
-          <h2 className="mt-1 text-[17px] font-bold">Opening & closing scripts</h2>
-          <p className="mt-1 text-[14px] text-muted max-w-2xl">
-            Shared by every agent. Used in the background for transcription key terms, language repair, and greeting/closing checks — the call transcript stays off the main audit screen.
+          <h2 className="text-[15px] font-bold text-ink">Organization Call Scripts</h2>
+          <p className="text-[12px] text-muted">
+            Opening and closing scripts shared across all agents to calibrate transcription key terms and greeting/wrap-up adherence.
           </p>
         </div>
         {SCRIPT_KINDS.map((kind) => (
