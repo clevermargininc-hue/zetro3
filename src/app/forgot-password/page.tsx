@@ -21,6 +21,9 @@ function ForgotPasswordForm() {
 
     try {
       const supabase = createClient();
+      // Set a recovery cookie so the auth callback knows where to redirect
+      // even if Supabase strips the ?next= query parameter
+      document.cookie = "zetro_recovery=1; path=/; max-age=3600; SameSite=Lax";
       const redirectUrl = `${window.location.origin}/auth/callback?next=/reset-password`;
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
         email,

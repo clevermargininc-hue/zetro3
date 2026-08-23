@@ -24,10 +24,19 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type");
-  const next = safeNext(searchParams.get("next"));
   const origin = new URL(request.url).origin;
 
-  const isPasswordRecovery = next === "/reset-password" || type === "recovery";
+  // Check if this is a password recovery flow via cookie or URL params
+  const recoveryCookie = request.cookies.get("zetro_recovery")?.value === "1";
+  const isPasswordRecovery =
+    searchParams.get("next") === "/reset-password" ||
+    type === "recovery" ||
+    recoveryCookie;
+
+  // Determine the redirect destination
+  const next = isPasswordRecovery
+    ? "/reset-password"
+    : safeNext(searchParams.get("next"));
 
   // If neither code nor token_hash is present, redirect with an error
   if (!code && !tokenHash) {
@@ -39,6 +48,10 @@ export async function GET(request: NextRequest) {
 
   const { supabaseUrl, supabaseAnonKey } = getPublicEnv();
   let redirect = NextResponse.redirect(redirectUrl(request, next));
+  // Clear the recovery cookie
+  if (recoveryCookie) {
+    redirect.cookies.set("zetro_recovery", "", { path: "/", maxAge: 0 });
+  }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -51,6 +64,10 @@ export async function GET(request: NextRequest) {
         cookiesToSet.forEach(({ name, value, options }) => {
           redirect.cookies.set(name, value, options);
         });
+        // Re-clear recovery cookie after redirect is recreated
+        if (recoveryCookie) {
+          redirect.cookies.set("zetro_recovery", "", { path: "/", maxAge: 0 });
+        }
       },
     },
   });
