@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { CallsBoard } from "@/components/calls-board";
 import type { Call, CallScore } from "@/lib/types";
@@ -16,27 +15,19 @@ export default async function CallsPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <p className="page-kicker">Inventory</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">Call Audits</h1>
-          <p className="mt-2 max-w-xl text-[15px] text-muted">
-            All uploaded recordings. Status: Processing, Transcribed, or Scored / Audited.
-          </p>
-        </div>
-        <Link href="/upload" className="btn btn-blue shadow-md shadow-blue/20">
-          Upload call
-        </Link>
+    <div className="space-y-8 animate-in fade-in duration-300 max-w-7xl mx-auto pb-12">
+      <div className="pb-5 border-b border-line/60">
+        <h1 className="text-2xl font-bold tracking-tight text-ink">Call Audit Inventory</h1>
+        <p className="mt-1 text-[13px] text-muted">
+          Operational log of uploaded customer recordings, transcription pipelines, and evaluation scorecards.
+        </p>
       </div>
-      
-      <div className="mt-8">
-        <CallsBoard
-          initialCalls={(calls || []) as Array<
-            Call & { agents?: { name: string } | null; call_scores?: CallScore[] | CallScore | null }
-          >}
-        />
-      </div>
+
+      <CallsBoard
+        initialCalls={(calls || []) as Array<
+          Call & { agents?: { name: string } | null; call_scores?: CallScore[] | CallScore | null }
+        >}
+      />
     </div>
   );
 }
