@@ -12,17 +12,48 @@ import {
 } from "@/components/settings-sections";
 import { TeamBoard } from "@/components/team-board";
 
+const Icons = {
+  user: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
+  workspace: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+    </svg>
+  ),
+  team: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
+  auditing: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z" />
+      <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+    </svg>
+  ),
+};
+
 const NAV = [
   {
-    label: "You",
-    items: [{ href: "/settings/account", label: "Account" }],
+    label: "Personal Profile",
+    items: [{ href: "/settings/account", label: "My Account", icon: Icons.user }],
   },
   {
-    label: "Workspace",
+    label: "Organization & Workspace",
     items: [
-      { href: "/settings/workspace", label: "General" },
-      { href: "/settings/team", label: "Team" },
-      { href: "/settings/auditing", label: "Auditing" },
+      { href: "/settings/workspace", label: "General Workspace", icon: Icons.workspace },
+      { href: "/settings/team", label: "Team & Access", icon: Icons.team },
+      { href: "/settings/auditing", label: "Auditing & Rules", icon: Icons.auditing },
     ],
   },
 ];
@@ -34,10 +65,10 @@ function SettingsPanel() {
   if (section === "workspace") return <WorkspaceSettings />;
   if (section === "team") {
     return (
-      <>
+      <div className="space-y-6">
         <TeamSettings />
         <TeamBoard embedded />
-      </>
+      </div>
     );
   }
   if (section === "auditing") return <AuditingSettings />;
@@ -49,64 +80,56 @@ function SettingsChrome() {
   const { error, info } = useSettings();
 
   return (
-    <div className="-mx-5 -my-8 flex min-h-[calc(100vh-4rem)] lg:-mx-10 lg:min-h-screen">
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-line/60 bg-surface-2/80 px-3 py-8 lg:sticky lg:top-0 lg:flex lg:h-screen">
-        <p className="px-3 text-[11px] font-bold uppercase tracking-[0.16em] text-muted">Settings</p>
-        <nav className="mt-6 space-y-6">
-          {NAV.map((group) => (
-            <div key={group.label}>
-              <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted/80">
-                {group.label}
-              </p>
-              <div className="mt-2 space-y-0.5">
-                {group.items.map((item) => {
-                  const active =
-                    pathname === item.href ||
-                    (item.href === "/settings/account" && pathname === "/settings");
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`block rounded-lg px-3 py-2 text-[13px] font-medium transition ${
-                        active
-                          ? "bg-white text-blue shadow-sm border border-line/50"
-                          : "border border-transparent text-muted hover:bg-white/70 hover:text-ink"
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </nav>
-      </aside>
+    <div className="space-y-8 animate-in fade-in duration-300 max-w-7xl mx-auto pb-12">
+      {/* Header */}
+      <div className="pb-5 border-b border-line/60">
+        <h1 className="text-2xl font-bold tracking-tight text-ink">Organization Settings</h1>
+        <p className="mt-1 text-[13px] text-muted">
+          Manage personal credentials, workspace preferences, team member permissions, and scoring rules.
+        </p>
+      </div>
 
-      <div className="min-w-0 flex-1 px-5 py-8 lg:px-10">
-        <div className="mb-6 flex gap-1 overflow-x-auto pb-1 lg:hidden">
-          {NAV.flatMap((group) => group.items).map((item) => {
-            const active =
-              pathname === item.href ||
-              (item.href === "/settings/account" && pathname === "/settings");
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-medium ${
-                  active ? "bg-blue text-white" : "bg-white text-muted border border-line"
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-        {error ? <p className="alert-error mb-4">{error}</p> : null}
-        {info ? <p className="alert-ok mb-4">{info}</p> : null}
-        <div className="max-w-2xl">
+      <div className="grid gap-8 lg:grid-cols-12">
+        {/* Navigation Sidebar */}
+        <aside className="lg:col-span-3 space-y-6">
+          <nav className="space-y-5 bg-white rounded-xl p-4 border border-line/70 shadow-sm">
+            {NAV.map((group) => (
+              <div key={group.label}>
+                <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  {group.label}
+                </span>
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const active =
+                      pathname === item.href ||
+                      (item.href === "/settings/account" && pathname === "/settings");
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all ${
+                          active
+                            ? "bg-blue/10 text-blue font-semibold border border-blue/20"
+                            : "text-slate-600 hover:bg-slate-50 hover:text-ink"
+                        }`}
+                      >
+                        <span className={active ? "text-blue" : "text-slate-400"}>{item.icon}</span>
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </nav>
+        </aside>
+
+        {/* Content Area */}
+        <main className="lg:col-span-9 min-w-0">
+          {error && <p className="alert-error mb-5">{error}</p>}
+          {info && <p className="alert-ok mb-5">{info}</p>}
           <SettingsPanel />
-        </div>
+        </main>
       </div>
     </div>
   );

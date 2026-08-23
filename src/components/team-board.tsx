@@ -27,6 +27,16 @@ function personLabel(person: { username?: string; fullName: string; email: strin
   return person.username ? `@${name}` : name;
 }
 
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .substring(0, 2);
+}
+
 export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
   const [data, setData] = useState<TeamData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +81,7 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
         setError("Invite saved, but email could not be sent. Copy the link and share it.");
       } else if (body.action === "invite" || body.action === "resend-invite") {
         setError(null);
-        setNotice("Invite email sent.");
+        setNotice("Invite email dispatched successfully.");
       } else {
         setError(null);
         setNotice(null);
@@ -93,43 +103,33 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
   }
 
   if (!data && !error) {
-    return <p className="text-sm text-muted">Loading…</p>;
+    return <p className="text-sm text-muted">Loading team directory…</p>;
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {error ? <p className="alert-error">{error}</p> : null}
       {notice ? <p className="alert-ok">{notice}</p> : null}
       {data ? (
         <>
-          {!embedded ? (
-          <div>
-            <p className="text-sm text-muted">
-              {data.workspace.name} · {data.workspace.plan} plan
-              {data.workspace.domain ? ` · ${data.workspace.domain}` : ""}
-            </p>
-          </div>
-          ) : null}
-
+          {/* Invite Teammate Card */}
           {data.workspace.role === "admin" ? (
-            <section className="panel rounded-2xl p-6">
-              <h2 className="text-lg font-semibold">Invite</h2>
-              {data.workspace.plan === "solo" ? (
-                <p className="mt-2 text-sm text-muted">
-                  Inviting a teammate upgrades this workspace from solo to team. We’ll email them a join link.
+            <section className="bg-white rounded-xl p-6 border border-line/70 shadow-sm space-y-4">
+              <div>
+                <h2 className="text-[16px] font-bold text-ink">Invite Team Member</h2>
+                <p className="text-[13px] text-muted mt-0.5">
+                  Send an email invitation with workspace access credentials.
                 </p>
-              ) : (
-                <p className="mt-2 text-sm text-muted">
-                  We’ll email them a link to join this workspace.
-                </p>
-              )}
+              </div>
+
               {data.mailConfigured === false ? (
-                <p className="alert-error mt-3">
-                  Invite email is not configured on this server. Restart the app after adding RESEND_API_KEY, and add the same key in Vercel.
-                </p>
+                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[12px]">
+                  Email delivery service is pending configuration. Invitations will generate manual shareable links.
+                </div>
               ) : null}
+
               <form
-                className="mt-4 flex flex-col gap-3 sm:flex-row"
+                className="flex flex-col sm:flex-row gap-3 max-w-xl"
                 onSubmit={async (event) => {
                   event.preventDefault();
                   const email = inviteDraft.trim().toLowerCase();
@@ -143,73 +143,90 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
                   required
                   value={inviteDraft}
                   onChange={(event) => setInviteDraft(event.target.value)}
-                  placeholder="nina.v@example.com"
-                  className="field"
+                  placeholder="colleague@company.com"
+                  className="field bg-slate-50/70 border-slate-200 text-ink text-[13px]"
                 />
-                <button type="submit" disabled={busy === "invite"} className="btn btn-blue shrink-0">
-                  {busy === "invite" ? "Sending…" : "Send invite"}
+                <button
+                  type="submit"
+                  disabled={busy === "invite"}
+                  className="btn bg-blue hover:bg-blue-2 text-white shadow-sm text-[13px] px-5 py-2 font-semibold shrink-0"
+                >
+                  {busy === "invite" ? "Sending…" : "Send Invite"}
                 </button>
               </form>
-              {(data.invites || []).length > 0 ? (
-                <ul className="mt-4 divide-y divide-line">
-                  {(data.invites || []).map((invite) => (
-                    <li key={invite.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                      <p className="text-sm text-ink">{invite.email}</p>
-                      <div className="flex items-center gap-3">
-                        <button
-                          type="button"
-                          className="text-sm text-muted hover:text-ink"
-                          onClick={() => {
-                            const raw = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-                            const origin = (raw.match(/https?:\/\/[^\s]+/i)?.[0] || raw).replace(/\/$/, "");
-                            const url = `${origin}/invite/${invite.token}`;
-                            void navigator.clipboard.writeText(url);
-                          }}
-                        >
-                          Copy link
-                        </button>
-                        <button
-                          type="button"
-                          disabled={busy === `resend-${invite.id}`}
-                          onClick={() => void act({ action: "resend-invite", inviteId: invite.id }, `resend-${invite.id}`)}
-                          className="text-sm text-muted hover:text-ink"
-                        >
-                          {busy === `resend-${invite.id}` ? "Sending…" : "Resend"}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={busy === invite.id}
-                          onClick={() => void act({ action: "cancel-invite", inviteId: invite.id }, invite.id)}
-                          className="text-sm text-muted hover:text-ink"
-                        >
-                          Cancel
-                        </button>
+
+              {/* Active Pending Invitations */}
+              {(data.invites || []).length > 0 && (
+                <div className="pt-3 border-t border-slate-100 space-y-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                    Pending Invitations ({(data.invites || []).length})
+                  </span>
+                  <div className="divide-y divide-slate-100 rounded-lg border border-slate-200 overflow-hidden">
+                    {(data.invites || []).map((invite) => (
+                      <div
+                        key={invite.id}
+                        className="px-4 py-2.5 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3 text-[13px]"
+                      >
+                        <span className="font-medium text-ink">{invite.email}</span>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            className="font-semibold text-blue hover:underline text-[12px]"
+                            onClick={() => {
+                              const raw = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+                              const origin = (raw.match(/https?:\/\/[^\s]+/i)?.[0] || raw).replace(/\/$/, "");
+                              const url = `${origin}/invite/${invite.token}`;
+                              void navigator.clipboard.writeText(url);
+                            }}
+                          >
+                            Copy Link
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy === `resend-${invite.id}`}
+                            onClick={() => void act({ action: "resend-invite", inviteId: invite.id }, `resend-${invite.id}`)}
+                            className="text-slate-600 hover:text-ink text-[12px]"
+                          >
+                            {busy === `resend-${invite.id}` ? "Sending…" : "Resend"}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy === invite.id}
+                            onClick={() => void act({ action: "cancel-invite", inviteId: invite.id }, invite.id)}
+                            className="text-rose hover:text-rose/80 text-[12px]"
+                          >
+                            Revoke
+                          </button>
+                        </div>
                       </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
           ) : null}
 
+          {/* Join Requests Card */}
           {data.workspace.role === "admin" && data.requests.length > 0 ? (
-            <section className="panel rounded-2xl p-6">
-              <h2 className="text-lg font-semibold">Join requests</h2>
-              <ul className="mt-4 divide-y divide-line">
+            <section className="bg-white rounded-xl p-6 border border-line/70 shadow-sm space-y-4">
+              <div>
+                <h2 className="text-[16px] font-bold text-ink">Pending Join Requests</h2>
+                <p className="text-[13px] text-muted mt-0.5">Teammates requesting to access this organization workspace.</p>
+              </div>
+
+              <div className="divide-y divide-slate-100 rounded-lg border border-slate-200 overflow-hidden">
                 {data.requests.map((request) => (
-                  <li key={request.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                  <div key={request.id} className="p-4 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="font-medium text-ink">{personLabel(request)}</p>
-                      {request.fullName && request.username ? (
-                        <p className="text-sm text-muted">{request.fullName}</p>
-                      ) : null}
+                      <p className="font-semibold text-ink text-[13px]">{personLabel(request)}</p>
+                      <p className="text-[12px] text-muted">{request.email}</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
                         disabled={busy === request.id}
                         onClick={() => review(request.id, "approve")}
-                        className="btn btn-blue"
+                        className="btn bg-blue hover:bg-blue-2 text-white shadow-sm text-[12px] px-3.5 py-1.5 font-semibold"
                       >
                         Approve
                       </button>
@@ -217,52 +234,67 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
                         type="button"
                         disabled={busy === request.id}
                         onClick={() => review(request.id, "reject")}
-                        className="btn btn-ghost"
+                        className="btn bg-white hover:bg-slate-50 text-slate-700 border border-line text-[12px] px-3.5 py-1.5"
                       >
                         Decline
                       </button>
                     </div>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </section>
           ) : null}
 
-          <section className="panel rounded-2xl p-6">
-            <h2 className="text-lg font-semibold">Members</h2>
-            {data.workspace.plan === "solo" ? (
-              <p className="mt-2 text-sm text-muted">
-                This is a solo workspace. When you bring in a teammate, you can move it to the team
-                plan.
-              </p>
-            ) : null}
-            <ul className="mt-4 divide-y divide-line">
+          {/* Members Directory */}
+          <section className="bg-white rounded-xl border border-line/70 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div>
+                <h2 className="text-[15px] font-bold text-ink">Active Workspace Members</h2>
+                <p className="text-[12px] text-muted mt-0.5">Teammates with active access to calls and scorecards</p>
+              </div>
+              <span className="text-[12px] font-semibold text-slate-500">
+                {data.members.length} {data.members.length === 1 ? "member" : "members"}
+              </span>
+            </div>
+
+            <div className="divide-y divide-slate-100">
               {data.members.map((member) => (
-                <li key={member.userId} className="flex items-center justify-between gap-3 py-3">
-                  <div>
-                    <p className="font-medium text-ink">{personLabel(member)}</p>
-                    {member.fullName && member.username ? (
-                      <p className="text-sm text-muted">{member.fullName}</p>
-                    ) : null}
+                <div key={member.userId} className="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-[11px] font-bold shrink-0">
+                      {getInitials(member.fullName || member.email)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-semibold text-ink truncate">{personLabel(member)}</p>
+                      <p className="text-[11px] text-muted truncate">{member.email}</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="badge bg-blue-soft text-blue">{member.role}</span>
-                    {data.workspace.role === "admin" && member.role === "member" ? (
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider ${
+                        member.role === "admin"
+                          ? "bg-slate-900 text-white"
+                          : "bg-slate-100 text-slate-700 border border-slate-200"
+                      }`}
+                    >
+                      {member.role || "Member"}
+                    </span>
+                    {data.workspace.role === "admin" && member.role === "member" && (
                       <button
                         type="button"
                         disabled={busy === member.userId}
                         onClick={() =>
                           void act({ action: "remove-member", userId: member.userId }, member.userId)
                         }
-                        className="text-sm text-muted hover:text-rose"
+                        className="text-[12px] text-slate-400 hover:text-rose font-medium transition-colors"
                       >
                         Remove
                       </button>
-                    ) : null}
+                    )}
                   </div>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           </section>
         </>
       ) : null}
