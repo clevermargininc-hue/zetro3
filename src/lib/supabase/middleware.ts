@@ -26,13 +26,15 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const oauthCode = request.nextUrl.searchParams.get("code");
 
-  // Google/Microsoft return with ?code=. Do not call getUser() first — it can
-  // overwrite the PKCE verifier cookie the callback needs to exchange the code.
+  // OAuth or Supabase email links return with ?code=. Do not call getUser()
+  // first — it can overwrite the PKCE verifier cookie the callback needs.
   if (oauthCode && !path.startsWith("/auth/callback")) {
     const callback = request.nextUrl.clone();
     callback.pathname = "/auth/callback";
     if (!callback.searchParams.get("next")) {
-      callback.searchParams.set("next", "/onboarding");
+      // If we arrived on a specific page (e.g. /reset-password), redirect back
+      // there after the code exchange; otherwise default to /onboarding.
+      callback.searchParams.set("next", path === "/" ? "/onboarding" : path);
     }
     return NextResponse.redirect(callback);
   }
