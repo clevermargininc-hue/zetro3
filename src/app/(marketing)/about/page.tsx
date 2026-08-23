@@ -40,9 +40,12 @@ export default function AboutPage() {
         </section>
 
         <section className="bg-surface-2 p-8 md:p-10 rounded-3xl border border-line/40">
-          <h2 className="text-2xl font-bold text-ink mb-4">Our Mission</h2>
+          <h2 className="text-2xl font-bold text-ink mb-4">Our Mission: Better Customer Service</h2>
+          <p className="mb-4">
+            At our core, we believe that every company should provide exceptional customer service. We are on a mission to give contact centers <strong>100% visibility</strong> into their operations to make this a reality. 
+          </p>
           <p className="mb-0">
-            We are on a mission to give contact centers <strong>100% visibility</strong> into their operations. By automating the heavy lifting of transcription and basic compliance scoring, we free up QA managers to do what they do best: coach, mentor, and elevate human performance.
+            By automating the heavy lifting of transcription and basic compliance scoring, we free up QA managers to do what they do best: coach, mentor, and elevate human performance. When agents improve, the ultimate winner is the customer.
           </p>
         </section>
       </div>
