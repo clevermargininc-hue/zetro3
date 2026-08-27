@@ -15,43 +15,39 @@ export default async function MarketingLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="min-h-full bg-white relative overflow-hidden selection:bg-blue/20 flex flex-col">
-      {/* Decorative Background shared across marketing pages */}
-      <div className="absolute top-0 inset-x-0 h-screen overflow-hidden pointer-events-none -z-10 fixed">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue/5 blur-[120px]" />
-        <div className="absolute top-[20%] right-[-10%] w-[40%] h-[60%] rounded-full bg-blue/10 blur-[150px]" />
-        <div className="absolute bottom-[-20%] left-[20%] w-[60%] h-[50%] rounded-full bg-blue/5 blur-[120px]" />
-        
-        {/* Subtle Grid Pattern */}
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-      </div>
-
-      {/* Header */}
-      <header className="border-b border-line/40 bg-white/70 none-xl sticky top-0 z-50">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Logo />
-          <nav className="hidden md:flex items-center gap-8 mx-auto absolute left-1/2 -translate-x-1/2">
-            <Link href="/about" className="text-[14px] font-semibold text-muted hover:text-ink transition-colors">About Us</Link>
-            <Link href="/how-it-works" className="text-[14px] font-semibold text-muted hover:text-ink transition-colors">How it Works</Link>
-            <Link href="/solutions" className="text-[14px] font-semibold text-muted hover:text-ink transition-colors">Solutions</Link>
-            <Link href="/pricing" className="text-[14px] font-semibold text-muted hover:text-ink transition-colors">Pricing</Link>
+    <div className="flex min-h-full flex-col bg-white">
+      <header className="sticky top-0 z-50 border-b border-line bg-white">
+        <div className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
+          <Logo size="sm" />
+          <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-6 md:flex">
+            <Link href="/about" className="text-[13px] font-medium text-muted hover:text-ink">
+              About
+            </Link>
+            <Link href="/how-it-works" className="text-[13px] font-medium text-muted hover:text-ink">
+              How it works
+            </Link>
+            <Link href="/solutions" className="text-[13px] font-medium text-muted hover:text-ink">
+              Solutions
+            </Link>
+            <Link href="/pricing" className="text-[13px] font-medium text-muted hover:text-ink">
+              Pricing
+            </Link>
           </nav>
           <div className="flex items-center gap-4">
-            <Link href="/talk-sales" className="text-[14px] font-semibold text-muted hover:text-ink transition-colors hidden sm:block">
-              Talk to Sales
+            <Link href="/talk-sales" className="hidden text-[13px] font-medium text-muted hover:text-ink sm:block">
+              Talk to sales
             </Link>
             {signedIn ? (
-              <Link href="/dashboard" className="btn btn-blue shadow-md shadow-blue/20 transition-transform hover:-translate-y-0.5">
-                Open Workspace
+              <Link href="/dashboard" className="btn btn-blue">
+                Open workspace
               </Link>
             ) : (
               <>
-                <Link href="/login" className="text-[14px] font-semibold text-muted hover:text-ink transition-colors hidden sm:block">
+                <Link href="/login" className="hidden text-[13px] font-medium text-muted hover:text-ink sm:block">
                   Sign in
                 </Link>
-                <Link href="/signup" className="btn btn-blue shadow-md shadow-blue/20 transition-transform hover:-translate-y-0.5">
-                  Get Started
+                <Link href="/signup" className="btn btn-blue">
+                  Get started
                 </Link>
               </>
             )}
@@ -59,48 +55,68 @@ export default async function MarketingLayout({ children }: { children: React.Re
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col z-10">
-        {children}
-      </main>
+      <main className="flex flex-1 flex-col">{children}</main>
 
-      {/* Shared Footer */}
-      <footer className="border-t border-line/50 bg-white py-16 z-10 relative mt-auto">
-         <div className="mx-auto max-w-7xl px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="md:col-span-1">
-               <Logo size="sm" />
-               <p className="mt-4 text-[13px] leading-relaxed text-muted">
-                 Enterprise quality intelligence for modern, bilingual contact centers across East Africa and beyond.
-               </p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-ink mb-4">Product</h4>
-              <ul className="space-y-2 text-[14px] text-muted">
-                <li><Link href="/how-it-works" className="hover:text-blue transition-colors">How it Works</Link></li>
-                <li><Link href="/solutions" className="hover:text-blue transition-colors">Solutions</Link></li>
-                <li><Link href="/pricing" className="hover:text-blue transition-colors">Pricing</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-ink mb-4">Company</h4>
-              <ul className="space-y-2 text-[14px] text-muted">
-                <li><Link href="/about" className="hover:text-blue transition-colors">About Us</Link></li>
-                <li><Link href="/talk-sales" className="hover:text-blue transition-colors">Contact Sales</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-ink mb-4">Legal</h4>
-              <ul className="space-y-2 text-[14px] text-muted">
-                <li><span className="cursor-not-allowed">Privacy Policy</span></li>
-                <li><span className="cursor-not-allowed">Terms of Service</span></li>
-              </ul>
-            </div>
-         </div>
-         <div className="mx-auto max-w-7xl px-6 mt-16 pt-8 border-t border-line/40 flex flex-col md:flex-row items-center justify-between">
-            <p className="text-[13px] font-medium text-muted">
-               &copy; {new Date().getFullYear()} Zetro Quality Intelligence. All rights reserved.
+      <footer className="mt-auto border-t border-line bg-white py-12">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-6 md:grid-cols-4">
+          <div className="md:col-span-1">
+            <Logo size="sm" />
+            <p className="mt-4 text-[13px] leading-relaxed text-muted">
+              Quality intelligence for bilingual contact centers in East Africa and beyond.
             </p>
-         </div>
+          </div>
+          <div>
+            <h4 className="text-[12px] font-medium uppercase tracking-wider text-muted">Product</h4>
+            <ul className="mt-3 space-y-2 text-[13px] text-muted">
+              <li>
+                <Link href="/how-it-works" className="hover:text-ink">
+                  How it works
+                </Link>
+              </li>
+              <li>
+                <Link href="/solutions" className="hover:text-ink">
+                  Solutions
+                </Link>
+              </li>
+              <li>
+                <Link href="/pricing" className="hover:text-ink">
+                  Pricing
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-[12px] font-medium uppercase tracking-wider text-muted">Company</h4>
+            <ul className="mt-3 space-y-2 text-[13px] text-muted">
+              <li>
+                <Link href="/about" className="hover:text-ink">
+                  About
+                </Link>
+              </li>
+              <li>
+                <Link href="/talk-sales" className="hover:text-ink">
+                  Contact sales
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-[12px] font-medium uppercase tracking-wider text-muted">Legal</h4>
+            <ul className="mt-3 space-y-2 text-[13px] text-muted">
+              <li>
+                <span className="cursor-not-allowed">Privacy policy</span>
+              </li>
+              <li>
+                <span className="cursor-not-allowed">Terms of service</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div className="mx-auto mt-10 max-w-6xl border-t border-line px-6 pt-6">
+          <p className="text-[13px] text-muted">
+            &copy; {new Date().getFullYear()} Zetro Quality Intelligence. All rights reserved.
+          </p>
+        </div>
       </footer>
     </div>
   );

@@ -9,7 +9,7 @@ export function AccountSettings() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg p-6 border border-line shadow-sm space-y-6">
+      <div className="surface p-6 space-y-6">
         <div>
           <h2 className="text-[16px] font-bold text-ink">Personal Profile</h2>
           <p className="text-[13px] text-muted mt-0.5">Your identity across team audits and comments.</p>
@@ -74,7 +74,7 @@ export function AccountSettings() {
             <button
               type="submit"
               disabled={saving === "profile"}
-              className="btn bg-blue hover:bg-blue-2 text-white shadow-sm text-[13px] px-5 py-2 font-semibold"
+              className="btn bg-blue hover:bg-blue-2 text-white text-[13px] px-5 py-2 font-semibold"
             >
               {saving === "profile" ? "Saving changes…" : "Save Profile"}
             </button>
@@ -105,7 +105,7 @@ export function WorkspaceSettings() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg p-6 border border-line shadow-sm space-y-6">
+      <div className="surface p-6 space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-slate-100">
           <div>
             <h2 className="text-[16px] font-bold text-ink">General Workspace Details</h2>
@@ -113,9 +113,7 @@ export function WorkspaceSettings() {
               Organization profile and regional quality auditing parameters.
             </p>
           </div>
-          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[12px] font-bold uppercase tracking-wider bg-blue/10 text-blue border border-blue/20">
-            Plan: {data.workspace.plan}
-          </span>
+          <span className="chip capitalize">Plan: {data.workspace.plan}</span>
         </div>
 
         <form
@@ -185,7 +183,7 @@ export function WorkspaceSettings() {
               <button
                 type="submit"
                 disabled={saving === "workspace"}
-                className="btn bg-blue hover:bg-blue-2 text-white shadow-sm text-[13px] px-5 py-2 font-semibold"
+                className="btn bg-blue hover:bg-blue-2 text-white text-[13px] px-5 py-2 font-semibold"
               >
                 {saving === "workspace" ? "Saving changes…" : "Save Workspace"}
               </button>
@@ -197,7 +195,7 @@ export function WorkspaceSettings() {
       </div>
 
       {isAdmin && isSolo && (
-        <div className="bg-white rounded-lg p-6 border border-line shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="surface p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h3 className="text-[15px] font-bold text-ink">Upgrade to Multi-User Team Workspace</h3>
             <p className="text-[13px] text-muted mt-0.5 max-w-lg">
@@ -208,7 +206,7 @@ export function WorkspaceSettings() {
             type="button"
             disabled={saving === "plan"}
             onClick={() => void patch({ plan: "team" }, "plan", "This workspace is now on the team plan.")}
-            className="btn bg-slate-900 hover:bg-slate-800 text-white shadow-sm text-[13px] px-4 py-2 font-semibold shrink-0"
+            className="btn bg-slate-900 hover:bg-slate-800 text-white text-[13px] px-4 py-2 font-semibold shrink-0"
           >
             {saving === "plan" ? "Upgrading…" : "Enable Team Plan"}
           </button>
@@ -222,7 +220,7 @@ export function AuditingSettings() {
   const { data, error, saving, patch } = useSettings();
   if (!data) {
     return (
-      <div className="bg-white rounded-lg p-6 border border-line shadow-sm">
+      <div className="surface p-6">
         <h2 className="text-[16px] font-bold text-ink">Auditing Rules</h2>
         <p className="mt-2 text-sm text-muted">{error ? "Could not load settings." : "Loading…"}</p>
       </div>
@@ -230,7 +228,7 @@ export function AuditingSettings() {
   }
 
   return (
-    <div className="bg-white rounded-lg p-6 border border-line shadow-sm space-y-6">
+    <div className="surface p-6 space-y-6">
       <div>
         <h2 className="text-[16px] font-bold text-ink">Automated Quality Scoring</h2>
         <p className="text-[13px] text-muted mt-0.5">

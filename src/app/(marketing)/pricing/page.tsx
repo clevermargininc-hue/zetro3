@@ -6,126 +6,187 @@ export const metadata: Metadata = {
   description: "Transparent pricing for Zetro QA Intelligence.",
 };
 
+function Check() {
+  return (
+    <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
+
+const PLANS = [
+  {
+    name: "Starter",
+    price: "$99",
+    period: "/ month",
+    blurb: "For small teams getting started with AI-powered QA.",
+    href: "/signup",
+    cta: "Start free",
+    featured: false,
+    features: [
+      "2,000 AI minutes",
+      "Automated QA scorecards",
+      "Compliance checks & sentiment analysis",
+      "Agent performance & basic analytics",
+      "English + Swahili",
+      "Renew monthly. Cancel anytime.",
+    ],
+  },
+  {
+    name: "Growth",
+    price: "$149",
+    period: "/ month",
+    blurb: "For growing contact centers that need full QA automation.",
+    href: "/signup",
+    cta: "Start free",
+    featured: true,
+    features: [
+      "10,000 AI minutes",
+      "Everything in Starter",
+      "Advanced QA scorecards",
+      "Custom SOPs & knowledge base",
+      "Team & agent analytics",
+      "Priority support",
+    ],
+  },
+  {
+    name: "Professional",
+    price: "$299",
+    period: "/ month",
+    blurb: "For large contact centers with complex requirements.",
+    href: "/signup",
+    cta: "Start free",
+    featured: false,
+    features: [
+      "25,000 AI minutes",
+      "Custom integrations & custom retention",
+      "SSO / Microsoft Entra",
+      "Custom QA & AI policies",
+      "Dedicated support & SLA",
+    ],
+  },
+  {
+    name: "Enterprise",
+    price: "Custom",
+    period: "",
+    blurb: "For global organizations requiring ultimate control and scale.",
+    href: "/talk-sales",
+    cta: "Talk to sales",
+    featured: false,
+    features: [
+      "Volume-based discounts",
+      "On-premise deployment options",
+      "Dedicated account manager",
+      "White-glove onboarding",
+    ],
+  },
+] as const;
+
+const OVERAGE = [
+  { plan: "Starter", rate: "$0.05", note: "/ min" },
+  { plan: "Growth", rate: "$0.035", note: "/ min" },
+  { plan: "Professional", rate: "$0.02", note: "/ min" },
+  { plan: "Enterprise", rate: "Custom", note: "(< $0.02)" },
+];
+
 export default function PricingPage() {
   return (
-    <div className="mx-auto max-w-7xl px-6 py-20 lg:py-32">
-      <div className="text-center mb-20 max-w-3xl mx-auto">
-        <h1 className="text-4xl font-extrabold tracking-tight text-ink sm:text-6xl mb-6">
-          Simple, <span className="text-blue">transparent</span> pricing
+    <div className="mx-auto w-full max-w-6xl px-6 py-16 lg:py-24">
+      <header className="mx-auto max-w-2xl text-center">
+        <p className="page-kicker">Pricing</p>
+        <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
+          Plans that scale with call volume
         </h1>
-        <p className="text-xl text-muted leading-relaxed">
-          No hidden fees. Only pay for the audio you process, or choose a predictable monthly plan for your entire team.
+        <p className="mt-4 text-[16px] leading-relaxed text-muted">
+          No hidden fees. Pay a predictable monthly rate for included AI minutes, then only for what you process beyond that.
         </p>
+      </header>
+
+      <div className="mt-12 grid border border-line bg-white lg:grid-cols-4">
+        {PLANS.map((plan) => (
+          <article
+            key={plan.name}
+            className={`flex flex-col border-b border-line p-6 last:border-b-0 lg:border-b-0 lg:border-r lg:last:border-r-0 ${
+              plan.featured ? "bg-blue-soft/40 ring-1 ring-inset ring-blue" : ""
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-[15px] font-semibold text-ink">{plan.name}</h2>
+              {plan.featured ? <span className="chip">Recommended</span> : null}
+            </div>
+            <p className="mt-2 min-h-[40px] text-[13px] leading-relaxed text-muted">{plan.blurb}</p>
+            <p className="mt-5 flex items-baseline gap-1">
+              <span className="text-[32px] font-semibold tracking-tight text-ink">{plan.price}</span>
+              {plan.period ? <span className="text-[13px] text-muted">{plan.period}</span> : null}
+            </p>
+            <Link
+              href={plan.href}
+              className={`btn mt-5 w-full ${plan.featured ? "btn-blue" : "btn-ghost"}`}
+            >
+              {plan.cta}
+            </Link>
+            <ul className="mt-6 space-y-2.5 border-t border-line pt-6">
+              {plan.features.map((item) => (
+                <li key={item} className="flex items-start gap-2.5 text-[13px] leading-snug text-ink">
+                  <Check />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </article>
+        ))}
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
-        
-        {/* Tier 1 */}
-        <div className="bg-white rounded-3xl p-8 border border-line/50 flex flex-col hover:shadow-lg transition-shadow">
-          <h3 className="text-2xl font-bold text-ink mb-2">Starter</h3>
-          <p className="text-muted text-sm mb-6">For small teams getting started with AI-powered QA.</p>
-          <div className="mb-6">
-            <span className="text-4xl font-extrabold text-ink">$99</span>
-            <span className="text-muted font-medium"> / month</span>
-          </div>
-          <ul className="space-y-4 mb-8 flex-1 text-sm text-ink/80 font-medium">
-             <li className="flex gap-3"><svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>2,000 AI minutes</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Automated QA scorecards</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Compliance checks & Sentiment analysis</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Agent performance & Basic analytics</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>English + Swahili</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Renew monthly. Cancel anytime.</li>
-          </ul>
-          <Link href="/signup" className="btn btn-blue w-full shadow-md shadow-blue/20">
-            Start Free
-          </Link>
+      <section className="mt-10 border border-line bg-white">
+        <div className="border-b border-line px-6 py-4">
+          <h2 className="text-[15px] font-semibold text-ink">Overage</h2>
+          <p className="mt-1 text-[13px] text-muted">
+            If you exceed included monthly AI minutes, additional minutes are billed at the plan rate.
+          </p>
         </div>
-
-        {/* Tier 2 */}
-        <div className="bg-blue rounded-3xl p-8 border border-blue shadow-sm shadow-blue/20 flex flex-col transform lg:-translate-y-4 relative">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-2 text-white text-xs font-bold px-4 py-1 rounded-full uppercase tracking-wider">
-            Most Popular
-          </div>
-          <h3 className="text-2xl font-bold text-white mb-2">Growth</h3>
-          <p className="text-blue-100 text-sm mb-6">For growing contact centers that need full QA automation.</p>
-          <div className="mb-6">
-            <span className="text-4xl font-extrabold text-white">$149</span>
-            <span className="text-blue-100 font-medium"> / month</span>
-          </div>
-          <ul className="space-y-4 mb-8 flex-1 text-sm text-white font-medium">
-             <li className="flex gap-3"><svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>10,000 AI minutes</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Everything in Starter</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Advanced QA scorecards</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Custom SOPs & knowledge base</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Team & agent analytics</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Priority support</li>
-          </ul>
-          <Link href="/signup" className="btn bg-white text-blue hover:bg-surface-2 w-full shadow-md">
-            Start Free
-          </Link>
+        <div className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Plan</th>
+                <th className="text-right">Rate beyond included minutes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {OVERAGE.map((row) => (
+                <tr key={row.plan}>
+                  <td className="font-medium text-ink">{row.plan}</td>
+                  <td className="text-right tabular-nums text-ink">
+                    {row.rate} <span className="font-normal text-muted">{row.note}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+      </section>
 
-        {/* Tier 3 */}
-        <div className="bg-surface-2 rounded-3xl p-8 border border-line/50 flex flex-col hover:shadow-lg transition-shadow">
-          <h3 className="text-2xl font-bold text-ink mb-2">Professional</h3>
-          <p className="text-muted text-sm mb-6">For large contact centers with complex requirements.</p>
-          <div className="mb-6 pt-2 pb-2">
-            <span className="text-4xl font-extrabold text-ink">$299</span>
-            <span className="text-muted font-medium"> / month</span>
+      <section className="mt-10 grid gap-px border border-line bg-line sm:grid-cols-3">
+        {[
+          ["Bilingual by default", "Tanzania workspaces audit in Kiswahili and English. Other regions audit in English."],
+          ["Cancel anytime", "Starter, Growth, and Professional renew monthly. Stop at the end of the billing period."],
+          ["Need a custom contract?", "Enterprise covers volume pricing, on-premise options, and a dedicated account team."],
+        ].map(([title, body]) => (
+          <div key={title} className="bg-white px-6 py-5">
+            <h3 className="text-[13px] font-semibold text-ink">{title}</h3>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-muted">{body}</p>
           </div>
-          <ul className="space-y-4 mb-8 flex-1 text-sm text-ink/80 font-medium">
-             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>25,000 AI minutes</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Custom integrations & Custom retention</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>SSO / Microsoft Entra</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Custom QA & AI Policies</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Dedicated support & SLA</li>
-          </ul>
-          <Link href="/signup" className="btn bg-white border border-line/50 text-ink hover:bg-surface-2 w-full shadow-sm">
-            Start Free
-          </Link>
+        ))}
+      </section>
+
+      <div className="mt-12 flex flex-col items-center justify-between gap-4 border border-line bg-white px-6 py-6 sm:flex-row">
+        <div>
+          <p className="text-[15px] font-semibold text-ink">Not sure which plan fits your volume?</p>
+          <p className="mt-1 text-[13px] text-muted">We’ll map minutes to your contact center and recommend a tier.</p>
         </div>
-
-        {/* Tier 4 */}
-        <div className="bg-surface-2 rounded-3xl p-8 border border-line/50 flex flex-col hover:shadow-lg transition-shadow">
-          <h3 className="text-2xl font-bold text-ink mb-2">Enterprise</h3>
-          <p className="text-muted text-sm mb-6">For global organizations requiring ultimate control and scale.</p>
-          <div className="mb-6 pt-2 pb-2">
-            <span className="text-3xl font-extrabold text-ink">Custom</span>
-          </div>
-          <ul className="space-y-4 mb-8 flex-1 text-sm text-ink/80 font-medium">
-             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Volume-based discounts</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>On-premise deployment options</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Dedicated account manager</li>
-             <li className="flex gap-3"><svg className="w-5 h-5 text-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>White-glove onboarding</li>
-          </ul>
-          <Link href="/talk-sales" className="btn bg-white border border-line/50 text-ink hover:bg-surface-2 w-full shadow-sm">
-            Talk to Sales
-          </Link>
-        </div>
-
-      </div>
-
-      <div className="max-w-4xl mx-auto mt-16 p-8 bg-surface-2 border border-line/50 rounded-lg">
-        <h4 className="font-bold text-ink mb-4">Overage Pricing (Pay as you scale)</h4>
-        <p className="text-muted text-sm mb-4">If you exceed your included monthly AI minutes, you will only be billed for what you use:</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm font-medium">
-          <div className="bg-white p-4 rounded-lg border border-line/40">
-            <span className="block text-muted mb-1">Starter</span>
-            <span className="text-ink text-lg font-bold">$0.05 <span className="text-sm font-normal text-muted">/ min</span></span>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-line/40">
-            <span className="block text-muted mb-1">Growth</span>
-            <span className="text-ink text-lg font-bold">$0.035 <span className="text-sm font-normal text-muted">/ min</span></span>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-line/40">
-            <span className="block text-muted mb-1">Professional</span>
-            <span className="text-ink text-lg font-bold">$0.02 <span className="text-sm font-normal text-muted">/ min</span></span>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-line/40">
-            <span className="block text-muted mb-1">Enterprise</span>
-            <span className="text-ink text-lg font-bold">Custom <span className="text-sm font-normal text-muted">(&#60; $0.02)</span></span>
-          </div>
-        </div>
+        <Link href="/talk-sales" className="btn btn-blue shrink-0">
+          Talk to sales
+        </Link>
       </div>
     </div>
   );

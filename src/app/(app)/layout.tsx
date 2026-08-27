@@ -59,7 +59,7 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="min-h-full bg-white print:block lg:flex">
+    <div className="min-h-full bg-bg print:block lg:flex print:bg-white">
       <AppNav
         email={user.email}
         username={username}
@@ -68,7 +68,7 @@ export default async function AppLayout({
         plan={plan}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 print:max-w-none print:px-0 print:py-0 lg:px-10">
+        <main className="mx-auto w-full max-w-[1180px] flex-1 px-5 py-7 print:max-w-none print:px-0 print:py-0 lg:px-8">
           {children}
         </main>
       </div>

@@ -58,9 +58,9 @@ export function statusLabel(status: CallStatus) {
     case "queued":
       return "Uploaded";
     case "transcribing":
-      return "Transcribing speakers";
+      return "Preparing for audit";
     case "transcribed":
-      return "Transcript ready";
+      return "Ready to audit";
     case "analyzing":
       return "Scoring the agent";
     case "completed":
@@ -84,7 +84,7 @@ export function auditLabel(status: CallStatus) {
     case "audited":
       return "Scored / Audited";
     case "transcribed":
-      return "Transcribed";
+      return "Ready to audit";
     case "failed":
       return "Failed";
     default:

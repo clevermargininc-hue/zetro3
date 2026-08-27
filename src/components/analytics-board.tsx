@@ -11,6 +11,7 @@ import {
   type WorkspaceAnalytics,
 } from "@/lib/analytics";
 import { REPORT_PERIODS, todayInNairobi, type ReportPeriod } from "@/lib/reports";
+import { KpiStrip, PageHeader, scoreChipClass } from "@/components/ui";
 
 const PERIOD_LABEL: Record<AnalyticsPeriodMode, string> = {
   daily: "Daily",
@@ -161,17 +162,13 @@ export function AnalyticsBoard() {
     data && data.uploaded > 0 ? Math.round((data.audited / data.uploaded) * 100) : null;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300 max-w-7xl mx-auto pb-12">
-      {/* Header */}
-      <div className="pb-5 border-b border-line/60">
-        <h1 className="text-2xl font-bold tracking-tight text-ink">Analytics & Performance</h1>
-        <p className="mt-1 text-[13px] text-muted">
-          Cross-sectional evaluation metrics, QA compliance trends, handle times, and coaching priorities.
-        </p>
-      </div>
+    <div className="space-y-6 pb-10">
+      <PageHeader
+        title="Analytics & Performance"
+        description="Cross-sectional evaluation metrics, QA compliance trends, handle times, and coaching priorities."
+      />
 
-      {/* Filter Control Bar */}
-      <section className="bg-white rounded-lg p-5 border border-line shadow-sm space-y-4">
+      <section className="surface p-5 space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2 text-[13px] font-bold text-ink">
             <span className="text-blue">{Icons.filter}</span>
@@ -180,9 +177,7 @@ export function AnalyticsBoard() {
           {data?.filter && (
             <div className="text-[12px] text-muted flex items-center gap-1.5">
               <span>Scope:</span>
-              <span className="font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                {data.filter.period_label}
-              </span>
+              <span className="chip">{data.filter.period_label}</span>
               {loading && <span className="text-blue font-medium animate-pulse ml-1">Updating…</span>}
             </div>
           )}
@@ -269,41 +264,33 @@ export function AnalyticsBoard() {
       {data && (
         <>
           {/* Top 4 Executive KPI Cards */}
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {/* KPI 1: Quality Score */}
-            <StatCard
-              label="Team QA Score"
-              value={data.avg_score != null ? `${data.avg_score}%` : "—"}
-              tone={scoreTone(data.avg_score)}
-              subtitle={data.avg_score != null ? verdictLabel(scoreTone(data.avg_score)) : "No score available"}
-              footer={`Coverage: ${auditCoverage != null ? `${auditCoverage}%` : "0%"} of uploaded calls`}
-            />
-
-            {/* KPI 2: Evaluated Volume */}
-            <StatCard
-              label="Audited Volume"
-              value={String(data.audited)}
-              subtitle={`${data.uploaded} calls total`}
-              footer={`${data.not_audited} pending in queue`}
-            />
-
-            {/* KPI 3: Compliance Rate */}
-            <StatCard
-              label="Compliance Pass Rate"
-              value={data.compliance_rate != null ? `${data.compliance_rate}%` : "—"}
-              tone={scoreTone(data.compliance_rate)}
-              subtitle={data.compliance_issues > 0 ? `${data.compliance_issues} calls flagged` : "Zero compliance breaches"}
-              footer="Based on organization SOP rules"
-            />
-
-            {/* KPI 4: Handling Time */}
-            <StatCard
-              label="Avg Handle Time (AHT)"
-              value={formatHandlingTime(data.avg_handling_seconds)}
-              subtitle={`Total: ${formatHandlingTime(data.total_handling_seconds)}`}
-              footer="Audited audio interaction duration"
-            />
-          </section>
+          <KpiStrip
+            items={[
+              {
+                label: "Team QA score",
+                value: data.avg_score != null ? `${data.avg_score}%` : "—",
+                hint:
+                  data.avg_score != null
+                    ? `${verdictLabel(scoreTone(data.avg_score))} · ${auditCoverage != null ? `${auditCoverage}%` : "0%"} coverage`
+                    : "No score available",
+              },
+              {
+                label: "Audited volume",
+                value: String(data.audited),
+                hint: `${data.not_audited} pending in queue`,
+              },
+              {
+                label: "Compliance pass rate",
+                value: data.compliance_rate != null ? `${data.compliance_rate}%` : "—",
+                hint: data.compliance_issues > 0 ? `${data.compliance_issues} calls flagged` : "Zero compliance breaches",
+              },
+              {
+                label: "Avg handle time",
+                value: formatHandlingTime(data.avg_handling_seconds),
+                hint: `Total: ${formatHandlingTime(data.total_handling_seconds)}`,
+              },
+            ]}
+          />
 
           {/* Core Visual Breakdown: Dimensions & Verdict Mix */}
           <section className="grid gap-6 lg:grid-cols-12">
@@ -317,15 +304,6 @@ export function AnalyticsBoard() {
                   <div className="space-y-4 pt-1">
                     {DIMENSIONS.map((dim) => {
                       const value = data.dimensions[dim.key];
-                      const dimTone = value != null ? scoreTone(value) : undefined;
-                      const barColor =
-                        dimTone === "excellent" || dimTone === "good"
-                          ? "bg-emerald-500"
-                          : dimTone === "warn"
-                          ? "bg-amber-500"
-                          : dimTone === "poor"
-                          ? "bg-rose-500"
-                          : "bg-slate-200";
 
                       return (
                         <div key={dim.key} className="space-y-1.5">
@@ -333,11 +311,8 @@ export function AnalyticsBoard() {
                             <span className="font-medium text-slate-700">{dim.label}</span>
                             <span className="font-bold tabular-nums text-ink">{value != null ? `${value}/100` : "—"}</span>
                           </div>
-                          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${barColor} transition-all duration-500`}
-                              style={{ width: `${value ?? 0}%` }}
-                            />
+                          <div className="bar">
+                            <span style={{ width: `${value ?? 0}%` }} />
                           </div>
                         </div>
                       );
@@ -357,12 +332,12 @@ export function AnalyticsBoard() {
                   <div className="space-y-3 pt-1">
                     {(
                       [
-                        ["excellent", data.verdicts.excellent, "bg-emerald-500"],
-                        ["good", data.verdicts.good, "bg-blue-500"],
-                        ["needs_improvement", data.verdicts.needs_improvement, "bg-amber-500"],
-                        ["poor", data.verdicts.poor, "bg-rose-500"],
+                        ["excellent", data.verdicts.excellent],
+                        ["good", data.verdicts.good],
+                        ["needs_improvement", data.verdicts.needs_improvement],
+                        ["poor", data.verdicts.poor],
                       ] as const
-                    ).map(([key, count, color]) => {
+                    ).map(([key, count]) => {
                       const pct = data.audited > 0 ? Math.round((count / data.audited) * 100) : 0;
                       return (
                         <div key={key}>
@@ -372,8 +347,8 @@ export function AnalyticsBoard() {
                               {count} <span className="text-slate-400 font-normal">({pct}%)</span>
                             </span>
                           </div>
-                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+                          <div className="bar">
+                            <span style={{ width: `${pct}%` }} />
                           </div>
                         </div>
                       );
@@ -388,11 +363,11 @@ export function AnalyticsBoard() {
               <Panel title="Evaluation Methodology & Languages" subtitle="Breakdown of audit paths and language context">
                 <div className="space-y-4 pt-1">
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <div className="p-3 bg-slate-50 border border-line">
                       <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">SOP Document Audits</span>
                       <span className="text-xl font-bold tabular-nums text-ink">{data.documents_audits}</span>
                     </div>
-                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <div className="p-3 bg-slate-50 border border-line">
                       <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Standard AI Audits</span>
                       <span className="text-xl font-bold tabular-nums text-ink">{data.automatic_audits}</span>
                     </div>
@@ -405,7 +380,7 @@ export function AnalyticsBoard() {
                         {data.languages.map((lang) => (
                           <span
                             key={lang.label}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium bg-slate-100 text-slate-700 border border-slate-200"
+                            className="chip"
                           >
                             <span>{lang.label}:</span>
                             <span className="font-bold">{lang.count} calls</span>
@@ -426,49 +401,6 @@ export function AnalyticsBoard() {
   );
 }
 
-function StatCard({
-  label,
-  value,
-  subtitle,
-  footer,
-  tone,
-}: {
-  label: string;
-  value: string;
-  subtitle?: string;
-  footer?: string;
-  tone?: ReturnType<typeof scoreTone>;
-}) {
-  const isGood = tone === "excellent" || tone === "good";
-  const isWarn = tone === "warn";
-  const isPoor = tone === "poor";
-
-  const color = isGood
-    ? "text-good"
-    : isWarn
-    ? "text-warn"
-    : isPoor
-    ? "text-rose"
-    : "text-ink";
-
-  return (
-    <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
-      <div>
-        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">{label}</span>
-        <div className="flex items-baseline gap-2">
-          <span className={`text-3xl font-bold tracking-tight tabular-nums ${color}`}>{value}</span>
-        </div>
-        {subtitle && <p className="mt-1 text-[12px] font-medium text-slate-600">{subtitle}</p>}
-      </div>
-      {footer && (
-        <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-muted font-medium truncate">
-          {footer}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function Panel({
   title,
   subtitle,
@@ -479,7 +411,7 @@ function Panel({
   children: ReactNode;
 }) {
   return (
-    <section className="bg-white rounded-lg border border-line shadow-sm overflow-hidden">
+    <section className="surface overflow-hidden">
       <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
         <h2 className="text-[15px] font-bold tracking-tight text-ink">{title}</h2>
         <p className="text-[12px] text-muted mt-0.5">{subtitle}</p>
@@ -508,8 +440,8 @@ function CohortList({
         <div key={row.id} className="py-3 flex items-center justify-between hover:bg-slate-50 transition-colors">
           <div className="flex items-center gap-3 min-w-0">
             <div
-              className={`w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-bold shrink-0 ${
-                mode === "top" ? "bg-slate-900 text-white" : "bg-rose/10 text-rose border border-rose/20"
+              className={`w-6 h-6 flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                mode === "top" ? "bg-navy text-white" : "chip chip-bad"
               }`}
             >
               {index + 1}
@@ -524,15 +456,7 @@ function CohortList({
               </p>
             </div>
           </div>
-          <span
-            className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold tabular-nums border ${
-              (row.avg_score ?? 0) >= 80
-                ? "bg-good/10 text-good border-good/20"
-                : (row.avg_score ?? 0) >= 60
-                ? "bg-warn/10 text-warn border-warn/20"
-                : "bg-rose/10 text-rose border-rose/20"
-            }`}
-          >
+          <span className={`${scoreChipClass(row.avg_score)} tabular-nums`}>
             {row.avg_score ?? "—"}%
           </span>
         </div>

@@ -114,7 +114,7 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
         <>
           {/* Invite Teammate Card */}
           {data.workspace.role === "admin" ? (
-            <section className="bg-white rounded-lg p-6 border border-line shadow-sm space-y-4">
+            <section className="surface p-6 space-y-4">
               <div>
                 <h2 className="text-[16px] font-bold text-ink">Invite Team Member</h2>
                 <p className="text-[13px] text-muted mt-0.5">
@@ -123,9 +123,10 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
               </div>
 
               {data.mailConfigured === false ? (
-                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[12px]">
+                <p className="text-[12px] text-muted">
+                  <span className="chip chip-wait mr-2">Email pending</span>
                   Email delivery service is pending configuration. Invitations will generate manual shareable links.
-                </div>
+                </p>
               ) : null}
 
               <form
@@ -149,7 +150,7 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
                 <button
                   type="submit"
                   disabled={busy === "invite"}
-                  className="btn bg-blue hover:bg-blue-2 text-white shadow-sm text-[13px] px-5 py-2 font-semibold shrink-0"
+                  className="btn bg-blue hover:bg-blue-2 text-white text-[13px] px-5 py-2 font-semibold shrink-0"
                 >
                   {busy === "invite" ? "Sending…" : "Send Invite"}
                 </button>
@@ -161,7 +162,7 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
                     Pending Invitations ({(data.invites || []).length})
                   </span>
-                  <div className="divide-y divide-slate-100 rounded-lg border border-slate-200 overflow-hidden">
+                  <div className="divide-y divide-slate-100 border border-line overflow-hidden">
                     {(data.invites || []).map((invite) => (
                       <div
                         key={invite.id}
@@ -208,13 +209,13 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
 
           {/* Join Requests Card */}
           {data.workspace.role === "admin" && data.requests.length > 0 ? (
-            <section className="bg-white rounded-lg p-6 border border-line shadow-sm space-y-4">
+            <section className="surface p-6 space-y-4">
               <div>
                 <h2 className="text-[16px] font-bold text-ink">Pending Join Requests</h2>
                 <p className="text-[13px] text-muted mt-0.5">Teammates requesting to access this organization workspace.</p>
               </div>
 
-              <div className="divide-y divide-slate-100 rounded-lg border border-slate-200 overflow-hidden">
+              <div className="divide-y divide-slate-100 border border-line overflow-hidden">
                 {data.requests.map((request) => (
                   <div key={request.id} className="p-4 bg-slate-50 flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -226,7 +227,7 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
                         type="button"
                         disabled={busy === request.id}
                         onClick={() => review(request.id, "approve")}
-                        className="btn bg-blue hover:bg-blue-2 text-white shadow-sm text-[12px] px-3.5 py-1.5 font-semibold"
+                        className="btn bg-blue hover:bg-blue-2 text-white text-[12px] px-3.5 py-1.5 font-semibold"
                       >
                         Approve
                       </button>
@@ -246,7 +247,7 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
           ) : null}
 
           {/* Members Directory */}
-          <section className="bg-white rounded-lg border border-line shadow-sm overflow-hidden">
+          <section className="surface overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <div>
                 <h2 className="text-[15px] font-bold text-ink">Active Workspace Members</h2>
@@ -270,13 +271,7 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider ${
-                        member.role === "admin"
-                          ? "bg-slate-900 text-white"
-                          : "bg-slate-100 text-slate-700 border border-slate-200"
-                      }`}
-                    >
+                    <span className="chip capitalize">
                       {member.role || "Member"}
                     </span>
                     {data.workspace.role === "admin" && member.role === "member" && (

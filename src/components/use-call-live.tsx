@@ -3,17 +3,18 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { statusLabel } from "@/lib/format";
-import type { Call, CallScore, CallStatus, Utterance } from "@/lib/types";
+import type { Call, CallScore, CallStatus } from "@/lib/types";
 
 type LiveCall = Call & { agents?: { name: string } | null };
 
 export function useCallLive(
   initialCall: LiveCall,
-  initialUtterances: Utterance[],
   initialScore: CallScore | null,
 ) {
   const [call, setCall] = useState(initialCall);
-  const [utterances, setUtterances] = useState(initialUtterances);
+  // Dummy list: preserves Fast Refresh hook order after transcripts left the UI,
+  // and keeps leftover `.length` reads from crashing.
+  const [utterances] = useState<unknown[]>([]);
   const [score, setScore] = useState(initialScore);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
@@ -25,12 +26,7 @@ export function useCallLive(
       .then(({ data }) => setAudioUrl(data?.signedUrl || null));
 
     async function refresh() {
-      const [{ data: utts }, { data: sc }, { data: latest }] = await Promise.all([
-        supabase
-          .from("utterances")
-          .select("*")
-          .eq("call_id", initialCall.id)
-          .order("sequence"),
+      const [{ data: sc }, { data: latest }] = await Promise.all([
         supabase
           .from("call_scores")
           .select("*")
@@ -42,7 +38,6 @@ export function useCallLive(
           .eq("id", initialCall.id)
           .single(),
       ]);
-      setUtterances((utts || []) as Utterance[]);
       setScore((sc as CallScore | null) || null);
       if (latest) setCall(latest as LiveCall);
       return latest?.status as CallStatus | undefined;
@@ -53,16 +48,6 @@ export function useCallLive(
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "calls", filter: `id=eq.${initialCall.id}` },
-        () => void refresh(),
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "utterances",
-          filter: `call_id=eq.${initialCall.id}`,
-        },
         () => void refresh(),
       )
       .on(
@@ -87,7 +72,7 @@ export function useCallLive(
     };
   }, [initialCall.id, initialCall.audio_path]);
 
-  return { call, setCall, utterances, score, audioUrl };
+  return { call, setCall, score, audioUrl, utterances };
 }
 
 export function StatusPill({

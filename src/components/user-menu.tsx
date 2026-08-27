@@ -50,9 +50,9 @@ export function UserMenu({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-3 rounded-lg bg-white border border-line/50 hover:border-blue/30 px-3 py-2 transition-colors focus:outline-none"
+        className="flex items-center gap-3 rounded border border-line bg-white px-3 py-2 hover:bg-slate-50"
       >
-        <div className="h-8 w-8 rounded-full bg-blue/10 flex items-center justify-center text-blue font-bold text-xs uppercase shrink-0">
+        <div className="h-8 w-8 rounded bg-navy text-white flex items-center justify-center font-medium text-xs uppercase shrink-0">
           {personInitial}
         </div>
         <div className="flex flex-col text-left">
@@ -67,15 +67,15 @@ export function UserMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-[calc(100%+8px)] min-w-[200px] bg-white border border-line/50 shadow-lg rounded-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="px-4 py-3 border-b border-line/40 bg-surface-2/30">
+        <div className="absolute right-0 top-[calc(100%+8px)] min-w-[200px] bg-white border border-line z-50">
+          <div className="px-4 py-3 border-b border-line">
             <p className="text-[12px] text-muted truncate">Signed in as</p>
             <p className="text-[13px] font-medium text-ink truncate mt-0.5">{email}</p>
           </div>
           <div className="p-1.5">
             <button
               onClick={signOut}
-              className="w-full text-left px-3 py-2 text-[13px] font-medium text-rose hover:bg-rose/10 rounded-lg transition-colors"
+              className="w-full text-left px-3 py-2 text-[13px] font-medium text-slate-600 hover:bg-slate-50 hover:text-ink"
             >
               Sign out
             </button>

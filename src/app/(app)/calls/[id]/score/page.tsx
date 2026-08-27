@@ -7,13 +7,7 @@ export default async function ScoreCallPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { call, utterances, score } = await loadOwnedCall(id);
+  const { call, score } = await loadOwnedCall(id);
 
-  return (
-    <ScoreWorkspace
-      initialCall={call}
-      initialUtterances={utterances}
-      initialScore={score}
-    />
-  );
+  return <ScoreWorkspace initialCall={call} initialScore={score} />;
 }

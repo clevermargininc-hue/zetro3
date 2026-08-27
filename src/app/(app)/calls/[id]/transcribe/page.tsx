@@ -7,13 +7,7 @@ export default async function TranscribeCallPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { call, utterances, score } = await loadOwnedCall(id);
+  const { call, score } = await loadOwnedCall(id);
 
-  return (
-    <TranscribeWorkspace
-      initialCall={call}
-      initialUtterances={utterances}
-      initialScore={score}
-    />
-  );
+  return <TranscribeWorkspace initialCall={call} initialScore={score} />;
 }

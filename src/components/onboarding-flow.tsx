@@ -267,9 +267,9 @@ export function OnboardingFlow() {
             <button
               type="button"
               onClick={() => setStep("team")}
-              className="flex w-full items-start gap-4 rounded-lg border border-line bg-white p-5 text-left shadow-sm transition hover:border-blue hover:shadow-md"
+              className="flex w-full items-start gap-4 border border-line bg-white p-5 text-left hover:border-blue"
             >
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-blue-soft text-blue">
+              <span className="grid h-11 w-11 shrink-0 place-items-center border border-line text-slate-500">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path d="M3 21V8a2 2 0 0 1 2-2h4v15" />
                   <path d="M9 21V4h8a2 2 0 0 1 2 2v15" />
@@ -290,9 +290,9 @@ export function OnboardingFlow() {
               type="button"
               disabled={loading}
               onClick={() => post({ action: "solo" })}
-              className="flex w-full items-start gap-4 rounded-lg border border-line bg-white p-5 text-left shadow-sm transition hover:border-blue hover:shadow-md"
+              className="flex w-full items-start gap-4 border border-line bg-white p-5 text-left hover:border-blue"
             >
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-blue-soft text-blue">
+              <span className="grid h-11 w-11 shrink-0 place-items-center border border-line text-slate-500">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <circle cx="12" cy="8" r="3.5" />
                   <path d="M5.5 19.5c.8-3.2 3.3-5 6.5-5s5.7 1.8 6.5 5" />

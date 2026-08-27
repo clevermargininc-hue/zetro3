@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SettingsProvider, useSettings } from "@/components/settings-provider";
+import { PageHeader } from "@/components/ui";
 import {
   AccountSettings,
   AuditingSettings,
@@ -80,19 +81,16 @@ function SettingsChrome() {
   const { error, info } = useSettings();
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300 max-w-7xl mx-auto pb-12">
-      {/* Header */}
-      <div className="pb-5 border-b border-line/60">
-        <h1 className="text-2xl font-bold tracking-tight text-ink">Organization Settings</h1>
-        <p className="mt-1 text-[13px] text-muted">
-          Manage personal credentials, workspace preferences, team member permissions, and scoring rules.
-        </p>
-      </div>
+    <div className="space-y-6 pb-10">
+      <PageHeader
+        title="Organization Settings"
+        description="Manage personal credentials, workspace preferences, team member permissions, and scoring rules."
+      />
 
       <div className="grid gap-8 lg:grid-cols-12">
         {/* Navigation Sidebar */}
         <aside className="lg:col-span-3 space-y-6">
-          <nav className="space-y-5 bg-white rounded-lg p-4 border border-line shadow-sm">
+          <nav className="space-y-5 surface p-4">
             {NAV.map((group) => (
               <div key={group.label}>
                 <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
@@ -107,9 +105,9 @@ function SettingsChrome() {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all ${
+                        className={`flex items-center gap-2.5 rounded px-3 py-2 text-[13px] font-medium ${
                           active
-                            ? "bg-blue/10 text-blue font-semibold border border-blue/20"
+                            ? "bg-blue-soft text-blue"
                             : "text-slate-600 hover:bg-slate-50 hover:text-ink"
                         }`}
                       >

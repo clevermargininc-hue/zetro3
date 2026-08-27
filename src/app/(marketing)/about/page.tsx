@@ -8,53 +8,58 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="mx-auto max-w-4xl px-6 py-20 lg:py-32">
-      <div className="text-center mb-16">
-        <h1 className="text-4xl font-extrabold tracking-tight text-ink sm:text-6xl mb-6">
-          Pioneering <span className="text-blue">Bilingual</span> AI for Africa
+    <div className="mx-auto w-full max-w-6xl px-6 py-16 lg:py-24">
+      <header className="max-w-2xl">
+        <p className="page-kicker">About</p>
+        <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
+          Bilingual AI for contact center quality
         </h1>
-        <p className="text-xl text-muted leading-relaxed max-w-2xl mx-auto">
-          We built Zetro because traditional Quality Assurance leaves a massive blind spot in contact centers, especially where multiple languages are spoken.
+        <p className="mt-4 text-[16px] leading-relaxed text-muted">
+          We built Zetro because traditional quality assurance leaves a massive blind spot — especially where more than one language is spoken on the same call.
         </p>
-      </div>
+      </header>
 
-      <div className="space-y-12 text-lg text-ink/80 leading-relaxed">
-        <section>
-          <h2 className="text-2xl font-bold text-ink mb-4">The 2% Problem</h2>
-          <p className="mb-4">
-            In most contact centers today, Quality Assurance (QA) teams manually listen to a random sample of calls. Given the sheer volume of customer interactions, they can physically only audit about 1% to 2% of total calls. 
+      <div className="mt-12 grid border border-line bg-white lg:grid-cols-2">
+        <section className="border-b border-line p-6 lg:border-b-0 lg:border-r">
+          <h2 className="text-[15px] font-semibold text-ink">The 2% problem</h2>
+          <p className="mt-3 text-[14px] leading-relaxed text-muted">
+            In most contact centers, QA teams manually listen to a random sample. Given the volume of conversations, they typically audit about 1% to 2% of calls.
           </p>
-          <p>
-            What happens to the other 98%? They vanish into the void. Compliance risks go undetected, brilliant customer service goes unrewarded, and agents don't get the consistent coaching they deserve.
+          <p className="mt-3 text-[14px] leading-relaxed text-muted">
+            The rest go unreviewed. Compliance risks go undetected, strong service goes unrewarded, and agents do not get consistent coaching.
           </p>
         </section>
-
-        <section>
-          <h2 className="text-2xl font-bold text-ink mb-4">The Bilingual Challenge</h2>
-          <p className="mb-4">
-            In East Africa and many emerging markets, conversations aren't neatly confined to one language. A single call can switch fluidly between English and Kiswahili, often in the same sentence. Off-the-shelf transcription software fails miserably at this "code-switching."
+        <section className="p-6">
+          <h2 className="text-[15px] font-semibold text-ink">The bilingual challenge</h2>
+          <p className="mt-3 text-[14px] leading-relaxed text-muted">
+            In East Africa and many other markets, a single call can switch between English and Kiswahili in the same sentence. Generic transcription tools fail at that code-switching.
           </p>
-          <p>
-            Zetro is built from the ground up to understand this reality. Our proprietary acoustic systems are trained on real-world, noisy, bilingual audio to provide unprecedented accuracy in transcription and speaker diarization.
-          </p>
-        </section>
-
-        <section className="bg-surface-2 p-8 md:p-10 rounded-3xl border border-line/40">
-          <h2 className="text-2xl font-bold text-ink mb-4">Our Mission: Better Customer Service</h2>
-          <p className="mb-4">
-            At our core, we believe that every company should provide exceptional customer service. We are on a mission to give contact centers <strong>100% visibility</strong> into their operations to make this a reality. 
-          </p>
-          <p className="mb-0">
-            By automating the heavy lifting of transcription and basic compliance scoring, we free up QA managers to do what they do best: coach, mentor, and elevate human performance. When agents improve, the ultimate winner is the customer.
+          <p className="mt-3 text-[14px] leading-relaxed text-muted">
+            Zetro is built for that reality: transcription and speaker diarization trained on real-world, noisy, bilingual audio.
           </p>
         </section>
       </div>
 
-      <div className="mt-20 text-center">
-        <h3 className="text-2xl font-bold text-ink mb-6">Ready to see it in action?</h3>
-        <Link href="/talk-sales" className="btn btn-lg btn-blue shadow-sm shadow-blue/20 hover:-translate-y-1 transition-all px-8">
-          Request a Demo
-        </Link>
+      <section className="mt-10 border border-line bg-white p-6">
+        <h2 className="text-[15px] font-semibold text-ink">Mission</h2>
+        <p className="mt-3 max-w-3xl text-[14px] leading-relaxed text-muted">
+          Every company should provide exceptional customer service. We give contact centers 100% visibility into their operations so QA managers can coach from evidence instead of sampling a handful of recordings. When agents improve, the customer wins.
+        </p>
+      </section>
+
+      <div className="mt-10 flex flex-col items-center justify-between gap-4 border border-line bg-white px-6 py-6 sm:flex-row">
+        <div>
+          <p className="text-[15px] font-semibold text-ink">Ready to see it on your own calls?</p>
+          <p className="mt-1 text-[13px] text-muted">Request a demo or start a workspace.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/talk-sales" className="btn btn-blue">
+            Request a demo
+          </Link>
+          <Link href="/signup" className="btn btn-ghost">
+            Start free
+          </Link>
+        </div>
       </div>
     </div>
   );

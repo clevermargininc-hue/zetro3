@@ -27,7 +27,7 @@ export function JoinRequestBanner() {
   if (count < 1) return null;
 
   return (
-    <p className="rounded-lg border border-blue/20 bg-blue-soft px-4 py-3 text-sm text-ink">
+    <p className="surface px-4 py-3 text-sm text-ink">
       {count === 1 ? "1 person wants to join this workspace." : `${count} people want to join this workspace.`}{" "}
       <Link href="/settings/team" className="font-medium text-blue hover:underline">
         Review requests

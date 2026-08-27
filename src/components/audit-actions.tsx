@@ -109,7 +109,7 @@ export function AuditActions({
   return (
     <div className="space-y-4">
       {busy ? (
-        <div className="p-6 rounded-lg border border-blue/20 bg-blue/5 flex items-center gap-4">
+        <div className="p-6 surface flex items-center gap-4">
           <div className="h-6 w-6 rounded-full border-2 border-blue/30 border-t-blue animate-spin shrink-0" />
           <div>
             <h3 className="text-[14px] font-bold text-ink">
@@ -127,15 +127,13 @@ export function AuditActions({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Card 1: SOP Standards Audit */}
-          <div className="bg-slate-50/70 hover:bg-white rounded-lg p-5 border border-slate-200 hover:border-slate-300 transition-all flex flex-col justify-between space-y-4">
+          <div className="surface p-5 flex flex-col justify-between space-y-4">
             <div>
               <div className="flex items-center gap-2.5 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-blue/10 text-blue flex items-center justify-center shrink-0">
-                  {Icons.document}
-                </div>
+                <span className="text-slate-500 shrink-0">{Icons.document}</span>
                 <div>
                   <h3 className="text-[14px] font-bold text-ink">SOP & Scorecard Audit</h3>
-                  <span className="text-[11px] font-semibold text-blue">Standards-Driven</span>
+                  <span className="chip">Standards-driven</span>
                 </div>
               </div>
               <p className="text-[12px] text-muted leading-relaxed">
@@ -146,7 +144,7 @@ export function AuditActions({
               type="button"
               disabled={busy}
               onClick={() => void start("documents")}
-              className="btn bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 shadow-xs text-[13px] font-semibold w-full justify-center py-2"
+              className="btn bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-[13px] font-semibold w-full justify-center py-2"
             >
               <span>Score via SOP Standards</span>
               {Icons.arrowRight}
@@ -154,15 +152,13 @@ export function AuditActions({
           </div>
 
           {/* Card 2: Autonomous AI Audit */}
-          <div className="bg-slate-50/70 hover:bg-white rounded-lg p-5 border border-slate-200 hover:border-slate-300 transition-all flex flex-col justify-between space-y-4">
+          <div className="surface p-5 flex flex-col justify-between space-y-4">
             <div>
               <div className="flex items-center gap-2.5 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                  {Icons.sparkles}
-                </div>
+                <span className="text-slate-500 shrink-0">{Icons.sparkles}</span>
                 <div>
                   <h3 className="text-[14px] font-bold text-ink">Autonomous QA Audit</h3>
-                  <span className="text-[11px] font-semibold text-emerald-600">Universal Benchmark</span>
+                  <span className="chip">Universal benchmark</span>
                 </div>
               </div>
               <p className="text-[12px] text-muted leading-relaxed">
@@ -173,7 +169,7 @@ export function AuditActions({
               type="button"
               disabled={busy}
               onClick={() => void start("automatic")}
-              className="btn bg-blue hover:bg-blue-2 text-white shadow-xs text-[13px] font-semibold w-full justify-center py-2"
+              className="btn bg-blue hover:bg-blue-2 text-white text-[13px] font-semibold w-full justify-center py-2"
             >
               <span>Run Autonomous Audit</span>
               {Icons.arrowRight}

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
 import { callAuditExcel, callAuditFilename, callAuditPdf } from "@/lib/call-audit-file";
 import { getTeamScope } from "@/lib/workspaces";
-import type { Call, CallScore, Utterance } from "@/lib/types";
+import type { Call, CallScore } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -33,10 +33,11 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const [{ data: utterances }, { data: score }] = await Promise.all([
-    supabase.from("utterances").select("*").eq("call_id", id).order("sequence"),
-    supabase.from("call_scores").select("*").eq("call_id", id).maybeSingle(),
-  ]);
+  const { data: score } = await supabase
+    .from("call_scores")
+    .select("*")
+    .eq("call_id", id)
+    .maybeSingle();
 
   if (!score) {
     return NextResponse.json(
@@ -48,7 +49,7 @@ export async function GET(
   const pack = {
     call: call as Call & { agents?: { name: string } | null },
     score: score as CallScore,
-    utterances: (utterances || []) as Utterance[],
+    utterances: [],
   };
   const body = format === "xlsx" ? callAuditExcel(pack) : callAuditPdf(pack);
   const filename = callAuditFilename(pack, format);

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { authFetch } from "@/lib/auth-fetch";
 import { formatAht, scoreTone, verdictLabel } from "@/lib/format";
+import { KpiStrip, PageHeader, scoreChipClass } from "@/components/ui";
 import {
   REPORT_PERIODS,
   todayInNairobi,
@@ -38,20 +39,6 @@ const Icons = {
   filter: (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-    </svg>
-  ),
-  shield: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
-  ),
-  emptyBox: (
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted/40">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="16" y1="13" x2="8" y2="13" />
-      <line x1="16" y1="17" x2="8" y2="17" />
     </svg>
   ),
 };
@@ -132,19 +119,15 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
   const summary = report?.summary;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300 max-w-7xl mx-auto pb-12">
-      {/* Header */}
+    <div className="space-y-6 pb-10">
       {!compact && (
-        <div className="pb-5 border-b border-line/60">
-          <h1 className="text-2xl font-bold tracking-tight text-ink">Score & Compliance Reports</h1>
-          <p className="mt-1 text-[13px] text-muted">
-            Formal quality evaluation reports, compliance audit summaries, and multi-format downloadable records.
-          </p>
-        </div>
+        <PageHeader
+          title="Score & Compliance Reports"
+          description="Formal quality evaluation reports, compliance audit summaries, and multi-format downloadable records."
+        />
       )}
 
-      {/* Filter & Export Bar */}
-      <section className="bg-white rounded-lg p-5 border border-line shadow-sm space-y-4">
+      <section className="surface p-5 space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2 text-[13px] font-bold text-ink">
             <span className="text-blue">{Icons.filter}</span>
@@ -153,9 +136,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
           {report && (
             <div className="text-[12px] text-muted flex items-center gap-1.5">
               <span>Selected Scope:</span>
-              <span className="font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                {report.period_label}
-              </span>
+              <span className="chip">{report.period_label}</span>
             </div>
           )}
         </div>
@@ -202,7 +183,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
           <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
             <button
               type="button"
-              className="btn bg-white hover:bg-slate-50 text-slate-700 border border-line shadow-sm text-[13px] px-4 py-2 font-medium"
+              className="btn bg-white hover:bg-slate-50 text-slate-700 border border-line text-[13px] px-4 py-2 font-medium"
               disabled={Boolean(downloading) || loading}
               onClick={() => void download("xlsx")}
             >
@@ -211,7 +192,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
             </button>
             <button
               type="button"
-              className="btn bg-blue hover:bg-blue-2 text-white shadow-sm text-[13px] px-4 py-2 font-semibold"
+              className="btn bg-blue hover:bg-blue-2 text-white text-[13px] px-4 py-2 font-semibold"
               disabled={Boolean(downloading) || loading}
               onClick={() => void download("pdf")}
             >
@@ -226,39 +207,35 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
 
       {/* Summary KPI Cards */}
       {summary ? (
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            label="Audited Calls"
-            value={String(summary.calls_audited)}
-            subtitle="Evaluated interactions"
-            footer={`Range: ${report?.range_start} to ${report?.range_end}`}
-          />
-          <StatCard
-            label="Average QA Score"
-            value={summary.avg_overall != null ? `${summary.avg_overall}%` : "—"}
-            tone={scoreTone(summary.avg_overall)}
-            subtitle={summary.avg_overall != null ? verdictLabel(scoreTone(summary.avg_overall)) : "No score"}
-            footer="Aggregate team quality index"
-          />
-          <StatCard
-            label="Compliance Integrity"
-            value={`${summary.calls_with_compliance_issue} calls`}
-            tone={summary.calls_with_compliance_issue > 0 ? "poor" : "good"}
-            subtitle={summary.calls_with_compliance_issue === 0 ? "Zero compliance breaches" : "Flagged compliance risks"}
-            footer={`${summary.total_compliance_findings} total findings logged`}
-          />
-          <StatCard
-            label="Avg Handle Time (AHT)"
-            value={formatAht(summary.aht_seconds)}
-            subtitle="Average audited call duration"
-            footer={`Total talk time: ${formatAht(summary.total_handling_seconds)}`}
-          />
-        </section>
+        <KpiStrip
+          items={[
+            {
+              label: "Audited calls",
+              value: String(summary.calls_audited),
+              hint: `Range: ${report?.range_start} to ${report?.range_end}`,
+            },
+            {
+              label: "Average QA score",
+              value: summary.avg_overall != null ? `${summary.avg_overall}%` : "—",
+              hint: summary.avg_overall != null ? verdictLabel(scoreTone(summary.avg_overall)) : "No score",
+            },
+            {
+              label: "Compliance integrity",
+              value: `${summary.calls_with_compliance_issue} calls`,
+              hint: `${summary.total_compliance_findings} total findings logged`,
+            },
+            {
+              label: "Avg handle time",
+              value: formatAht(summary.aht_seconds),
+              hint: `Total talk time: ${formatAht(summary.total_handling_seconds)}`,
+            },
+          ]}
+        />
       ) : null}
 
       {/* Loading state */}
       {loading && (
-        <div className="bg-white rounded-lg p-10 border border-line flex items-center justify-center shadow-sm">
+        <div className="surface p-10 flex items-center justify-center">
           <div className="h-5 w-5 rounded-full border-2 border-slate-200 border-t-blue animate-spin mr-3" />
           <span className="text-muted text-[13px] font-medium">Generating structured report dataset…</span>
         </div>
@@ -266,7 +243,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
 
       {/* Tabbed Report Explorer */}
       {!compact && report && !loading && (
-        <section className="bg-white rounded-lg border border-line shadow-sm overflow-hidden">
+        <section className="surface overflow-hidden">
           {/* Tab navigation */}
           <div className="flex border-b border-slate-200 px-6 bg-slate-50 gap-6">
             <button
@@ -330,20 +307,12 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                       </td>
 
                       <td className="px-6 py-3.5 text-right whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold tabular-nums border ${
-                            row.overall_score >= 80
-                              ? "bg-good/10 text-good border-good/20"
-                              : row.overall_score >= 60
-                              ? "bg-warn/10 text-warn border-warn/20"
-                              : "bg-rose/10 text-rose border-rose/20"
-                          }`}
-                        >
+                        <span className={`${scoreChipClass(row.overall_score)} tabular-nums`}>
                           {row.overall_score}%
                         </span>
                       </td>
                       <td className="px-6 py-3.5 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200 capitalize">
+                        <span className="chip capitalize">
                           {String(row.verdict).replace(/_/g, " ")}
                         </span>
                       </td>
@@ -352,11 +321,11 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                       </td>
                       <td className="px-6 py-3.5 text-right whitespace-nowrap">
                         {row.compliance_findings.length > 0 ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-rose/10 text-rose border border-rose/20">
+                          <span className="chip chip-bad">
                             {row.compliance_findings.length} Flagged
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-good/10 text-good border border-good/20">
+                          <span className="chip chip-ok">
                             Clean
                           </span>
                         )}
@@ -404,8 +373,8 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                         </Link>
                       </td>
 
-                      <td className="px-6 py-3.5 text-rose font-medium leading-relaxed max-w-lg">
-                        <div className="p-2.5 bg-rose/5 rounded border border-rose/15 text-[12px]">
+                      <td className="px-6 py-3.5 font-medium leading-relaxed max-w-lg">
+                        <div className="p-2.5 border-l-2 border-rose text-[12px]">
                           {row.finding}
                         </div>
                       </td>
@@ -414,8 +383,8 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
 
                   {!report.compliance.length && (
                     <tr>
-                      <td colSpan={4} className="px-6 py-12 text-center text-good font-medium text-[13px]">
-                        ✓ Zero compliance findings recorded for this evaluation period.
+                      <td colSpan={4} className="px-6 py-12 text-center text-muted font-medium text-[13px]">
+                        Zero compliance findings recorded for this evaluation period.
                       </td>
                     </tr>
                   )}
@@ -426,49 +395,6 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
 
           </div>
         </section>
-      )}
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  subtitle,
-  footer,
-  tone,
-}: {
-  label: string;
-  value: string;
-  subtitle?: string;
-  footer?: string;
-  tone?: ReturnType<typeof scoreTone>;
-}) {
-  const isGood = tone === "excellent" || tone === "good";
-  const isWarn = tone === "warn";
-  const isPoor = tone === "poor";
-
-  const color = isGood
-    ? "text-good"
-    : isWarn
-    ? "text-warn"
-    : isPoor
-    ? "text-rose"
-    : "text-ink";
-
-  return (
-    <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
-      <div>
-        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">{label}</span>
-        <div className="flex items-baseline gap-2">
-          <span className={`text-3xl font-bold tracking-tight tabular-nums ${color}`}>{value}</span>
-        </div>
-        {subtitle && <p className="mt-1 text-[12px] font-medium text-slate-600">{subtitle}</p>}
-      </div>
-      {footer && (
-        <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-muted font-medium truncate">
-          {footer}
-        </div>
       )}
     </div>
   );

@@ -6,115 +6,121 @@ export const metadata: Metadata = {
   description: "Zetro AI solutions tailored for QA Managers, Operations Directors, and specific industries.",
 };
 
+function Check() {
+  return (
+    <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
+
+const ROLES = [
+  {
+    title: "QA managers",
+    kicker: "Stop sampling. Start coaching.",
+    body: "Spend less time hunting for the 1% of calls to review, and more time helping agents improve. Zetro flags non-compliant calls and shows where the conversation went wrong.",
+    points: ["100% audit coverage", "Targeted coaching recommendations", "Automated scorecard filling"],
+    featured: false,
+  },
+  {
+    title: "Operations directors",
+    kicker: "Mitigate risk. Maximize ROI.",
+    body: "Confirm that standard operating procedures are followed across the floor. Identify compliance risk, fraud attempts, or negative sentiment before they escalate.",
+    points: ["Real-time compliance alerts", "Macro trend analysis", "Agent performance rankings"],
+    featured: true,
+  },
+  {
+    title: "Agents",
+    kicker: "Fair, consistent evaluations.",
+    body: "Agents should not be judged on one bad call that happened to be sampled. Zetro evaluates every interaction so people are graded on typical performance, not a single worst moment.",
+    points: ["Objective AI scoring", "Clear feedback loop", "Recognition for top performers"],
+    featured: false,
+  },
+] as const;
+
+const INDUSTRIES = [
+  {
+    title: "Telecommunications",
+    body: "Ensure sales agents correctly disclose terms when upselling data packages or mobile money services in both English and Swahili.",
+  },
+  {
+    title: "Financial services",
+    body: "Audit debt collection calls for empathy and regulatory compliance. Detect fraudulent patterns from the transcript.",
+  },
+  {
+    title: "BPO & outsourcing",
+    body: "Prove SLA adherence to clients with concrete data. Share a transparent dashboard of campaign QA scores.",
+  },
+  {
+    title: "E-commerce",
+    body: "Track product mentions, delivery complaints, and resolution rates without manual sampling.",
+  },
+] as const;
+
 export default function SolutionsPage() {
   return (
-    <div className="mx-auto max-w-7xl px-6 py-20 lg:py-32">
-      <div className="text-center mb-20 max-w-3xl mx-auto">
-        <h1 className="text-4xl font-extrabold tracking-tight text-ink sm:text-6xl mb-6">
-          Built for the <span className="text-blue">entire team</span>
+    <div className="mx-auto w-full max-w-6xl px-6 py-16 lg:py-24">
+      <header className="max-w-2xl">
+        <p className="page-kicker">Solutions</p>
+        <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
+          Built for the whole floor
         </h1>
-        <p className="text-xl text-muted leading-relaxed">
-          From the frontline agent to the Director of Operations, Zetro turns black-box conversations into actionable intelligence.
+        <p className="mt-4 text-[16px] leading-relaxed text-muted">
+          From the frontline agent to the director of operations, Zetro turns conversations into evidence you can act on.
         </p>
+      </header>
+
+      <div className="mt-12 grid border border-line bg-white lg:grid-cols-3">
+        {ROLES.map((role) => (
+          <article
+            key={role.title}
+            className={`flex flex-col border-b border-line p-6 last:border-b-0 lg:border-b-0 lg:border-r lg:last:border-r-0 ${
+              role.featured ? "bg-blue-soft/40 ring-1 ring-inset ring-blue" : ""
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-[15px] font-semibold text-ink">{role.title}</h2>
+              {role.featured ? <span className="chip">Operations</span> : null}
+            </div>
+            <p className="mt-2 text-[13px] font-medium text-ink">{role.kicker}</p>
+            <p className="mt-3 flex-1 text-[13px] leading-relaxed text-muted">{role.body}</p>
+            <ul className="mt-5 space-y-2.5 border-t border-line pt-5">
+              {role.points.map((item) => (
+                <li key={item} className="flex items-start gap-2.5 text-[13px] text-ink">
+                  <Check />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </article>
+        ))}
       </div>
 
-      <div className="grid gap-12 lg:grid-cols-3 mb-32">
-        {/* Role 1 */}
-        <div className="bg-white rounded-3xl p-10 border border-line/40 shadow-sm hover:shadow-sm transition-all group">
-          <h3 className="text-2xl font-bold text-ink mb-2">For QA Managers</h3>
-          <p className="text-blue font-medium mb-6">Stop listening. Start coaching.</p>
-          <p className="text-muted leading-relaxed mb-6">
-            Spend less time hunting for the 1% of calls to review, and more time actually helping your agents improve. Zetro automatically flags non-compliant calls and highlights exactly where the conversation went wrong.
-          </p>
-          <ul className="space-y-3 text-sm text-ink/80 font-medium">
-            <li className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-              100% Audit Coverage
-            </li>
-            <li className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-              Targeted Coaching Recommendations
-            </li>
-            <li className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-              Automated Scorecard Filling
-            </li>
-          </ul>
+      <section className="mt-10">
+        <h2 className="text-[15px] font-semibold text-ink">Industries</h2>
+        <p className="mt-1 text-[13px] text-muted">The same audit workflow, applied to regulated and high-volume service lines.</p>
+        <div className="mt-4 grid border border-line bg-white sm:grid-cols-2">
+          {INDUSTRIES.map((item, index) => (
+            <article
+              key={item.title}
+              className={`p-6 ${index % 2 === 0 ? "sm:border-r border-line" : ""} ${
+                index < 2 ? "border-b border-line" : ""
+              }`}
+            >
+              <h3 className="text-[15px] font-semibold text-ink">{item.title}</h3>
+              <p className="mt-2 text-[13px] leading-relaxed text-muted">{item.body}</p>
+            </article>
+          ))}
         </div>
+      </section>
 
-        {/* Role 2 */}
-        <div className="bg-blue rounded-3xl p-10 shadow-sm shadow-blue/20 transition-all text-white transform lg:-translate-y-4">
-          <h3 className="text-2xl font-bold mb-2">For Operations Directors</h3>
-          <p className="text-blue-200 font-medium mb-6">Mitigate risk. Maximize ROI.</p>
-          <p className="text-white/80 leading-relaxed mb-6">
-            Ensure that standard operating procedures are being followed across the entire floor. Identify compliance risks, fraud attempts, or negative customer sentiment before they escalate into major business problems.
-          </p>
-          <ul className="space-y-3 text-sm text-white font-medium">
-            <li className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-              Real-time Compliance Alerts
-            </li>
-            <li className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-              Macro Trend Analysis
-            </li>
-            <li className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-              Agent Performance Leaderboards
-            </li>
-          </ul>
+      <div className="mt-10 flex flex-col items-center justify-between gap-4 border border-line bg-white px-6 py-6 sm:flex-row">
+        <div>
+          <p className="text-[15px] font-semibold text-ink">Discuss your use case</p>
+          <p className="mt-1 text-[13px] text-muted">We’ll map Zetro to your QA process, languages, and volume.</p>
         </div>
-
-        {/* Role 3 */}
-        <div className="bg-white rounded-3xl p-10 border border-line/40 shadow-sm hover:shadow-sm transition-all group">
-          <h3 className="text-2xl font-bold text-ink mb-2">For Agents</h3>
-          <p className="text-blue font-medium mb-6">Fair, unbiased evaluations.</p>
-          <p className="text-muted leading-relaxed mb-6">
-            Agents hate being judged on just one "bad call" that happened to be selected for manual review. Zetro evaluates every single interaction, ensuring that agents are graded on their average performance, not their worst day.
-          </p>
-          <ul className="space-y-3 text-sm text-ink/80 font-medium">
-            <li className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-              Objective AI Scoring
-            </li>
-            <li className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-              Clear Feedback Loop
-            </li>
-            <li className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-              Recognition for Top Performers
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="border-t border-line/40 pt-20">
-        <h2 className="text-3xl font-bold text-center text-ink mb-16">Trusted across Industries</h2>
-        
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          <div className="bg-surface-2 p-8 rounded-3xl">
-            <h4 className="font-bold text-xl text-ink mb-3">Telecommunications</h4>
-            <p className="text-muted">Ensure sales agents are correctly disclosing terms and conditions when upselling data packages or mobile money services in both English and Swahili.</p>
-          </div>
-          <div className="bg-surface-2 p-8 rounded-3xl">
-            <h4 className="font-bold text-xl text-ink mb-3">Financial Services</h4>
-            <p className="text-muted">Audit debt collection calls for empathy and regulatory compliance. Detect fraudulent patterns automatically based on audio transcriptions.</p>
-          </div>
-          <div className="bg-surface-2 p-8 rounded-3xl">
-            <h4 className="font-bold text-xl text-ink mb-3">BPO & Outsourcing</h4>
-            <p className="text-muted">Prove SLA adherence to your clients with concrete data. Provide clients with a transparent dashboard of their campaigns' QA scores.</p>
-          </div>
-          <div className="bg-surface-2 p-8 rounded-3xl">
-            <h4 className="font-bold text-xl text-ink mb-3">E-commerce</h4>
-            <p className="text-muted">Track product mentions, delivery complaints, and monitor the resolution rate of common customer inquiries without manual sampling.</p>
-          </div>
-        </div>
-      </div>
-      
-      <div className="mt-20 text-center">
-        <Link href="/talk-sales" className="btn btn-lg btn-blue shadow-sm shadow-blue/20 hover:-translate-y-1 transition-all px-10">
-          Discuss your Use Case
+        <Link href="/talk-sales" className="btn btn-blue shrink-0">
+          Talk to sales
         </Link>
       </div>
     </div>

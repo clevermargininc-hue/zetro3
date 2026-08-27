@@ -146,14 +146,14 @@ export function AppNav({
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden shrink-0 flex-col border-r border-line bg-slate-50 print:hidden lg:sticky lg:top-0 lg:flex lg:h-screen transition-all duration-200 relative ${
-          collapsed ? "w-20" : "w-68"
+        className={`hidden shrink-0 flex-col border-r border-line bg-white print:hidden lg:sticky lg:top-0 lg:flex lg:h-screen transition-[width] duration-200 relative ${
+          collapsed ? "w-16" : "w-60"
         }`}
       >
         {/* Collapse Button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute -right-3 top-7 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-slate-300 bg-white shadow-xs text-slate-500 hover:text-ink transition-transform duration-200"
+          className="absolute -right-3 top-7 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-line bg-white text-slate-500 hover:text-ink"
           style={{ transform: collapsed ? "rotate(180deg)" : "rotate(0deg)" }}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
@@ -163,25 +163,25 @@ export function AppNav({
         </button>
 
         {/* Logo Brand Header */}
-        <div className={`flex items-center h-18 border-b border-line/60 bg-white px-6 shrink-0 ${collapsed ? "justify-center px-0" : ""}`}>
+        <div className={`flex items-center h-14 border-b border-line bg-white px-5 shrink-0 ${collapsed ? "justify-center px-0" : ""}`}>
           <Logo size="sm" collapsed={collapsed} />
         </div>
 
         {/* Navigation Items */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-7 space-y-8 custom-scrollbar">
-          <nav className="space-y-8">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-5 space-y-6">
+          <nav className="space-y-6">
             {NAV.map((group) => (
-              <div key={group.label} className="space-y-2">
+              <div key={group.label} className="space-y-1">
                 {!collapsed ? (
-                  <span className="px-3.5 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">
+                  <span className="px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400 block mb-1.5">
                     {group.label}
                   </span>
                 ) : (
-                  <div className="flex justify-center mb-3">
-                    <div className="h-px w-6 bg-slate-200" />
+                  <div className="flex justify-center mb-2">
+                    <div className="h-px w-5 bg-line" />
                   </div>
                 )}
-                <div className="space-y-1.5">
+                <div className="space-y-0.5">
                   {group.items.map((item) => {
                     const active = navReady && linkActive(item.href, pathname);
                     return (
@@ -189,17 +189,17 @@ export function AppNav({
                         key={item.href}
                         href={item.href}
                         title={collapsed ? item.label : undefined}
-                        className={`flex items-center rounded-lg text-[13.5px] font-medium transition-all ${
+                        className={`flex items-center rounded text-[13px] font-medium ${
                           collapsed
-                            ? "justify-center h-10 w-full px-0"
-                            : "gap-3 px-3.5 py-2.5"
+                            ? "justify-center h-9 w-full px-0"
+                            : "gap-2.5 px-3 py-2"
                         } ${
                           active
-                            ? "bg-blue text-white font-semibold shadow-sm"
-                            : "text-slate-600 hover:bg-slate-100/90 hover:text-ink"
+                            ? "bg-blue-soft text-blue"
+                            : "text-slate-600 hover:bg-slate-50 hover:text-ink"
                         }`}
                       >
-                        <span className={`shrink-0 transition-colors ${active ? "text-white" : "text-slate-400 group-hover:text-slate-700"}`}>
+                        <span className={`shrink-0 ${active ? "text-blue" : "text-slate-400"}`}>
                           {item.icon}
                         </span>
                         {!collapsed && <span className="truncate">{item.label}</span>}
@@ -213,17 +213,17 @@ export function AppNav({
         </div>
 
         {/* Bottom User Profile Section */}
-        <div className="p-4 border-t border-line/60 bg-white shrink-0">
+        <div className="p-3 border-t border-line bg-white shrink-0">
           {!collapsed ? (
-            <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-slate-50 border border-slate-200/80">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-[11px] font-bold shrink-0">
+            <div className="flex items-center justify-between gap-2 px-1 py-1">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded bg-navy text-white flex items-center justify-center text-[11px] font-medium shrink-0">
                   {personInitial}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[12px] font-semibold text-ink truncate leading-tight">{personLabel}</p>
-                  <p className="text-[10px] font-medium text-slate-400 truncate leading-tight mt-0.5">
-                    {workspaceName || "Zetro QA"}
+                  <p className="text-[12px] font-medium text-ink truncate leading-tight">{personLabel}</p>
+                  <p className="text-[11px] text-muted truncate leading-tight mt-0.5">
+                    {workspaceName || "Zetro"}
                   </p>
                 </div>
               </div>
@@ -231,7 +231,7 @@ export function AppNav({
                 type="button"
                 onClick={signOut}
                 title="Sign out"
-                className="text-slate-400 hover:text-rose p-1.5 rounded-md hover:bg-white transition-all shrink-0"
+                className="text-slate-400 hover:text-ink p-1.5 rounded hover:bg-slate-50 shrink-0"
               >
                 {Icons.logout}
               </button>
@@ -242,7 +242,7 @@ export function AppNav({
                 type="button"
                 onClick={signOut}
                 title="Sign out"
-                className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-[11px] font-bold hover:bg-rose transition-colors"
+                className="w-7 h-7 rounded bg-navy text-white flex items-center justify-center text-[11px] font-medium"
               >
                 {personInitial}
               </button>
@@ -252,7 +252,7 @@ export function AppNav({
       </aside>
 
       {/* Mobile Header */}
-      <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-line bg-white px-4 print:hidden lg:hidden shadow-xs">
+      <header className="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-line bg-white px-4 print:hidden lg:hidden">
         <Logo size="sm" />
         <button
           type="button"
@@ -301,13 +301,13 @@ export function AppNav({
                             key={item.href}
                             href={item.href}
                             onClick={() => setOpen(false)}
-                            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[13.5px] font-medium transition-all ${
+                            className={`flex items-center gap-2.5 px-3 py-2 rounded text-[13px] font-medium ${
                               active
-                                ? "bg-blue text-white font-semibold shadow-sm"
+                                ? "bg-blue-soft text-blue"
                                 : "text-slate-600 hover:bg-slate-50 hover:text-ink"
                             }`}
                           >
-                            <span className={active ? "text-white" : "text-slate-400"}>
+                            <span className={active ? "text-blue" : "text-slate-400"}>
                               {item.icon}
                             </span>
                             <span>{item.label}</span>
@@ -323,7 +323,7 @@ export function AppNav({
             {/* Mobile User Bottom */}
             <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-[11px] font-bold shrink-0">
+                <div className="w-7 h-7 rounded bg-navy text-white flex items-center justify-center text-[11px] font-medium shrink-0">
                   {personInitial}
                 </div>
                 <div className="min-w-0">
@@ -334,7 +334,7 @@ export function AppNav({
               <button
                 type="button"
                 onClick={signOut}
-                className="text-[12px] font-semibold text-rose hover:underline"
+                className="text-[12px] font-medium text-slate-600 hover:text-ink"
               >
                 Sign out
               </button>

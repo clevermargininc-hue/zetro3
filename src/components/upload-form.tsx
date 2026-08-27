@@ -9,10 +9,13 @@ import { workspaceLanguages } from "@/lib/locale";
 import type { AuditMode, LanguageMode } from "@/lib/types";
 import { useQaReadiness } from "@/components/use-qa-readiness";
 import {
-  AUDIO_ACCEPT,
+  FILE_ACCEPT,
+  ZIP_ACCEPT,
   formatFileSize,
   filesFromDataTransfer,
+  expandIncomingFiles,
   mergeAudioPicks,
+  isZipFile,
   type AudioPick,
 } from "@/lib/audio-files";
 
@@ -27,6 +30,15 @@ const Icons = {
   folder: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+    </svg>
+  ),
+  zip: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 8v13H3V3h12" />
+      <path d="M21 8h-6V3" />
+      <path d="M10 12h.01" />
+      <path d="M10 16h.01" />
+      <path d="M10 8h.01" />
     </svg>
   ),
   files: (
@@ -55,6 +67,7 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const zipInputRef = useRef<HTMLInputElement>(null);
   const [picks, setPicks] = useState<AudioPick[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [agentName, setAgentName] = useState("");
@@ -95,21 +108,40 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
   }, []);
 
   function addFiles(list: File[]) {
+    void ingestFiles(list);
+  }
+
+  async function ingestFiles(list: File[]) {
+    if (loading || !list.length) return;
     setDone([]);
     setFailed([]);
-    setPicks((current) => {
-      const { files, skipped } = mergeAudioPicks(current, list);
-      if (!files.length) {
-        setError("No audio recordings found. Use MP3, WAV, M4A, AAC, MP4, OGG, or WEBM.");
-      } else {
-        setError(
-          skipped.length
-            ? `Skipped: ${skipped.slice(0, 4).join(", ")}${skipped.length > 4 ? "…" : ""}`
-            : null,
-        );
-      }
-      return files;
-    });
+    const hasZip = list.some(isZipFile);
+    if (hasZip) setProgress("Opening ZIP and listing recordings…");
+    try {
+      const expanded = await expandIncomingFiles(list);
+      setPicks((current) => {
+        const { files, skipped } = mergeAudioPicks(current, expanded.files);
+        const allSkipped = [...expanded.skipped, ...skipped];
+        if (!files.length) {
+          setError(
+            allSkipped.length
+              ? `No audio recordings found. ${allSkipped.slice(0, 3).join("; ")}`
+              : "No audio recordings found. Use MP3, WAV, M4A, AAC, MP4, OGG, WEBM, or a ZIP of those files.",
+          );
+        } else {
+          setError(
+            allSkipped.length
+              ? `Skipped: ${allSkipped.slice(0, 4).join(", ")}${allSkipped.length > 4 ? "…" : ""}`
+              : null,
+          );
+        }
+        return files;
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not read those files.");
+    } finally {
+      if (hasZip) setProgress(null);
+    }
   }
 
   async function onDrop(event: React.DragEvent) {
@@ -121,7 +153,7 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!picks.length) {
-      setError("Please choose recordings or a folder of calls.");
+      setError("Please choose recordings, a folder, or a ZIP of calls.");
       return;
     }
     setError(null);
@@ -235,12 +267,12 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={onSubmit} className="bg-white rounded-lg p-6 sm:p-8 border border-line shadow-sm space-y-6">
+      <form onSubmit={onSubmit} className="surface p-6 sm:p-8 space-y-6">
         <div>
           <input
             ref={fileInputRef}
             type="file"
-            accept={AUDIO_ACCEPT}
+            accept={FILE_ACCEPT}
             multiple
             className="hidden"
             onChange={(e) => {
@@ -251,6 +283,17 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
           <input
             ref={folderInputRef}
             type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              addFiles([...(e.target.files || [])]);
+              e.target.value = "";
+            }}
+          />
+          <input
+            ref={zipInputRef}
+            type="file"
+            accept={ZIP_ACCEPT}
             multiple
             className="hidden"
             onChange={(e) => {
@@ -274,30 +317,24 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
               setDragOver(false);
             }}
             onDrop={(e) => void onDrop(e)}
-            className={`rounded-lg border-2 border-dashed transition-all p-8 text-center ${
+            className={`border border-dashed p-8 text-center ${
               dragOver
-                ? "border-blue bg-blue/5"
+                ? "border-blue bg-blue-soft"
                 : count
-                  ? "border-emerald-400 bg-emerald-50/40"
-                  : "border-slate-300 bg-slate-50"
+                  ? "border-line bg-white"
+                  : "border-line bg-slate-50"
             }`}
           >
-            <div
-              className={`mx-auto w-12 h-12 rounded-lg flex items-center justify-center mb-3.5 ${
-                count
-                  ? "bg-emerald-500 text-white"
-                  : "bg-white text-slate-600 border border-slate-200"
-              }`}
-            >
+            <div className="mx-auto mb-3.5 flex items-center justify-center text-slate-500">
               {count ? Icons.check : Icons.uploadCloud}
             </div>
             <p className="text-[15px] font-bold text-ink">
               {count
                 ? `${count} recording${count === 1 ? "" : "s"} ready · ${formatFileSize(totalBytes)}`
-                : "Drop files or a folder of calls"}
+                : "Drop files, a folder, or a ZIP of calls"}
             </p>
             <p className="mt-1 text-[12px] text-muted max-w-sm mx-auto">
-              MP3, WAV, M4A, AAC, MP4, OGG, WEBM · up to 100MB each · 50 files per batch
+              MP3, WAV, M4A, AAC, MP4, OGG, WEBM, or ZIP · up to 100MB each · 100 files per batch
             </p>
             <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
               <button
@@ -322,11 +359,19 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
                 {Icons.folder}
                 Choose folder
               </button>
+              <button
+                type="button"
+                onClick={() => zipInputRef.current?.click()}
+                className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[12px] px-3.5 py-1.5 font-semibold"
+              >
+                {Icons.zip}
+                Choose ZIP
+              </button>
             </div>
           </div>
 
           {count > 0 && (
-            <ul className="mt-3 max-h-56 overflow-y-auto divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
+            <ul className="mt-3 max-h-56 overflow-y-auto divide-y divide-slate-100 border border-line bg-white">
               {picks.map((pick) => (
                 <li key={pick.key} className="flex items-center gap-3 px-3 py-2 text-[12px]">
                   <span className="min-w-0 flex-1 text-left">
@@ -387,7 +432,7 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
           ) : null}
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+        <div className="border border-line bg-slate-50 p-4 space-y-3">
           <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"
@@ -407,10 +452,10 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
               <button
                 type="button"
                 onClick={() => setAuditMode("automatic")}
-                className={`text-[12px] font-semibold px-3 py-1.5 rounded-lg border ${
+                className={`text-[12px] font-semibold px-3 py-1.5 border ${
                   auditMode === "automatic"
                     ? "bg-blue text-white border-blue"
-                    : "bg-white text-slate-700 border-slate-200"
+                    : "bg-white text-slate-700 border-line"
                 }`}
               >
                 Autonomous audit
@@ -420,10 +465,10 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
                 disabled={blocked}
                 onClick={() => setAuditMode("documents")}
                 title={blocked ? "Upload scorecard and compliance files under Standards first." : undefined}
-                className={`text-[12px] font-semibold px-3 py-1.5 rounded-lg border disabled:opacity-50 ${
+                className={`text-[12px] font-semibold px-3 py-1.5 border disabled:opacity-50 ${
                   auditMode === "documents"
                     ? "bg-blue text-white border-blue"
-                    : "bg-white text-slate-700 border-slate-200"
+                    : "bg-white text-slate-700 border-line"
                 }`}
               >
                 SOP standards audit
@@ -435,7 +480,7 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
         {error && <div className="alert-error text-[13px]">{error}</div>}
 
         {progress && (
-          <div className="flex items-center gap-3 text-[13px] font-medium text-blue bg-blue/10 p-3.5 rounded-lg border border-blue/20">
+          <div className="flex items-center gap-3 text-[13px] font-medium text-ink surface p-3.5">
             <div className="h-4 w-4 rounded-full border-2 border-blue/30 border-t-blue animate-spin shrink-0" />
             <span>{progress}</span>
           </div>
@@ -445,7 +490,7 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
           <button
             type="submit"
             disabled={loading || !count}
-            className="btn bg-blue hover:bg-blue-2 text-white shadow-sm w-full py-2.5 text-[14px] font-semibold"
+            className="btn bg-blue hover:bg-blue-2 text-white w-full py-2.5 text-[14px] font-semibold"
           >
             {loading
               ? "Processing upload…"
@@ -457,25 +502,23 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
       </form>
 
       {(done.length > 0 || failed.length > 0) && (
-        <div className="bg-white rounded-lg p-6 border border-emerald-200 bg-emerald-50/30 shadow-sm space-y-4">
+        <div className="surface p-6 space-y-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[12px] font-bold">
-              {Icons.check}
-            </div>
-            <h3 className="text-[15px] font-bold text-emerald-900">
+            <span className="chip chip-ok">Uploaded</span>
+            <h3 className="text-[15px] font-bold text-ink">
               {done.length} recording{done.length === 1 ? "" : "s"} uploaded
               {autoAudit ? " · auditing in the background" : " · transcription started"}
             </h3>
           </div>
           {failed.length > 0 && (
-            <p className="text-[13px] text-rose-700">
+            <p className="text-[13px] text-rose">
               {failed.length} failed: {failed.map((row) => `${row.title} (${row.error})`).join("; ")}
             </p>
           )}
           <div className="pt-1 flex flex-wrap gap-2">
             <Link
               href="/calls"
-              className="btn bg-emerald-600 hover:bg-emerald-700 text-white text-[13px] px-4 py-2 font-semibold inline-flex"
+              className="btn bg-blue hover:bg-blue-2 text-white text-[13px] px-4 py-2 font-semibold inline-flex"
             >
               View call audits →
             </Link>

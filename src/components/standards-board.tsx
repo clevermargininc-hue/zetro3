@@ -112,39 +112,23 @@ function KindSection({
   const required = (QA_KINDS as readonly string[]).includes(kind);
 
   return (
-    <div
-      className={`bg-white rounded-lg p-5 border shadow-sm transition-all duration-200 ${
-        ok ? "border-line hover:border-slate-300" : "border-slate-200"
-      }`}
-    >
+    <div className="surface p-5">
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-5">
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <div
-              className={`flex items-center justify-center w-8 h-8 rounded-lg text-sm shrink-0 ${
-                ok
-                  ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                  : required
-                  ? "bg-slate-100 text-slate-600 border border-slate-200"
-                  : "bg-slate-50 text-slate-400 border border-slate-200"
-              }`}
-            >
+            <div className="flex items-center justify-center w-8 h-8 shrink-0 text-slate-500">
               {getKindIcon(kind)}
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-[15px] font-bold text-ink capitalize">{QA_KIND_LABELS[kind]}</h3>
                 {required ? (
-                  <span className="text-[11px] font-semibold px-2 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200">
-                    Required
-                  </span>
+                  <span className="chip">Required</span>
                 ) : (
-                  <span className="text-[11px] font-medium px-2 py-0.2 rounded bg-slate-50 text-slate-500 border border-slate-200">
-                    Optional
-                  </span>
+                  <span className="chip">Optional</span>
                 )}
                 {ok && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.2 rounded border border-emerald-200">
+                  <span className="chip chip-ok">
                     {Icons.checkCircle}
                     <span>Active ({rows.length})</span>
                   </span>
@@ -162,11 +146,11 @@ function KindSection({
               {rows.map((doc) => (
                 <div
                   key={doc.id}
-                  className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[12px] hover:bg-white hover:border-slate-300 transition-all"
+                  className="flex items-center gap-2 border border-line px-3 py-1.5 text-[12px]"
                 >
                   <span
                     className={`font-semibold truncate max-w-[240px] ${
-                      doc.has_text ? "text-slate-800" : "text-rose-600 line-through"
+                      doc.has_text ? "text-slate-800" : "text-rose line-through"
                     }`}
                     title={`${doc.title} ${!doc.has_text ? "(Unreadable content)" : ""}`}
                   >
@@ -175,7 +159,7 @@ function KindSection({
                   <button
                     type="button"
                     onClick={() => onRemove(doc.id)}
-                    className="text-slate-400 hover:text-rose-600 p-0.5 rounded transition-colors ml-1"
+                    className="text-slate-400 hover:text-rose p-0.5 rounded ml-1"
                     title="Remove document"
                   >
                     {Icons.trash}
@@ -188,7 +172,7 @@ function KindSection({
 
         {/* Upload Button / Dropzone */}
         <div className="md:w-56 shrink-0">
-          <label className="flex h-full min-h-[52px] items-center justify-center cursor-pointer rounded-lg border border-dashed border-slate-300 bg-slate-50/60 px-4 py-3 text-center transition-all duration-200 hover:border-blue hover:bg-blue/5 hover:text-blue group">
+          <label className="flex h-full min-h-[52px] items-center justify-center cursor-pointer border border-dashed border-line bg-slate-50 px-4 py-3 text-center hover:border-blue hover:bg-blue-soft group">
             <input
               type="file"
               accept={FILE_ACCEPT}
@@ -263,11 +247,9 @@ export function StandardsBoard() {
   return (
     <div className="space-y-6">
       {readiness?.setupRequired ? (
-        <div className="bg-white rounded-lg p-5 border border-amber-200 bg-amber-50/50 shadow-sm">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700 block mb-1">
-            Database Setup Required
-          </span>
-          <h2 className="text-[15px] font-bold text-ink">Enable standards storage</h2>
+        <div className="surface p-5">
+          <span className="chip chip-wait mb-2">Database setup required</span>
+          <h2 className="text-[15px] font-bold text-ink mt-2">Enable standards storage</h2>
           <p className="mt-1 text-[13px] text-slate-600 leading-relaxed">
             Run <code className="text-ink font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">supabase/qa-standards.sql</code> and{" "}
             <code className="text-ink font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">supabase/holding-procedure.sql</code> in the
@@ -276,26 +258,17 @@ export function StandardsBoard() {
         </div>
       ) : null}
 
-      {/* System Readiness Banner */}
-      <section
-        className={`bg-white rounded-lg p-5 border shadow-sm flex items-center justify-between transition-colors ${
-          readiness?.ready
-            ? "border-emerald-200 bg-emerald-50/30"
-            : "border-slate-200"
-        }`}
-      >
+      <section className="surface p-5 flex items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                readiness?.ready ? "bg-emerald-500" : "bg-amber-500 animate-pulse"
-              }`}
-            />
-            <h2 className={`text-[15px] font-bold ${readiness?.ready ? "text-emerald-800" : "text-ink"}`}>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-[15px] font-bold text-ink">
               {readiness?.ready
                 ? "Organization QA Standards Active"
                 : "Custom Audit Setup Incomplete"}
             </h2>
+            <span className={readiness?.ready ? "chip chip-ok" : "chip chip-wait"}>
+              {readiness?.ready ? "Ready" : "Incomplete"}
+            </span>
           </div>
           <p className="text-[13px] text-muted mt-1">
             {readiness?.ready

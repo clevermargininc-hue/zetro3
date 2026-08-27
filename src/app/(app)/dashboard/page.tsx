@@ -1,65 +1,12 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
-import { formatAht, formatDate, formatDuration, scoreTone, verdictLabel, languageLabel } from "@/lib/format";
+import { formatAht, formatDate, formatDuration, languageLabel } from "@/lib/format";
 import { getTeamScope } from "@/lib/workspaces";
 import type { AgentPerformance, Call, CallScore } from "@/lib/types";
 import { JoinRequestBanner } from "@/components/join-request-banner";
+import { KpiStrip, PageHeader, scoreChipClass } from "@/components/ui";
 
-// Professional Enterprise SVG Icons
 const Icons = {
-  upload: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
-    </svg>
-  ),
-  analytics: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="20" x2="18" y2="10" />
-      <line x1="12" y1="20" x2="12" y2="4" />
-      <line x1="6" y1="20" x2="6" y2="14" />
-    </svg>
-  ),
-  document: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="16" y1="13" x2="8" y2="13" />
-      <line x1="16" y1="17" x2="8" y2="17" />
-    </svg>
-  ),
-  shieldCheck: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
-  ),
-  arrowUpRight: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="7" y1="17" x2="17" y2="7" />
-      <polyline points="7 7 17 7 17 17" />
-    </svg>
-  ),
-  users: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  ),
-  clock: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  ),
-  activity: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-    </svg>
-  ),
   emptyBox: (
     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted/40">
       <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
@@ -103,7 +50,6 @@ export default async function DashboardPage() {
 
   const allCalls = calls || [];
   const completedCalls = allCalls.filter((c) => c.status === "completed");
-  const inProgressCalls = allCalls.filter((c) => c.status === "transcribing" || c.status === "analyzing" || c.status === "queued");
 
   // Extract valid scores
   const scoreObjects: CallScore[] = completedCalls
@@ -159,208 +105,150 @@ export default async function DashboardPage() {
   const agentLeaderboard = rankAgents(agents || [], allCalls);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300 max-w-7xl mx-auto pb-12">
-      {/* Header bar */}
-      <div className="pb-5 border-b border-line/60">
-        <h1 className="text-2xl font-bold tracking-tight text-ink">Operations Overview</h1>
-        <p className="mt-1 text-[13px] text-muted">
-          Continuous visibility into call-center service standards, compliance adherence, and agent performance.
-        </p>
-      </div>
+    <div className="space-y-6 pb-10">
+      <PageHeader
+        title="Overview"
+        description="Call quality, compliance, and handling time across this workspace."
+      />
 
       <JoinRequestBanner />
 
-      {/* KPI Cards Grid */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Card 1: Team Quality Index */}
-        <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
-          <div>
-            <div className="flex items-center justify-between text-muted mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Quality Score Index</span>
-              <span className="text-blue bg-blue/10 p-1.5 rounded-lg">{Icons.activity}</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold tracking-tight tabular-nums text-ink">
-                {avgScore != null ? `${avgScore}%` : "—"}
-              </span>
-              {avgScore != null && (
-                <span
-                  className={`text-[11px] font-semibold px-2 py-0.5 rounded border ${
-                    avgScore >= 80
-                      ? "bg-good/10 text-good border-good/20"
-                      : avgScore >= 60
-                      ? "bg-warn/10 text-warn border-warn/20"
-                      : "bg-rose/10 text-rose border-rose/20"
-                  }`}
-                >
-                  {verdictLabel(scoreTone(avgScore))}
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[12px] text-muted">
-            <span>Pass Rate (≥70%):</span>
-            <span className="font-semibold text-ink">{passRate != null ? `${passRate}%` : "—"}</span>
-          </div>
-        </div>
+      <KpiStrip
+        items={[
+          {
+            label: "Quality score",
+            value: avgScore != null ? `${avgScore}%` : "—",
+            hint: passRate != null ? `${passRate}% pass rate (≥70)` : "No scored calls yet",
+          },
+          {
+            label: "Audited calls",
+            value: String(completedCalls.length),
+            hint: `${formatTotalTime(totalAudioSeconds)} evaluated audio`,
+          },
+          {
+            label: "Compliance",
+            value: compliancePassRate != null ? `${compliancePassRate}%` : "—",
+            hint: `${totalBreaches} ${totalBreaches === 1 ? "finding" : "findings"} flagged`,
+          },
+          {
+            label: "Avg handle time",
+            value: formatAht(ahtSeconds),
+            hint: "Per audited call",
+          },
+        ]}
+      />
 
-        {/* Card 2: Audited Volume */}
-        <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
-          <div>
-            <div className="flex items-center justify-between text-muted mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Audited Calls</span>
-              <span className="text-blue bg-blue/10 p-1.5 rounded-lg">{Icons.document}</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold tracking-tight tabular-nums text-ink">
-                {completedCalls.length}
-              </span>
-              <span className="text-[12px] text-muted font-medium">calls scored</span>
-            </div>
-          </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[12px] text-muted">
-            <span>Evaluated Audio:</span>
-            <span className="font-semibold text-ink">{formatTotalTime(totalAudioSeconds)}</span>
-          </div>
-        </div>
-
-        {/* Card 3: Compliance Health */}
-        <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
-          <div>
-            <div className="flex items-center justify-between text-muted mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Compliance Pass Rate</span>
-              <span className="text-good bg-good/10 p-1.5 rounded-lg">{Icons.shieldCheck}</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className={`text-3xl font-bold tracking-tight tabular-nums ${compliancePassRate && compliancePassRate < 90 ? 'text-warn' : 'text-good'}`}>
-                {compliancePassRate != null ? `${compliancePassRate}%` : "—"}
-              </span>
-              <span className="text-[12px] text-muted font-medium">clean calls</span>
-            </div>
-          </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[12px] text-muted">
-            <span>Flagged Breaches:</span>
-            <span className={`font-semibold ${totalBreaches > 0 ? 'text-rose' : 'text-slate-700'}`}>
-              {totalBreaches} {totalBreaches === 1 ? "finding" : "findings"}
-            </span>
-          </div>
-        </div>
-
-        {/* Card 4: Average Handle Time */}
-        <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
-          <div>
-            <div className="flex items-center justify-between text-muted mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Avg Handle Time (AHT)</span>
-              <span className="text-blue bg-blue/10 p-1.5 rounded-lg">{Icons.clock}</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold tracking-tight tabular-nums text-ink">
-                {formatAht(ahtSeconds)}
-              </span>
-              <span className="text-[12px] text-muted font-medium">per audited call</span>
-            </div>
-          </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[12px] text-muted">
-            <span>Total talk time:</span>
-            <span className="font-semibold text-ink">{formatTotalTime(totalAudioSeconds)}</span>
-          </div>
-        </div>
-
-
-      </section>
-
-      {/* Main Analysis Section */}
-      <section className="grid gap-6">
-
-          {/* Quality Tier Distribution */}
-          <div className="bg-white rounded-lg border border-line shadow-sm p-6">
+      <section className="surface p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-[14px] font-bold text-ink">Evaluation Score Tier Distribution</h3>
-                <p className="text-[12px] text-muted">Breakdown of calls across standard evaluation bands</p>
+                <h3 className="text-[14px] font-semibold text-ink">Score distribution</h3>
+                <p className="text-[12px] text-muted">Calls by evaluation band</p>
               </div>
-              <span className="text-[12px] font-semibold text-slate-500">{scoreValues.length} total scored</span>
+              <span className="text-[12px] text-muted">{scoreValues.length} scored</span>
             </div>
 
-            {/* Stacked Progress Bar */}
             {scoreValues.length > 0 ? (
               <div className="space-y-4">
-                <div className="h-3.5 w-full bg-slate-100 rounded-full overflow-hidden flex">
+                <div className="h-1.5 w-full bg-slate-100 overflow-hidden flex">
                   <div
-                    className="bg-emerald-500 h-full transition-all"
+                    className="bg-navy h-full"
                     style={{ width: `${(tierExcellent / scoreValues.length) * 100}%` }}
                     title={`Excellent: ${tierExcellent}`}
                   />
                   <div
-                    className="bg-blue-500 h-full transition-all"
+                    className="bg-blue h-full"
                     style={{ width: `${(tierGood / scoreValues.length) * 100}%` }}
                     title={`Good: ${tierGood}`}
                   />
                   <div
-                    className="bg-amber-500 h-full transition-all"
+                    className="bg-slate-400 h-full"
                     style={{ width: `${(tierNeedsImp / scoreValues.length) * 100}%` }}
                     title={`Needs Improvement: ${tierNeedsImp}`}
                   />
                   <div
-                    className="bg-rose-500 h-full transition-all"
+                    className="bg-slate-300 h-full"
                     style={{ width: `${(tierPoor / scoreValues.length) * 100}%` }}
                     title={`Poor: ${tierPoor}`}
                   />
                 </div>
-
-                {/* Legend */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                  <div className="flex items-center gap-2 text-[12px]">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
-                    <div>
-                      <span className="text-slate-600 block">Excellent (85+)</span>
-                      <span className="font-bold text-ink">{tierExcellent} ({Math.round((tierExcellent / scoreValues.length) * 100)}%)</span>
-                    </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[12px]">
+                  <div>
+                    <span className="text-muted block">Excellent (85+)</span>
+                    <span className="font-medium text-ink tabular-nums">{tierExcellent} ({Math.round((tierExcellent / scoreValues.length) * 100)}%)</span>
                   </div>
-                  <div className="flex items-center gap-2 text-[12px]">
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
-                    <div>
-                      <span className="text-slate-600 block">Good (70-84)</span>
-                      <span className="font-bold text-ink">{tierGood} ({Math.round((tierGood / scoreValues.length) * 100)}%)</span>
-                    </div>
+                  <div>
+                    <span className="text-muted block">Good (70–84)</span>
+                    <span className="font-medium text-ink tabular-nums">{tierGood} ({Math.round((tierGood / scoreValues.length) * 100)}%)</span>
                   </div>
-                  <div className="flex items-center gap-2 text-[12px]">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
-                    <div>
-                      <span className="text-slate-600 block">Review (50-69)</span>
-                      <span className="font-bold text-ink">{tierNeedsImp} ({Math.round((tierNeedsImp / scoreValues.length) * 100)}%)</span>
-                    </div>
+                  <div>
+                    <span className="text-muted block">Review (50–69)</span>
+                    <span className="font-medium text-ink tabular-nums">{tierNeedsImp} ({Math.round((tierNeedsImp / scoreValues.length) * 100)}%)</span>
                   </div>
-                  <div className="flex items-center gap-2 text-[12px]">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
-                    <div>
-                      <span className="text-slate-600 block">Poor (&lt;50)</span>
-                      <span className="font-bold text-ink">{tierPoor} ({Math.round((tierPoor / scoreValues.length) * 100)}%)</span>
-                    </div>
+                  <div>
+                    <span className="text-muted block">Poor (&lt;50)</span>
+                    <span className="font-medium text-ink tabular-nums">{tierPoor} ({Math.round((tierPoor / scoreValues.length) * 100)}%)</span>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="py-6 text-center text-muted text-[13px]">
-                No evaluations available to compute tier distribution.
-              </div>
+              <p className="py-4 text-muted text-[13px]">No evaluations yet.</p>
             )}
-          </div>
-
       </section>
 
-      {/* Recent Evaluated Calls Stream */}
-      <section className="bg-white rounded-lg border border-line shadow-sm overflow-hidden">
-        <div className="px-6 py-4.5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50">
+      <section className="surface overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-line flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-[15px] font-bold text-ink">Recent Call Audits</h2>
-            <p className="text-[12px] text-muted mt-0.5">Recently processed recordings with evaluation scores</p>
+            <h2 className="text-[14px] font-semibold text-ink">Agent rankings</h2>
+            <p className="text-[12px] text-muted mt-0.5">Average QA score by representative</p>
           </div>
-          <Link
-            href="/calls"
-            className="btn bg-white hover:bg-slate-50 text-slate-700 border border-line text-[12px] px-3.5 py-1.5 rounded-lg self-start sm:self-auto"
-          >
-            View All Call Logs →
+          <Link href="/leaderboard" className="btn btn-ghost text-[12px]">
+            View all
+          </Link>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-line bg-slate-50 text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                <th className="px-6 py-3">Representative</th>
+                <th className="px-6 py-3 text-right">Audits</th>
+                <th className="px-6 py-3 text-right">Avg score</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-[13px]">
+              {agentLeaderboard.slice(0, 6).map((agent) => (
+                <tr key={agent.id} className="hover:bg-slate-50">
+                  <td className="px-6 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded bg-navy text-white flex items-center justify-center text-[10px] font-medium shrink-0">
+                        {getInitials(agent.name)}
+                      </div>
+                      <span className="font-medium text-ink">{agent.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-3 text-right tabular-nums text-slate-600">{agent.call_count}</td>
+                  <td className="px-6 py-3 text-right">
+                    <span className={`${scoreChipClass(agent.avg_score)} tabular-nums`}>
+                      {agent.avg_score != null ? `${agent.avg_score}%` : "—"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!agentLeaderboard.length ? (
+            <p className="px-6 py-8 text-[13px] text-muted">Assign agents on upload to populate rankings.</p>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="surface overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[14px] font-semibold text-ink">Recent audits</h2>
+            <p className="text-[12px] text-muted mt-0.5">Latest recordings and scores</p>
+          </div>
+          <Link href="/calls" className="btn btn-ghost text-[12px]">
+            View all
           </Link>
         </div>
 
@@ -368,7 +256,7 @@ export default async function DashboardPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-line bg-slate-50 text-[11px] font-medium uppercase tracking-wider text-slate-500">
                 <th className="px-6 py-3">Call Title / Recording</th>
 
                 <th className="px-6 py-3">Date & Time</th>
@@ -404,7 +292,7 @@ export default async function DashboardPage() {
 
                     {/* Language */}
                     <td className="px-6 py-3.5 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                      <span className="chip">
                         {languageLabel(call.detected_language || call.language_mode)}
                       </span>
                     </td>
@@ -413,13 +301,9 @@ export default async function DashboardPage() {
                     <td className="px-6 py-3.5 whitespace-nowrap">
                       {score ? (
                         hasBreach ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose bg-rose/10 px-2 py-0.5 rounded border border-rose/20">
-                            Flagged Breach
-                          </span>
+                          <span className="chip chip-bad">Flagged</span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-good bg-good/10 px-2 py-0.5 rounded border border-good/20">
-                            Clean
-                          </span>
+                          <span className="chip chip-ok">Clean</span>
                         )
                       ) : (
                         <span className="text-slate-400 text-[11px]">—</span>
@@ -429,19 +313,11 @@ export default async function DashboardPage() {
                     {/* QA Score */}
                     <td className="px-6 py-3.5 text-right whitespace-nowrap">
                       {score?.overall_score != null ? (
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-md font-bold text-[13px] tabular-nums border ${
-                            score.overall_score >= 80
-                              ? "bg-good/10 text-good border-good/20"
-                              : score.overall_score >= 60
-                              ? "bg-warn/10 text-warn border-warn/20"
-                              : "bg-rose/10 text-rose border-rose/20"
-                          }`}
-                        >
+                        <span className={`${scoreChipClass(score.overall_score)} tabular-nums`}>
                           {score.overall_score}%
                         </span>
                       ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[11px] font-medium">
+                        <span className="chip">
                           {call.status === "failed" ? "Failed" : "Processing"}
                         </span>
                       )}
@@ -465,13 +341,13 @@ export default async function DashboardPage() {
 
           {!allCalls.length && (
             <div className="py-16 text-center">
-              <div className="inline-flex p-4 rounded-full bg-slate-50 mb-3">{Icons.emptyBox}</div>
-              <h3 className="text-[15px] font-bold text-ink">No call records available</h3>
+              <div className="inline-flex p-3 mb-3 text-muted">{Icons.emptyBox}</div>
+              <h3 className="text-[14px] font-semibold text-ink">No call records</h3>
               <p className="mt-1 text-[13px] text-muted max-w-sm mx-auto">
-                Upload your contact center recordings to begin automated bilingual transcription and quality auditing.
+                Upload recordings to start quality auditing.
               </p>
-              <Link href="/upload" className="mt-5 btn btn-blue text-[13px] px-5 py-2 inline-flex">
-                Upload Call Recording
+              <Link href="/upload" className="mt-4 btn btn-blue text-[13px] inline-flex">
+                Upload calls
               </Link>
             </div>
           )}

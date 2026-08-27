@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/supabase/server";
 import { getTeamScope } from "@/lib/workspaces";
 import { CallsBoard } from "@/components/calls-board";
+import { PageHeader } from "@/components/ui";
 import type { Call, CallScore } from "@/lib/types";
 
 export default async function CallsPage() {
@@ -13,13 +14,11 @@ export default async function CallsPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300 max-w-7xl mx-auto pb-12">
-      <div className="pb-5 border-b border-line/60">
-        <h1 className="text-2xl font-bold tracking-tight text-ink">Call Audit Inventory</h1>
-        <p className="mt-1 text-[13px] text-muted">
-          Operational log of uploaded customer recordings, transcription pipelines, and evaluation scorecards.
-        </p>
-      </div>
+    <div className="space-y-6 pb-10">
+      <PageHeader
+        title="Call audits"
+        description="Uploaded recordings and evaluation scorecards. Transcripts stay on the server."
+      />
 
       <CallsBoard
         initialCalls={(calls || []) as Array<

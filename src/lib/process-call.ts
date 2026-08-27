@@ -197,7 +197,7 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
 
     if (uttError) throw new Error(uttError.message);
     if (!stored?.length) {
-      throw new Error("Transcribe and separate speakers first.");
+      throw new Error("Prepare this call for audit first.");
     }
 
     let standardsText = "";

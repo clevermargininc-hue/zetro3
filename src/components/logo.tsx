@@ -15,8 +15,8 @@ export function Logo({
   return (
     <Link href="/" className="flex items-center gap-3">
       <span
-        className={`${mark} shrink-0 grid place-items-center rounded-[0.4rem] ${
-          invert ? "bg-white text-blue" : "bg-gradient-to-br from-blue to-blue-2 text-white shadow-sm"
+        className={`${mark} shrink-0 grid place-items-center rounded-[4px] ${
+          invert ? "bg-white text-blue" : "bg-blue text-white"
         }`}
       >
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
@@ -30,7 +30,7 @@ export function Logo({
         </svg>
       </span>
       {!collapsed && (
-        <span className="leading-tight flex flex-col justify-center animate-in fade-in zoom-in-95 duration-200">
+        <span className="leading-tight flex flex-col justify-center">
           <span
             className={`${type} block font-bold tracking-tight ${
               invert ? "text-white" : "text-ink"
