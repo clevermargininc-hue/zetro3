@@ -28,7 +28,7 @@ export default async function MarketingLayout({ children }: { children: React.Re
       </div>
 
       {/* Header */}
-      <header className="border-b border-line/40 bg-white/70 backdrop-blur-xl sticky top-0 z-50">
+      <header className="border-b border-line/40 bg-white/70 none-xl sticky top-0 z-50">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Logo />
           <nav className="hidden md:flex items-center gap-8 mx-auto absolute left-1/2 -translate-x-1/2">

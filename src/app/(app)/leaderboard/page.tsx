@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { scoreTone, verdictLabel } from "@/lib/format";
+import { getTeamScope } from "@/lib/workspaces";
 import type { CallScore } from "@/lib/types";
 
 const Icons = {
@@ -57,12 +58,13 @@ export default async function LeaderboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const teamScope = await getTeamScope(user!.id);
   const [{ data: agents }, { data: calls }] = await Promise.all([
-    supabase.from("agents").select("id, name").eq("user_id", user!.id),
+    supabase.from("agents").select("id, name").in("user_id", teamScope),
     supabase
       .from("calls")
       .select("id, agent_id, status, call_scores(overall_score, verdict)")
-      .eq("user_id", user!.id),
+      .in("user_id", teamScope),
   ]);
 
   const ranked = (agents || [])
@@ -113,7 +115,7 @@ export default async function LeaderboardPage() {
       {/* Benchmark Summary Cards */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Top Performer */}
-        <div className="bg-white rounded-xl p-5 border border-line/70 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
+        <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">#1 Top Performer</span>
             <div className="flex items-baseline gap-2">
@@ -133,7 +135,7 @@ export default async function LeaderboardPage() {
         </div>
 
         {/* Team QA Average */}
-        <div className="bg-white rounded-xl p-5 border border-line/70 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
+        <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">Team Average QA</span>
             <div className="flex items-baseline gap-2">
@@ -153,7 +155,7 @@ export default async function LeaderboardPage() {
         </div>
 
         {/* Total Evaluated Audits */}
-        <div className="bg-white rounded-xl p-5 border border-line/70 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
+        <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">Assigned Audits</span>
             <div className="flex items-baseline gap-2">
@@ -169,7 +171,7 @@ export default async function LeaderboardPage() {
         </div>
 
         {/* Workforce Coverage */}
-        <div className="bg-white rounded-xl p-5 border border-line/70 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
+        <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">Active Workforce</span>
             <div className="flex items-baseline gap-2">
@@ -203,8 +205,8 @@ export default async function LeaderboardPage() {
             return (
               <div
                 key={agent.id}
-                className={`bg-white rounded-xl p-5 border shadow-sm flex flex-col justify-between ${
-                  isFirst ? "border-slate-400/80 ring-1 ring-slate-200" : "border-line/70"
+                className={`bg-white rounded-lg p-5 border shadow-sm flex flex-col justify-between ${
+                  isFirst ? "border-slate-400/80 ring-1 ring-slate-200" : "border-line"
                 }`}
               >
                 <div>
@@ -255,8 +257,8 @@ export default async function LeaderboardPage() {
       )}
 
       {/* Main Ranking Data Table */}
-      <section className="bg-white rounded-xl border border-line/70 shadow-sm overflow-hidden">
-        <div className="px-6 py-4.5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
+      <section className="bg-white rounded-lg border border-line shadow-sm overflow-hidden">
+        <div className="px-6 py-4.5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50">
           <div>
             <h2 className="text-[15px] font-bold text-ink">Workforce Leaderboard Matrix</h2>
             <p className="text-[12px] text-muted mt-0.5">Complete ranking of representative performance and evaluation metrics</p>
@@ -285,7 +287,7 @@ export default async function LeaderboardPage() {
                 const isTop3 = rank === 3;
 
                 return (
-                  <tr key={agent.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr key={agent.id} className="hover:bg-slate-50 transition-colors">
                     {/* Rank */}
                     <td className="px-6 py-3.5 whitespace-nowrap">
                       <div

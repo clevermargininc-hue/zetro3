@@ -80,8 +80,8 @@ export default function HowItWorksPage() {
       </div>
 
       <div className="mb-24 grid gap-4 sm:grid-cols-2 max-w-3xl mx-auto">
-        <div className="flex items-start gap-4 rounded-2xl border border-line bg-white p-5 text-left shadow-sm">
-          <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl border border-line bg-white">
+        <div className="flex items-start gap-4 rounded-lg border border-line bg-white p-5 text-left shadow-sm">
+          <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg border border-line bg-white">
             <TanzaniaFlagIcon className="h-11 w-11" />
           </span>
           <div>
@@ -89,8 +89,8 @@ export default function HowItWorksPage() {
             <p className="mt-1 text-sm text-muted">Kiswahili and English auditing</p>
           </div>
         </div>
-        <div className="flex items-start gap-4 rounded-2xl border border-line bg-white p-5 text-left shadow-sm">
-          <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-blue-soft text-blue">
+        <div className="flex items-start gap-4 rounded-lg border border-line bg-white p-5 text-left shadow-sm">
+          <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-blue-soft text-blue">
             <WorldFlagIcon className="h-7 w-7" />
           </span>
           <div>
@@ -139,7 +139,7 @@ export default function HowItWorksPage() {
       <div className="mt-32 text-center bg-blue/5 rounded-3xl p-12 border border-blue/10">
         <h3 className="text-3xl font-bold text-ink mb-6">Experience the magic on your own data.</h3>
         <p className="text-muted text-lg mb-8 max-w-2xl mx-auto">Upload a sample call and your company scorecard. We will show you the exact automated audit Zetro can produce.</p>
-        <Link href="/talk-sales" className="btn btn-lg btn-blue shadow-xl shadow-blue/20 hover:-translate-y-1 transition-all px-10">
+        <Link href="/talk-sales" className="btn btn-lg btn-blue shadow-sm shadow-blue/20 hover:-translate-y-1 transition-all px-10">
           Book a live Demo
         </Link>
       </div>

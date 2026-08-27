@@ -1,5 +1,6 @@
 import { NextResponse, after } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
+import { getTeamScope } from "@/lib/workspaces";
 import { transcribeCall } from "@/lib/process-call";
 
 export const runtime = "nodejs";
@@ -21,7 +22,8 @@ export async function POST(
     .eq("id", id)
     .single();
 
-  if (!call || call.user_id !== user.id) {
+  const teamScope = await getTeamScope(user.id);
+  if (!call || !teamScope.includes(call.user_id)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

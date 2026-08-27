@@ -28,7 +28,7 @@ export default async function HomePage() {
           </p>
           
           <div className="mt-10 flex flex-col sm:flex-row gap-4 w-full sm:w-auto animate-in fade-in slide-in-from-bottom-10 duration-700 delay-300">
-            <Link href={signedIn ? "/dashboard" : "/signup"} className="btn btn-lg btn-blue shadow-xl shadow-blue/20 hover:-translate-y-1 transition-all px-8 text-[16px]">
+            <Link href={signedIn ? "/dashboard" : "/signup"} className="btn btn-lg btn-blue shadow-sm shadow-blue/20 hover:-translate-y-1 transition-all px-8 text-[16px]">
               {signedIn ? "Go to Dashboard" : "Start your free workspace"}
             </Link>
             <Link href="/talk-sales" className="btn btn-lg bg-white border border-line/50 text-ink hover:bg-surface-2 shadow-sm transition-all px-8 text-[16px]">
@@ -65,8 +65,8 @@ export default async function HomePage() {
                 "Get instant scores for empathy, resolution, and compliance, complete with coaching recommendations.",
               ],
             ].map(([n, title, body]) => (
-              <article key={n} className="bg-white rounded-3xl p-8 border border-line/40 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group">
-                <div className="h-12 w-12 rounded-2xl bg-surface-2 flex items-center justify-center mb-6 group-hover:bg-blue/10 transition-colors">
+              <article key={n} className="bg-white rounded-3xl p-8 border border-line/40 shadow-sm hover:shadow-sm transition-all duration-300 hover:-translate-y-1 group">
+                <div className="h-12 w-12 rounded-lg bg-surface-2 flex items-center justify-center mb-6 group-hover:bg-blue/10 transition-colors">
                    <p className="text-[16px] font-bold text-blue font-mono">{n}</p>
                 </div>
                 <h3 className="text-[18px] font-bold text-ink">{title}</h3>

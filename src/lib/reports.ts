@@ -1,5 +1,6 @@
 import { verdictLabel } from "@/lib/format";
 import type { AuditMode, Verdict } from "@/lib/types";
+import { getTeamScope } from "@/lib/workspaces";
 
 export const REPORT_PERIODS = ["daily", "weekly", "monthly", "annually"] as const;
 export type ReportPeriod = (typeof REPORT_PERIODS)[number];
@@ -355,13 +356,14 @@ export async function loadQaReport(
   date: string,
   agentId: string | null,
 ): Promise<QaReport> {
+  const teamScope = await getTeamScope(userId);
   const callsQuery = supabase
     .from("calls")
     .select("id, title, agent_id, created_at, completed_at, status, agents(name), call_scores(*)")
-    .eq("user_id", userId)
+    .in("user_id", teamScope)
     .eq("status", "completed");
 
-  const agentsQuery = supabase.from("agents").select("id, name").eq("user_id", userId);
+  const agentsQuery = supabase.from("agents").select("id, name").in("user_id", teamScope);
 
   const [{ data: calls, error: callError }, { data: agents, error: agentError }] = await Promise.all([
     callsQuery,

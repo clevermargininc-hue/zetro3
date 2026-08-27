@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CallJobList } from "@/components/call-job-list";
 import { createClient } from "@/lib/supabase/server";
+import { getTeamScope } from "@/lib/workspaces";
 import type { Call, CallScore } from "@/lib/types";
 
 export default async function TranscribePage() {
@@ -9,10 +10,11 @@ export default async function TranscribePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const teamScope = await getTeamScope(user!.id);
   const { data: calls } = await supabase
     .from("calls")
     .select("*, agents(name), call_scores(overall_score, verdict)")
-    .eq("user_id", user!.id)
+    .in("user_id", teamScope)
     .order("created_at", { ascending: false });
 
   return (
@@ -27,7 +29,7 @@ export default async function TranscribePage() {
             Process audio to generate transcripts, detect languages, and separate speakers. This is required before scoring.
           </p>
         </div>
-        <Link href="/upload" className="btn bg-blue text-white shadow-md shadow-blue/20 hover:-translate-y-0.5 transition-all px-6 py-3 rounded-xl font-bold text-[13px]">
+        <Link href="/upload" className="btn bg-blue text-white shadow-md shadow-blue/20 hover:-translate-y-0.5 transition-all px-6 py-3 rounded-lg font-bold text-[13px]">
           Upload Call
         </Link>
       </div>
@@ -57,6 +59,7 @@ export default async function TranscribePage() {
         initialCalls={(calls || []) as Array<
           Call & { agents?: { name: string } | null; call_scores?: CallScore[] | CallScore | null }
         >}
+        teamScope={teamScope}
       />
     </div>
   );

@@ -95,13 +95,7 @@ export function ScoreWorkspace({
 
             {/* Metadata strip */}
             <div className="mt-2 flex items-center gap-3 text-[12px] text-muted flex-wrap">
-              <span className="flex items-center gap-1.5">
-                <div className="w-5 h-5 rounded-full bg-slate-800 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
-                  {getInitials(call.agents?.name || "Unassigned")}
-                </div>
-                <span className="font-semibold text-slate-700">{call.agents?.name || "Unassigned"}</span>
-              </span>
-              <span>•</span>
+
               <span className="flex items-center gap-1">
                 <span className="font-medium text-slate-600">Language:</span>
                 <span className="font-semibold text-ink">{languageLabel(call.detected_language || call.language_mode)}</span>
@@ -136,7 +130,7 @@ export function ScoreWorkspace({
 
       {/* When waiting for audit */}
       {hasScript && !score && !busy && (
-        <section className="bg-white no-print rounded-xl p-8 border border-line/70 shadow-sm max-w-xl mx-auto mt-8 text-center space-y-4">
+        <section className="bg-white no-print rounded-lg p-8 border border-line shadow-sm max-w-xl mx-auto mt-8 text-center space-y-4">
           <h2 className="text-[16px] font-bold text-ink">Score this Interaction</h2>
           <p className="text-[13px] text-muted max-w-md mx-auto">
             Select an evaluation pathway below to generate agent performance metrics.
@@ -155,7 +149,7 @@ export function ScoreWorkspace({
 
       {/* Analyzing state */}
       {busy && !score && (
-        <section className="bg-white no-print rounded-xl p-12 border border-line/70 shadow-sm text-center space-y-4 max-w-lg mx-auto mt-8">
+        <section className="bg-white no-print rounded-lg p-12 border border-line shadow-sm text-center space-y-4 max-w-lg mx-auto mt-8">
           <div className="h-8 w-8 rounded-full border-3 border-blue/20 border-t-blue animate-spin mx-auto" />
           <h2 className="text-[16px] font-bold text-ink">AI Quality Audit in Progress…</h2>
           <p className="text-[13px] text-muted max-w-sm mx-auto leading-relaxed">
@@ -176,7 +170,7 @@ export function ScoreWorkspace({
 
       {/* Fallback when not ready */}
       {!hasScript && !busy && (
-        <section className="bg-white no-print rounded-xl p-8 border border-line/70 shadow-sm text-center max-w-md mx-auto mt-8 space-y-3">
+        <section className="bg-white no-print rounded-lg p-8 border border-line shadow-sm text-center max-w-md mx-auto mt-8 space-y-3">
           <h2 className="text-[16px] font-bold text-ink">Recording Not Ready for Evaluation</h2>
           <p className="text-[13px] text-muted">
             The audio transcript is still being prepared. Return to the call stream to check progress.

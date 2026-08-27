@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getTeamScope } from "@/lib/workspaces";
 
 export const runtime = "nodejs";
 
@@ -24,7 +25,8 @@ export async function DELETE(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  if (!row || row.user_id !== user.id) {
+  const teamScope = await getTeamScope(user.id);
+  if (!row || !teamScope.includes(row.user_id)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

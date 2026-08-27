@@ -33,7 +33,7 @@ const Icons = {
   ),
 };
 
-export function UploadForm() {
+export function UploadForm({ teamScope }: { teamScope: string[] }) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [agentName, setAgentName] = useState("");
@@ -97,7 +97,7 @@ export function UploadForm() {
         const { data: existing } = await supabase
           .from("agents")
           .select("id")
-          .eq("user_id", user.id)
+          .in("user_id", teamScope)
           .ilike("name", trimmedAgent)
           .maybeSingle();
         if (existing) {
@@ -150,14 +150,14 @@ export function UploadForm() {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={onSubmit} className="bg-white rounded-xl p-6 sm:p-8 border border-line/70 shadow-sm space-y-6">
+      <form onSubmit={onSubmit} className="bg-white rounded-lg p-6 sm:p-8 border border-line shadow-sm space-y-6">
         {/* File Dropzone */}
         <div>
           <label
-            className={`relative flex flex-col items-center justify-center cursor-pointer rounded-xl border-2 border-dashed transition-all p-8 text-center group ${
+            className={`relative flex flex-col items-center justify-center cursor-pointer rounded-lg border-2 border-dashed transition-all p-8 text-center group ${
               file
                 ? "border-emerald-400 bg-emerald-50/40"
-                : "border-slate-300 bg-slate-50/50 hover:border-blue hover:bg-blue/5"
+                : "border-slate-300 bg-slate-50 hover:border-blue hover:bg-blue/5"
             }`}
           >
             <input
@@ -167,7 +167,7 @@ export function UploadForm() {
               onChange={(e) => setFile(e.target.files?.[0] || null)}
             />
             <div
-              className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3.5 transition-colors ${
+              className={`w-12 h-12 rounded-lg flex items-center justify-center mb-3.5 transition-colors ${
                 file
                   ? "bg-emerald-500 text-white"
                   : "bg-white text-slate-600 border border-slate-200 group-hover:text-blue group-hover:border-blue/30"
@@ -245,7 +245,7 @@ export function UploadForm() {
 
       {/* Done notification */}
       {done && (
-        <div className="bg-white rounded-xl p-6 border border-emerald-200 bg-emerald-50/30 shadow-sm space-y-4">
+        <div className="bg-white rounded-lg p-6 border border-emerald-200 bg-emerald-50/30 shadow-sm space-y-4">
           <div className="flex items-center gap-2.5">
             <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[12px] font-bold">
               {Icons.check}

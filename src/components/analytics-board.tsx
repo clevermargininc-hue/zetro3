@@ -171,7 +171,7 @@ export function AnalyticsBoard() {
       </div>
 
       {/* Filter Control Bar */}
-      <section className="bg-white rounded-xl p-5 border border-line/70 shadow-sm space-y-4">
+      <section className="bg-white rounded-lg p-5 border border-line shadow-sm space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2 text-[13px] font-bold text-ink">
             <span className="text-blue">{Icons.filter}</span>
@@ -181,7 +181,7 @@ export function AnalyticsBoard() {
             <div className="text-[12px] text-muted flex items-center gap-1.5">
               <span>Scope:</span>
               <span className="font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                {data.filter.period_label} · {data.filter.agent_label}
+                {data.filter.period_label}
               </span>
               {loading && <span className="text-blue font-medium animate-pulse ml-1">Updating…</span>}
             </div>
@@ -255,62 +255,7 @@ export function AnalyticsBoard() {
           )}
         </div>
 
-        {/* Agent filter chips */}
-        <div className="pt-2">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[12px] font-bold uppercase tracking-wider text-slate-500">
-              Agent Cohort Selection
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${
-                  allAgents ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-                onClick={selectAllAgents}
-              >
-                All Agents
-              </button>
-              <button
-                type="button"
-                className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${
-                  !allAgents && includeUnassigned
-                    ? "bg-slate-900 text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-                onClick={() => {
-                  setAllAgents(false);
-                  setIncludeUnassigned((v) => !v);
-                }}
-              >
-                Unassigned Calls
-              </button>
-            </div>
-          </div>
 
-          <div className="flex flex-wrap gap-1.5">
-            {agentOptions.map((agent) => {
-              const active = !allAgents && selectedAgentIds.includes(agent.id);
-              return (
-                <button
-                  key={agent.id}
-                  type="button"
-                  onClick={() => toggleAgent(agent.id)}
-                  className={`px-3 py-1 rounded-md text-[12px] font-medium border transition-all ${
-                    active
-                      ? "border-blue bg-blue text-white shadow-xs"
-                      : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white"
-                  }`}
-                >
-                  {agent.name}
-                </button>
-              );
-            })}
-            {!agentOptions.length && (
-              <span className="text-[12px] text-muted italic">No agents registered in workspace.</span>
-            )}
-          </div>
-        </div>
       </section>
 
       {error && <p className="alert-error">{error}</p>}
@@ -474,92 +419,7 @@ export function AnalyticsBoard() {
             </div>
           </section>
 
-          {/* Performance Cohorts: Top Performers vs Coaching Needed */}
-          <section className="grid gap-6 lg:grid-cols-2">
-            <Panel title="Top Performing Representatives" subtitle="Highest average evaluation scores in current period">
-              <CohortList
-                rows={data.top_performers}
-                empty="No top performers detected in this filter selection."
-                mode="top"
-              />
-            </Panel>
 
-            <Panel title="Coaching & Remediation Priorities" subtitle="Agents with lower scores or flagged compliance issues">
-              <CohortList
-                rows={data.coaching_needed}
-                empty="No coaching remediation flags detected in this period."
-                mode="coach"
-              />
-            </Panel>
-          </section>
-
-          {/* Comprehensive Agent Evaluation Matrix */}
-          <section className="bg-white rounded-xl border border-line/70 shadow-sm overflow-hidden">
-            <div className="px-6 py-4.5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
-              <div>
-                <h2 className="text-[15px] font-bold text-ink">Agent Performance Matrix</h2>
-                <p className="text-[12px] text-muted mt-0.5">Detailed evaluation breakdown per agent for the selected timeframe</p>
-              </div>
-              <span className="text-[12px] font-semibold text-slate-500">{data.agents.length} representatives tracked</span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                    <th className="px-6 py-3">Agent Representative</th>
-                    <th className="px-6 py-3 text-right">Avg QA Score</th>
-                    <th className="px-6 py-3 text-right">Audited Calls</th>
-                    <th className="px-6 py-3 text-right">Excellent (&gt;85%)</th>
-                    <th className="px-6 py-3 text-right">Coaching Flags</th>
-                    <th className="px-6 py-3 text-right">Total Talk Time</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-[13px]">
-                  {data.agents.map((row) => (
-                    <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-6 py-3.5 font-semibold text-ink">{row.name}</td>
-                      <td className="px-6 py-3.5 text-right whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold tabular-nums border ${
-                            row.avg_score != null
-                              ? row.avg_score >= 80
-                                ? "bg-good/10 text-good border-good/20"
-                                : row.avg_score >= 60
-                                ? "bg-warn/10 text-warn border-warn/20"
-                                : "bg-rose/10 text-rose border-rose/20"
-                              : "bg-slate-100 text-slate-500 border-slate-200"
-                          }`}
-                        >
-                          {row.avg_score != null ? `${row.avg_score}%` : "—"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3.5 text-right font-medium text-slate-700 tabular-nums">
-                        {row.call_count}
-                      </td>
-                      <td className="px-6 py-3.5 text-right font-medium text-emerald-600 tabular-nums">
-                        {row.excellent}
-                      </td>
-                      <td className="px-6 py-3.5 text-right font-medium tabular-nums">
-                        <span className={row.needs_coaching > 0 ? "text-amber-600 font-bold" : "text-slate-400"}>
-                          {row.needs_coaching}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3.5 text-right text-slate-600 tabular-nums whitespace-nowrap">
-                        {formatHandlingTime(row.total_handling_seconds)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {!data.agents.length && (
-                <div className="py-12 text-center text-muted text-[13px]">
-                  No agent data available for this filter period.
-                </div>
-              )}
-            </div>
-          </section>
         </>
       )}
     </div>
@@ -592,7 +452,7 @@ function StatCard({
     : "text-ink";
 
   return (
-    <div className="bg-white rounded-xl p-5 border border-line/70 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
+    <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
       <div>
         <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">{label}</span>
         <div className="flex items-baseline gap-2">
@@ -619,8 +479,8 @@ function Panel({
   children: ReactNode;
 }) {
   return (
-    <section className="bg-white rounded-xl border border-line/70 shadow-sm overflow-hidden">
-      <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+    <section className="bg-white rounded-lg border border-line shadow-sm overflow-hidden">
+      <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
         <h2 className="text-[15px] font-bold tracking-tight text-ink">{title}</h2>
         <p className="text-[12px] text-muted mt-0.5">{subtitle}</p>
       </div>
@@ -645,7 +505,7 @@ function CohortList({
   return (
     <div className="divide-y divide-slate-100">
       {rows.map((row, index) => (
-        <div key={row.id} className="py-3 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+        <div key={row.id} className="py-3 flex items-center justify-between hover:bg-slate-50 transition-colors">
           <div className="flex items-center gap-3 min-w-0">
             <div
               className={`w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-bold shrink-0 ${

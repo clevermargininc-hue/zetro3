@@ -58,9 +58,9 @@ export function ScoreCard({ score }: { score: CallScore }) {
   return (
     <div className="space-y-6">
       {/* Executive Hero Evaluation Card */}
-      <section className="bg-white rounded-xl p-6 sm:p-8 border border-line/70 shadow-sm flex flex-col md:flex-row items-center md:items-start gap-8">
+      <section className="bg-white rounded-lg p-6 sm:p-8 border border-line shadow-sm flex flex-col md:flex-row items-center md:items-start gap-8">
         {/* Score Gauge */}
-        <div className="shrink-0 flex flex-col items-center justify-center p-6 bg-slate-50/80 rounded-xl border border-slate-200 text-center min-w-[160px]">
+        <div className="shrink-0 flex flex-col items-center justify-center p-6 bg-slate-50 rounded-lg border border-slate-200 text-center min-w-[160px]">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
             Overall QA Score
           </span>
@@ -94,7 +94,7 @@ export function ScoreCard({ score }: { score: CallScore }) {
       </section>
 
       {/* Quality Dimensions Matrix */}
-      <section className="bg-white rounded-xl p-6 border border-line/70 shadow-sm space-y-4">
+      <section className="bg-white rounded-lg p-6 border border-line shadow-sm space-y-4">
         <div className="pb-3 border-b border-slate-100 flex items-center justify-between">
           <div>
             <h3 className="text-[15px] font-bold text-ink">Category Scorecard Matrix</h3>
@@ -177,7 +177,7 @@ export function ScoreCard({ score }: { score: CallScore }) {
 
       {/* Standards Referenced */}
       {score.standards_used?.length ? (
-        <section className="bg-white rounded-xl p-6 border border-line/70 shadow-sm space-y-3">
+        <section className="bg-white rounded-lg p-6 border border-line shadow-sm space-y-3">
           <div className="pb-2 border-b border-slate-100">
             <h4 className="text-[13px] font-bold uppercase tracking-wider text-slate-500">
               Standards & Rubrics Referenced During Audit
@@ -227,7 +227,7 @@ function AnalysisCard({
   );
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-line/70 shadow-sm space-y-4">
+    <div className="bg-white rounded-lg p-6 border border-line shadow-sm space-y-4">
       <div className="flex items-start gap-3">
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${iconColor}`}>
           {icon}

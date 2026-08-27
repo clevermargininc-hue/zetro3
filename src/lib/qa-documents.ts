@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getTeamScope } from "@/lib/workspaces";
 import {
   MIN_READABLE_CHARS,
   QA_KIND_LABELS,
@@ -54,10 +55,11 @@ export function summarizeDocuments(docs: QaDocument[]): QaReadiness {
 
 export async function loadQaDocuments(userId: string): Promise<QaDocument[]> {
   const supabase = createAdminClient();
+  const teamScope = await getTeamScope(userId);
   const { data, error } = await supabase
     .from("qa_documents")
     .select("*")
-    .eq("user_id", userId)
+    .in("user_id", teamScope)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -96,7 +98,7 @@ export function formatQaContext(docs: QaDocument[]) {
           ? "COMPLIANCE — flag every breach of these rules"
           : "PROCESS DOCUMENTS — required scripts, steps, and product facts";
     return `## ${heading}\n\n${items
-      .map((doc) => `### ${doc.title} (${doc.file_name})\n${doc.extracted_text}`)
+      .map((doc) => `### ${doc.title} (${doc.file_name})\n${(doc.extracted_text || "").slice(0, 4000)}`)
       .join("\n\n")}`;
   })
     .filter(Boolean)

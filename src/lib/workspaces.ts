@@ -379,3 +379,18 @@ export async function listWorkspaceAdmins(workspaceId: string) {
   if (profileError) throw new Error(profileError.message);
   return profiles || [];
 }
+
+export async function getTeamScope(userId: string): Promise<string[]> {
+  const membership = await getMembership(userId);
+  if (!membership) return [userId];
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from('workspace_members')
+    .select('user_id')
+    .eq('workspace_id', membership.workspaceId);
+  if (data && data.length > 0) {
+    return data.map(row => row.user_id as string);
+  }
+  return [userId];
+}
+

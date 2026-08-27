@@ -114,7 +114,7 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
         <>
           {/* Invite Teammate Card */}
           {data.workspace.role === "admin" ? (
-            <section className="bg-white rounded-xl p-6 border border-line/70 shadow-sm space-y-4">
+            <section className="bg-white rounded-lg p-6 border border-line shadow-sm space-y-4">
               <div>
                 <h2 className="text-[16px] font-bold text-ink">Invite Team Member</h2>
                 <p className="text-[13px] text-muted mt-0.5">
@@ -165,7 +165,7 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
                     {(data.invites || []).map((invite) => (
                       <div
                         key={invite.id}
-                        className="px-4 py-2.5 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3 text-[13px]"
+                        className="px-4 py-2.5 bg-slate-50 flex flex-wrap items-center justify-between gap-3 text-[13px]"
                       >
                         <span className="font-medium text-ink">{invite.email}</span>
                         <div className="flex items-center gap-3">
@@ -208,7 +208,7 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
 
           {/* Join Requests Card */}
           {data.workspace.role === "admin" && data.requests.length > 0 ? (
-            <section className="bg-white rounded-xl p-6 border border-line/70 shadow-sm space-y-4">
+            <section className="bg-white rounded-lg p-6 border border-line shadow-sm space-y-4">
               <div>
                 <h2 className="text-[16px] font-bold text-ink">Pending Join Requests</h2>
                 <p className="text-[13px] text-muted mt-0.5">Teammates requesting to access this organization workspace.</p>
@@ -216,7 +216,7 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
 
               <div className="divide-y divide-slate-100 rounded-lg border border-slate-200 overflow-hidden">
                 {data.requests.map((request) => (
-                  <div key={request.id} className="p-4 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
+                  <div key={request.id} className="p-4 bg-slate-50 flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="font-semibold text-ink text-[13px]">{personLabel(request)}</p>
                       <p className="text-[12px] text-muted">{request.email}</p>
@@ -246,8 +246,8 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
           ) : null}
 
           {/* Members Directory */}
-          <section className="bg-white rounded-xl border border-line/70 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <section className="bg-white rounded-lg border border-line shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <div>
                 <h2 className="text-[15px] font-bold text-ink">Active Workspace Members</h2>
                 <p className="text-[12px] text-muted mt-0.5">Teammates with active access to calls and scorecards</p>
@@ -259,7 +259,7 @@ export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
 
             <div className="divide-y divide-slate-100">
               {data.members.map((member) => (
-                <div key={member.userId} className="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
+                <div key={member.userId} className="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-[11px] font-bold shrink-0">
                       {getInitials(member.fullName || member.email)}

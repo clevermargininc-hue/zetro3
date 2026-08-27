@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getTeamScope } from "@/lib/workspaces";
 import { chunkText, cosineSimilarity, embedQuery, embedTexts } from "@/lib/embeddings";
 import { ALL_DOCUMENT_KINDS, QA_KINDS, SCRIPT_KINDS, type QaDocument, type QaKind } from "@/lib/qa-kinds";
 import { formatQaContext } from "@/lib/qa-documents";
@@ -52,17 +53,18 @@ export async function indexQaDocument(doc: QaDocument) {
 
 export async function retrieveQaContext(userId: string, transcript: string, docs: QaDocument[]) {
   const supabase = createAdminClient();
+  const teamScope = await getTeamScope(userId);
   const { data, error } = await supabase
     .from("qa_document_chunks")
     .select("document_id, kind, content, embedding")
-    .eq("user_id", userId);
+    .in("user_id", teamScope);
 
   if (error || !data?.length) {
     return formatQaContext(docs);
   }
 
   const query = await embedQuery(
-    `Call transcript for QA scoring and compliance review:\n${transcript.slice(0, 7000)}`,
+    `Call transcript for QA scoring and compliance review:\n${transcript.slice(0, 1500)}`,
   );
 
   const ranked = (data as StoredChunk[])
@@ -73,11 +75,11 @@ export async function retrieveQaContext(userId: string, transcript: string, docs
     .sort((a, b) => b.score - a.score);
 
   const limits: Record<QaKind, number> = {
-    scorecard: 10,
-    compliance: 10,
-    document: 8,
-    opening: 4,
-    closing: 4,
+    scorecard: 6,
+    compliance: 6,
+    document: 4,
+    opening: 2,
+    closing: 2,
   };
 
   const picked = ALL_DOCUMENT_KINDS.flatMap((kind) =>

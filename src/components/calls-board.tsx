@@ -48,7 +48,7 @@ const Icons = {
   ),
 };
 
-export function CallsBoard({ initialCalls }: { initialCalls: CallRow[] }) {
+export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[], teamScope: string[] }) {
   const [calls, setCalls] = useState(initialCalls);
   const [filter, setFilter] = useState<Filter>("all");
 
@@ -61,7 +61,7 @@ export function CallsBoard({ initialCalls }: { initialCalls: CallRow[] }) {
       const { data } = await supabase
         .from("calls")
         .select("*, agents(name), call_scores(overall_score, verdict)")
-        .eq("user_id", user.id)
+        .in("user_id", teamScope)
         .order("created_at", { ascending: false });
       if (data) setCalls(data as CallRow[]);
     }
@@ -99,7 +99,7 @@ export function CallsBoard({ initialCalls }: { initialCalls: CallRow[] }) {
     <div className="space-y-6">
       {/* Operational KPI Tiles */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="bg-white rounded-xl p-5 border border-line/70 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
+        <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">Total Logged Calls</span>
             <span className="text-3xl font-bold tracking-tight tabular-nums text-ink">{calls.length}</span>
@@ -109,7 +109,7 @@ export function CallsBoard({ initialCalls }: { initialCalls: CallRow[] }) {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-5 border border-line/70 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
+        <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">Scored & Audited</span>
             <span className="text-3xl font-bold tracking-tight tabular-nums text-emerald-600">{counts.audited}</span>
@@ -119,7 +119,7 @@ export function CallsBoard({ initialCalls }: { initialCalls: CallRow[] }) {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-5 border border-line/70 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
+        <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">Transcribed Ready</span>
             <span className="text-3xl font-bold tracking-tight tabular-nums text-blue">{counts.transcribed}</span>
@@ -129,7 +129,7 @@ export function CallsBoard({ initialCalls }: { initialCalls: CallRow[] }) {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-5 border border-line/70 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
+        <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">In Pipeline / Processing</span>
             <div className="flex items-baseline gap-2">
@@ -148,7 +148,7 @@ export function CallsBoard({ initialCalls }: { initialCalls: CallRow[] }) {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100/80 rounded-lg max-w-fit border border-slate-200">
+      <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-lg max-w-fit border border-slate-200">
         {(
           [
             ["all", `All (${calls.length})`],
@@ -174,7 +174,7 @@ export function CallsBoard({ initialCalls }: { initialCalls: CallRow[] }) {
       </div>
 
       {/* Main Table */}
-      <div className="bg-white rounded-xl border border-line/70 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg border border-line shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -191,7 +191,7 @@ export function CallsBoard({ initialCalls }: { initialCalls: CallRow[] }) {
               {visible.map((call) => {
                 const score = scoreOf(call);
                 return (
-                  <tr key={call.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr key={call.id} className="hover:bg-slate-50 transition-colors">
                     {/* Call Title & Date */}
                     <td className="px-6 py-3.5">
                       <div className="font-semibold text-ink line-clamp-1 max-w-xs">{call.title || call.file_name || "Audio Recording"}</div>

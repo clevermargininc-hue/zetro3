@@ -109,7 +109,7 @@ export function AuditActions({
   return (
     <div className="space-y-4">
       {busy ? (
-        <div className="p-6 rounded-xl border border-blue/20 bg-blue/5 flex items-center gap-4">
+        <div className="p-6 rounded-lg border border-blue/20 bg-blue/5 flex items-center gap-4">
           <div className="h-6 w-6 rounded-full border-2 border-blue/30 border-t-blue animate-spin shrink-0" />
           <div>
             <h3 className="text-[14px] font-bold text-ink">
@@ -127,7 +127,7 @@ export function AuditActions({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Card 1: SOP Standards Audit */}
-          <div className="bg-slate-50/70 hover:bg-white rounded-xl p-5 border border-slate-200 hover:border-slate-300 transition-all flex flex-col justify-between space-y-4">
+          <div className="bg-slate-50/70 hover:bg-white rounded-lg p-5 border border-slate-200 hover:border-slate-300 transition-all flex flex-col justify-between space-y-4">
             <div>
               <div className="flex items-center gap-2.5 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-blue/10 text-blue flex items-center justify-center shrink-0">
@@ -154,7 +154,7 @@ export function AuditActions({
           </div>
 
           {/* Card 2: Autonomous AI Audit */}
-          <div className="bg-slate-50/70 hover:bg-white rounded-xl p-5 border border-slate-200 hover:border-slate-300 transition-all flex flex-col justify-between space-y-4">
+          <div className="bg-slate-50/70 hover:bg-white rounded-lg p-5 border border-slate-200 hover:border-slate-300 transition-all flex flex-col justify-between space-y-4">
             <div>
               <div className="flex items-center gap-2.5 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">

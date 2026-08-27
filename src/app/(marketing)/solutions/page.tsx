@@ -20,7 +20,7 @@ export default function SolutionsPage() {
 
       <div className="grid gap-12 lg:grid-cols-3 mb-32">
         {/* Role 1 */}
-        <div className="bg-white rounded-3xl p-10 border border-line/40 shadow-sm hover:shadow-xl transition-all group">
+        <div className="bg-white rounded-3xl p-10 border border-line/40 shadow-sm hover:shadow-sm transition-all group">
           <h3 className="text-2xl font-bold text-ink mb-2">For QA Managers</h3>
           <p className="text-blue font-medium mb-6">Stop listening. Start coaching.</p>
           <p className="text-muted leading-relaxed mb-6">
@@ -43,7 +43,7 @@ export default function SolutionsPage() {
         </div>
 
         {/* Role 2 */}
-        <div className="bg-blue rounded-3xl p-10 shadow-xl shadow-blue/20 transition-all text-white transform lg:-translate-y-4">
+        <div className="bg-blue rounded-3xl p-10 shadow-sm shadow-blue/20 transition-all text-white transform lg:-translate-y-4">
           <h3 className="text-2xl font-bold mb-2">For Operations Directors</h3>
           <p className="text-blue-200 font-medium mb-6">Mitigate risk. Maximize ROI.</p>
           <p className="text-white/80 leading-relaxed mb-6">
@@ -66,7 +66,7 @@ export default function SolutionsPage() {
         </div>
 
         {/* Role 3 */}
-        <div className="bg-white rounded-3xl p-10 border border-line/40 shadow-sm hover:shadow-xl transition-all group">
+        <div className="bg-white rounded-3xl p-10 border border-line/40 shadow-sm hover:shadow-sm transition-all group">
           <h3 className="text-2xl font-bold text-ink mb-2">For Agents</h3>
           <p className="text-blue font-medium mb-6">Fair, unbiased evaluations.</p>
           <p className="text-muted leading-relaxed mb-6">
@@ -113,7 +113,7 @@ export default function SolutionsPage() {
       </div>
       
       <div className="mt-20 text-center">
-        <Link href="/talk-sales" className="btn btn-lg btn-blue shadow-xl shadow-blue/20 hover:-translate-y-1 transition-all px-10">
+        <Link href="/talk-sales" className="btn btn-lg btn-blue shadow-sm shadow-blue/20 hover:-translate-y-1 transition-all px-10">
           Discuss your Use Case
         </Link>
       </div>

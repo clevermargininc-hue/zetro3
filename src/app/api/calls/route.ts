@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
 import { resolvedLanguageMode } from "@/lib/locale";
 import type { LanguageMode } from "@/lib/types";
-import { getMembership } from "@/lib/workspaces";
+import { getMembership, getTeamScope } from "@/lib/workspaces";
 
 const MODES: LanguageMode[] = ["auto", "en", "sw", "mixed"];
 
@@ -12,10 +12,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const teamScope = await getTeamScope(user.id);
   const { data, error } = await supabase
     .from("calls")
     .select("*, agents(name), call_scores(overall_score, verdict)")
-    .eq("user_id", user.id)
+    .in("user_id", teamScope)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -54,13 +55,14 @@ export async function POST(request: Request) {
     languageMode = requested;
   }
 
+  const teamScope = await getTeamScope(user.id);
   let agentId: string | null = null;
   const agentName = body.agent_name?.trim();
   if (agentName) {
     const { data: existing } = await supabase
       .from("agents")
       .select("id")
-      .eq("user_id", user.id)
+      .in("user_id", teamScope)
       .ilike("name", agentName)
       .maybeSingle();
 

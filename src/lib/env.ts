@@ -47,6 +47,6 @@ export function getServerEnv() {
     aiEmbeddingModel: process.env.AI_EMBEDDING_MODEL || "text-embedding-3-small",
     aiTemperature: Number.parseFloat(process.env.AI_TEMPERATURE || "0.1") || 0.1,
     aiMaxRetries: Math.max(1, Math.round(optionalNumber(process.env.AI_MAX_RETRIES, 3))),
-    aiTimeoutMs: optionalNumber(process.env.AI_TIMEOUT, 120000),
+    aiTimeoutMs: optionalNumber(process.env.AI_TIMEOUT, 90000),
   };
 }

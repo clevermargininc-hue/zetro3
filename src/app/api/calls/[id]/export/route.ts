@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
 import { callAuditExcel, callAuditFilename, callAuditPdf } from "@/lib/call-audit-file";
+import { getTeamScope } from "@/lib/workspaces";
 import type { Call, CallScore, Utterance } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -20,11 +21,12 @@ export async function GET(
     return NextResponse.json({ error: "Format must be xlsx or pdf." }, { status: 400 });
   }
 
+  const teamScope = await getTeamScope(user.id);
   const { data: call } = await supabase
     .from("calls")
     .select("*, agents(name)")
     .eq("id", id)
-    .eq("user_id", user.id)
+    .in("user_id", teamScope)
     .maybeSingle();
 
   if (!call) {

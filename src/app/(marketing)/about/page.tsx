@@ -52,7 +52,7 @@ export default function AboutPage() {
 
       <div className="mt-20 text-center">
         <h3 className="text-2xl font-bold text-ink mb-6">Ready to see it in action?</h3>
-        <Link href="/talk-sales" className="btn btn-lg btn-blue shadow-xl shadow-blue/20 hover:-translate-y-1 transition-all px-8">
+        <Link href="/talk-sales" className="btn btn-lg btn-blue shadow-sm shadow-blue/20 hover:-translate-y-1 transition-all px-8">
           Request a Demo
         </Link>
       </div>

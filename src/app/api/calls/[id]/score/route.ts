@@ -3,6 +3,7 @@ import { getRequestUser } from "@/lib/supabase/request-user";
 import { scoreCall } from "@/lib/process-call";
 import { loadQaDocuments, summarizeDocuments } from "@/lib/qa-documents";
 import { readinessErrorMessage } from "@/lib/qa-kinds";
+import { getTeamScope } from "@/lib/workspaces";
 import type { AuditMode } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -38,7 +39,8 @@ export async function POST(
     .eq("id", id)
     .single();
 
-  if (!call || call.user_id !== user.id) {
+  const teamScope = await getTeamScope(user.id);
+  if (!call || !teamScope.includes(call.user_id)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

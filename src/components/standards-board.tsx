@@ -103,8 +103,8 @@ function KindSection({
 
   return (
     <div
-      className={`bg-white rounded-xl p-5 border shadow-sm transition-all duration-200 ${
-        ok ? "border-line/70 hover:border-slate-300" : "border-slate-200"
+      className={`bg-white rounded-lg p-5 border shadow-sm transition-all duration-200 ${
+        ok ? "border-line hover:border-slate-300" : "border-slate-200"
       }`}
     >
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-5">
@@ -253,7 +253,7 @@ export function StandardsBoard() {
   return (
     <div className="space-y-6">
       {readiness?.setupRequired ? (
-        <div className="bg-white rounded-xl p-5 border border-amber-200 bg-amber-50/50 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border border-amber-200 bg-amber-50/50 shadow-sm">
           <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700 block mb-1">
             Database Setup Required
           </span>
@@ -268,7 +268,7 @@ export function StandardsBoard() {
 
       {/* System Readiness Banner */}
       <section
-        className={`bg-white rounded-xl p-5 border shadow-sm flex items-center justify-between transition-colors ${
+        className={`bg-white rounded-lg p-5 border shadow-sm flex items-center justify-between transition-colors ${
           readiness?.ready
             ? "border-emerald-200 bg-emerald-50/30"
             : "border-slate-200"

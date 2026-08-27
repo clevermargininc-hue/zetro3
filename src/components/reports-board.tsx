@@ -144,7 +144,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
       )}
 
       {/* Filter & Export Bar */}
-      <section className="bg-white rounded-xl p-5 border border-line/70 shadow-sm space-y-4">
+      <section className="bg-white rounded-lg p-5 border border-line shadow-sm space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2 text-[13px] font-bold text-ink">
             <span className="text-blue">{Icons.filter}</span>
@@ -154,14 +154,14 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
             <div className="text-[12px] text-muted flex items-center gap-1.5">
               <span>Selected Scope:</span>
               <span className="font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                {report.period_label} · {report.agent_label}
+                {report.period_label}
               </span>
             </div>
           )}
         </div>
 
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-5">
-          <div className="flex-1 grid gap-4 sm:grid-cols-3 items-end">
+          <div className="flex-1 grid gap-4 sm:grid-cols-2 items-end">
             {/* Period selector */}
             <div>
               <label className="block text-[12px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
@@ -195,24 +195,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
               />
             </div>
 
-            {/* Agent filter */}
-            <div>
-              <label className="block text-[12px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                Workforce Scope
-              </label>
-              <select
-                className="field bg-slate-50/70 border-slate-200 text-ink text-[13px] font-medium"
-                value={agentId}
-                onChange={(event) => setAgentId(event.target.value)}
-              >
-                <option value="all">All Workforce (Team-wide)</option>
-                {agents.map((agent) => (
-                  <option key={agent.id} value={agent.id}>
-                    {agent.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+
           </div>
 
           {/* Export Action Buttons */}
@@ -275,7 +258,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
 
       {/* Loading state */}
       {loading && (
-        <div className="bg-white rounded-xl p-10 border border-line/70 flex items-center justify-center shadow-sm">
+        <div className="bg-white rounded-lg p-10 border border-line flex items-center justify-center shadow-sm">
           <div className="h-5 w-5 rounded-full border-2 border-slate-200 border-t-blue animate-spin mr-3" />
           <span className="text-muted text-[13px] font-medium">Generating structured report dataset…</span>
         </div>
@@ -283,9 +266,9 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
 
       {/* Tabbed Report Explorer */}
       {!compact && report && !loading && (
-        <section className="bg-white rounded-xl border border-line/70 shadow-sm overflow-hidden">
+        <section className="bg-white rounded-lg border border-line shadow-sm overflow-hidden">
           {/* Tab navigation */}
-          <div className="flex border-b border-slate-200 px-6 bg-slate-50/50 gap-6">
+          <div className="flex border-b border-slate-200 px-6 bg-slate-50 gap-6">
             <button
               onClick={() => setActiveTab("scores")}
               className={`py-3.5 font-bold text-[13px] transition-colors border-b-2 ${
@@ -306,18 +289,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
             >
               Compliance Findings ({report.compliance.length})
             </button>
-            {(report.agents.length > 1 || (report.agent_id == null && report.agents.length > 0)) && (
-              <button
-                onClick={() => setActiveTab("agents")}
-                className={`py-3.5 font-bold text-[13px] transition-colors border-b-2 ${
-                  activeTab === "agents"
-                    ? "border-blue text-blue"
-                    : "border-transparent text-slate-500 hover:text-ink"
-                }`}
-              >
-                Workforce Breakdown ({report.agents.length})
-              </button>
-            )}
+
           </div>
 
           <div className="overflow-x-auto">
@@ -328,7 +300,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                   <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                     <th className="px-6 py-3">Timestamp</th>
                     <th className="px-6 py-3">Call Title / Recording</th>
-                    <th className="px-6 py-3">Representative</th>
+
                     <th className="px-6 py-3 text-right">Score</th>
                     <th className="px-6 py-3">Verdict</th>
                     <th className="px-6 py-3">Audit Method</th>
@@ -337,7 +309,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-[13px]">
                   {report.calls.map((row) => (
-                    <tr key={row.call_id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={row.call_id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-3.5 text-slate-500 whitespace-nowrap text-[12px]">
                         {new Intl.DateTimeFormat("en-KE", {
                           dateStyle: "medium",
@@ -352,9 +324,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                           {row.title}
                         </Link>
                       </td>
-                      <td className="px-6 py-3.5 font-medium text-slate-700">
-                        {row.agent_name || <span className="text-slate-400 italic">Unassigned</span>}
-                      </td>
+
                       <td className="px-6 py-3.5 text-right whitespace-nowrap">
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold tabular-nums border ${
@@ -408,13 +378,13 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                   <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                     <th className="px-6 py-3">Timestamp</th>
                     <th className="px-6 py-3">Call Title</th>
-                    <th className="px-6 py-3">Representative</th>
+
                     <th className="px-6 py-3">Compliance Finding / Breach Description</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-[13px]">
                   {report.compliance.map((row, index) => (
-                    <tr key={`${row.call_id}-${index}`} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={`${row.call_id}-${index}`} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-3.5 text-slate-500 whitespace-nowrap text-[12px]">
                         {new Intl.DateTimeFormat("en-KE", {
                           dateStyle: "medium",
@@ -429,7 +399,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                           {row.title}
                         </Link>
                       </td>
-                      <td className="px-6 py-3.5 font-medium text-slate-700">{row.agent_name}</td>
+
                       <td className="px-6 py-3.5 text-rose font-medium leading-relaxed max-w-lg">
                         <div className="p-2.5 bg-rose/5 rounded border border-rose/15 text-[12px]">
                           {row.finding}
@@ -449,60 +419,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
               </table>
             )}
 
-            {/* Tab 3: Agent Breakdown */}
-            {activeTab === "agents" && (
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                    <th className="px-6 py-3">Representative</th>
-                    <th className="px-6 py-3 text-right">Calls Audited</th>
-                    <th className="px-6 py-3 text-right">Avg QA Score</th>
-                    <th className="px-6 py-3 text-right">Excellent (&gt;85%)</th>
-                    <th className="px-6 py-3 text-right">Poor (&lt;50%)</th>
-                    <th className="px-6 py-3 text-right">Compliance Findings</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-[13px]">
-                  {report.agents.map((row) => (
-                    <tr key={row.agent_id || row.agent_name} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-6 py-3.5 font-semibold text-ink">{row.agent_name}</td>
-                      <td className="px-6 py-3.5 text-right font-medium text-slate-700 tabular-nums">
-                        {row.call_count}
-                      </td>
-                      <td className="px-6 py-3.5 text-right whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold tabular-nums border ${
-                            row.avg_score != null
-                              ? row.avg_score >= 80
-                                ? "bg-good/10 text-good border-good/20"
-                                : row.avg_score >= 60
-                                ? "bg-warn/10 text-warn border-warn/20"
-                                : "bg-rose/10 text-rose border-rose/20"
-                              : "bg-slate-100 text-slate-500 border-slate-200"
-                          }`}
-                        >
-                          {row.avg_score != null ? `${row.avg_score}%` : "—"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3.5 text-right font-medium text-emerald-600 tabular-nums">
-                        {row.excellent}
-                      </td>
-                      <td className="px-6 py-3.5 text-right font-medium tabular-nums">
-                        <span className={row.poor > 0 ? "text-rose font-bold" : "text-slate-400"}>
-                          {row.poor}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3.5 text-right text-slate-600 tabular-nums whitespace-nowrap">
-                        <span className={row.compliance_findings > 0 ? "text-rose font-semibold" : ""}>
-                          {row.compliance_findings} findings
-                        </span>{" "}
-                        <span className="text-slate-400">in {row.compliance_calls} calls</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+
           </div>
         </section>
       )}
@@ -536,7 +453,7 @@ function StatCard({
     : "text-ink";
 
   return (
-    <div className="bg-white rounded-xl p-5 border border-line/70 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
+    <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
       <div>
         <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">{label}</span>
         <div className="flex items-baseline gap-2">

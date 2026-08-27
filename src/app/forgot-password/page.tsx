@@ -39,7 +39,7 @@ function ForgotPasswordForm() {
   }
 
   return (
-    <div className="w-full max-w-md p-8 md:p-12 rounded-3xl bg-surface-2 border border-line shadow-xl">
+    <div className="w-full max-w-md p-8 md:p-12 rounded-3xl bg-surface-2 border border-line shadow-sm">
       <h1 className="text-3xl font-extrabold text-ink mb-2">Reset password</h1>
       <p className="text-muted text-[15px] mb-8">
         Enter your email and we&apos;ll send you a link to reset your password.
@@ -47,7 +47,7 @@ function ForgotPasswordForm() {
 
       {success ? (
         <div className="flex flex-col gap-6">
-          <div className="alert-ok p-4 rounded-xl">
+          <div className="alert-ok p-4 rounded-lg">
             Check your email for a password reset link.
           </div>
           <Link

@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { getOpenAI, isModelAccessError, withRetries } from "@/lib/ai-client";
 import { getServerEnv } from "@/lib/env";
 import type {
-  AssemblyUtterance,
+  GenericUtterance,
   CallAnalysis,
   SpeakerRole,
   AuditMode,
@@ -132,7 +132,7 @@ function normalizeEvidenceVerdict(value: unknown): MetricEvidenceVerdict {
 
 function normalizeMetricEvidence(
   raw: unknown,
-  utterances: AssemblyUtterance[],
+  utterances: GenericUtterance[],
 ): MetricEvidence {
   const source =
     raw && typeof raw === "object" && !Array.isArray(raw)
@@ -185,8 +185,8 @@ metric_evidence (required for every score dimension):
 Do not dump the full transcript — only these short evidence snippets.`;
 
 
-const FALLBACK_REASONING = ["gpt-5", "gpt-5-mini", "gpt-4o"];
-const FALLBACK_FAST = ["gpt-5-mini", "gpt-5", "gpt-4o-mini"];
+const FALLBACK_REASONING = ["gpt-4o-mini", "gpt-4o", "gpt-5-mini"];
+const FALLBACK_FAST = ["gpt-4o-mini", "gpt-4o", "gpt-5-mini"];
 
 type ModelMode = "reasoning" | "fast";
 
@@ -197,6 +197,25 @@ function modelsFor(mode: ModelMode) {
   return [primary, ...fallbacks.filter((model) => model !== primary)];
 }
 
+const noTemperature = new Set<string>();
+
+function supportsTemperature(model: string) {
+  if (noTemperature.has(model)) return false;
+  return !/^(gpt-5|o1|o3|o4)/i.test(model);
+}
+
+function tokenLimit(model: string) {
+  if (/^(gpt-5|o1|o3|o4)/i.test(model)) return { max_completion_tokens: 1600 };
+  return { max_tokens: 1600 };
+}
+
+function clipText(text: string, max: number) {
+  if (text.length <= max) return text;
+  const head = Math.floor(max * 0.55);
+  const tail = max - head - 24;
+  return `${text.slice(0, head)}\n\n[...truncated...]\n\n${text.slice(-tail)}`;
+}
+
 async function completeJson(
   system: string,
   user: string,
@@ -205,15 +224,16 @@ async function completeJson(
   mode: ModelMode,
 ) {
   const { aiTemperature } = getServerEnv();
-  const openai = getOpenAI();
   const models = modelsFor(mode);
   let lastError: unknown;
 
   for (const model of models) {
     try {
       const parsed = await withRetries(async () => {
+        const openai = getOpenAI();
         const body: OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming = {
           model,
+          ...tokenLimit(model),
           response_format: {
             type: "json_schema",
             json_schema: {
@@ -227,21 +247,32 @@ async function completeJson(
             { role: "user", content: user },
           ],
         };
+        if (supportsTemperature(model)) {
+          body.temperature = aiTemperature;
+        }
         try {
-          const completion = await openai.chat.completions.create({
-            ...body,
-            temperature: aiTemperature,
-          });
+          const completion = await openai.chat.completions.create(body);
           const raw = completion.choices[0]?.message?.content;
           if (!raw) throw new Error("OpenAI returned an empty response");
           return JSON.parse(raw);
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          if (!message.toLowerCase().includes("temperature")) throw error;
-          const completion = await openai.chat.completions.create(body);
-          const raw = completion.choices[0]?.message?.content;
-          if (!raw) throw new Error("OpenAI returned an empty response");
-          return JSON.parse(raw);
+          if (message.toLowerCase().includes("temperature")) {
+            noTemperature.add(model);
+            const { temperature: _t, ...withoutTemp } = body;
+            const completion = await getOpenAI().chat.completions.create(withoutTemp);
+            const raw = completion.choices[0]?.message?.content;
+            if (!raw) throw new Error("OpenAI returned an empty response");
+            return JSON.parse(raw);
+          }
+          if (/max_tokens|max_completion_tokens/i.test(message)) {
+            const { max_tokens: _a, max_completion_tokens: _b, ...withoutLimit } = body;
+            const completion = await getOpenAI().chat.completions.create(withoutLimit);
+            const raw = completion.choices[0]?.message?.content;
+            if (!raw) throw new Error("OpenAI returned an empty response");
+            return JSON.parse(raw);
+          }
+          throw error;
         }
       });
       return parsed;
@@ -389,7 +420,7 @@ speaker_assignments must cover every speaker label.
 ${EVIDENCE_PROMPT_BLOCK}`;
 
 export async function analyzeCall(
-  utterances: AssemblyUtterance[],
+  utterances: GenericUtterance[],
   agentName: string | null | undefined,
   standardsText: string,
   standards: QaDocument[],
@@ -398,20 +429,23 @@ export async function analyzeCall(
   scriptsText = "",
   scriptDocs: QaDocument[] = [],
 ): Promise<CallAnalysis> {
-  const transcript = utterances
-    .map((u, i) => {
-      const start = Math.floor(u.start / 1000);
-      return `[${i}] Speaker ${u.speaker} (${start}s): ${u.text}`;
-    })
-    .join("\n");
+  const transcript = clipText(
+    utterances
+      .map((u, i) => {
+        const start = Math.floor(u.start / 1000);
+        return `[${i}] Speaker ${u.speaker} (${start}s): ${u.text}`;
+      })
+      .join("\n"),
+    12000,
+  );
 
   const scriptsBlock = scriptsText.trim()
-    ? `\n\nORGANIZATION CALL SCRIPTS (shared by all agents):\n${scriptsText.trim()}`
+    ? `\n\nORGANIZATION CALL SCRIPTS (shared by all agents):\n${clipText(scriptsText.trim(), 2500)}`
     : "";
 
   const userPrompt =
     mode === "documents"
-      ? `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}WORKSPACE STANDARDS (you have read these files; score only from them; use company names/key terms from here):\n${standardsText}${scriptsBlock}\n\nTranscript:\n${transcript}`
+      ? `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}WORKSPACE STANDARDS (you have read these files; score only from them; use company names/key terms from here):\n${clipText(standardsText, 8000)}${scriptsBlock}\n\nTranscript:\n${transcript}`
       : `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}Automatic audit — no company scorecard required.${scriptsBlock}\n\nTranscript:\n${transcript}`;
 
   const parsed = (await completeJson(
@@ -425,7 +459,7 @@ export async function analyzeCall(
     userPrompt,
     "call_analysis",
     ANALYSIS_SCHEMA,
-    "reasoning",
+    "fast",
   )) as CallAnalysis & {
     speaker_assignments?: { speaker_label: string; role: SpeakerRole }[];
     compliance_findings?: string[];

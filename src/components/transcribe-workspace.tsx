@@ -167,11 +167,7 @@ export function TranscribeWorkspace({
 
             {/* Metadata tags */}
             <div className="mt-2 flex items-center gap-3 text-[12px] text-muted flex-wrap">
-              <span className="flex items-center gap-1.5">
-                <span className="font-semibold text-slate-700">Representative:</span>
-                <span>{call.agents?.name || "Unassigned"}</span>
-              </span>
-              <span>•</span>
+
               <span className="flex items-center gap-1.5">
                 <span className="font-semibold text-slate-700">Language:</span>
                 <span>{languageLabel(call.detected_language || call.language_mode)}</span>
@@ -201,7 +197,7 @@ export function TranscribeWorkspace({
       )}
 
       {/* Audio Playback Card */}
-      <section className="bg-white rounded-xl p-6 border border-line/70 shadow-sm space-y-4">
+      <section className="bg-white rounded-lg p-6 border border-line shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-[14px] font-bold text-ink">
             <span className="text-blue">{Icons.headphones}</span>
@@ -221,7 +217,7 @@ export function TranscribeWorkspace({
 
       {/* Evaluation & Scoring Workspace */}
       {!readyForAudit ? (
-        <section className="bg-white rounded-xl p-8 border border-line/70 shadow-sm text-center space-y-4">
+        <section className="bg-white rounded-lg p-8 border border-line shadow-sm text-center space-y-4">
           <div className="max-w-md mx-auto">
             <h2 className="text-[16px] font-bold text-ink">
               {preparingBusy ? "Speech Transcription in Progress…" : "Prepare Recording for Evaluation"}
@@ -249,7 +245,7 @@ export function TranscribeWorkspace({
           </div>
         </section>
       ) : (
-        <section className="bg-white rounded-xl p-6 border border-line/70 shadow-sm space-y-5">
+        <section className="bg-white rounded-lg p-6 border border-line shadow-sm space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
             <div>
               <h2 className="text-[15px] font-bold text-ink">Quality Evaluation Options</h2>

@@ -50,7 +50,7 @@ export function UserMenu({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-3 rounded-xl bg-white border border-line/50 hover:border-blue/30 px-3 py-2 transition-colors focus:outline-none"
+        className="flex items-center gap-3 rounded-lg bg-white border border-line/50 hover:border-blue/30 px-3 py-2 transition-colors focus:outline-none"
       >
         <div className="h-8 w-8 rounded-full bg-blue/10 flex items-center justify-center text-blue font-bold text-xs uppercase shrink-0">
           {personInitial}
@@ -67,7 +67,7 @@ export function UserMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-[calc(100%+8px)] min-w-[200px] bg-white border border-line/50 shadow-lg rounded-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute right-0 top-[calc(100%+8px)] min-w-[200px] bg-white border border-line/50 shadow-lg rounded-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="px-4 py-3 border-b border-line/40 bg-surface-2/30">
             <p className="text-[12px] text-muted truncate">Signed in as</p>
             <p className="text-[13px] font-medium text-ink truncate mt-0.5">{email}</p>

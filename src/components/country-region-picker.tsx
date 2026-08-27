@@ -125,11 +125,11 @@ export function CountryRegionPicker({
         type="button"
         disabled={disabled}
         onClick={() => onModeChange("tz")}
-        className={`flex w-full items-start gap-4 rounded-2xl border bg-white p-5 text-left shadow-sm transition hover:border-blue hover:shadow-md ${
+        className={`flex w-full items-start gap-4 rounded-lg border bg-white p-5 text-left shadow-sm transition hover:border-blue hover:shadow-md ${
           mode === "tz" ? "border-blue ring-1 ring-blue/30" : "border-line"
         }`}
       >
-        <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl border border-line bg-white shadow-sm">
+        <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg border border-line bg-white shadow-sm">
           <TanzaniaFlagIcon className="h-11 w-11" />
         </span>
         <span>
@@ -142,12 +142,12 @@ export function CountryRegionPicker({
         type="button"
         disabled={disabled}
         onClick={() => onModeChange("other")}
-        className={`flex w-full flex-col gap-3 rounded-2xl border bg-white p-5 text-left shadow-sm transition hover:border-blue hover:shadow-md ${
+        className={`flex w-full flex-col gap-3 rounded-lg border bg-white p-5 text-left shadow-sm transition hover:border-blue hover:shadow-md ${
           mode === "other" ? "border-blue ring-1 ring-blue/30" : "border-line"
         }`}
       >
         <span className="flex items-start gap-4">
-          <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-blue-soft text-blue">
+          <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-blue-soft text-blue">
             <WorldFlagIcon country={otherCountry} className="h-7 w-7" />
           </span>
           <span>

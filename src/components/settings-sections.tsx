@@ -9,7 +9,7 @@ export function AccountSettings() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 border border-line/70 shadow-sm space-y-6">
+      <div className="bg-white rounded-lg p-6 border border-line shadow-sm space-y-6">
         <div>
           <h2 className="text-[16px] font-bold text-ink">Personal Profile</h2>
           <p className="text-[13px] text-muted mt-0.5">Your identity across team audits and comments.</p>
@@ -105,7 +105,7 @@ export function WorkspaceSettings() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 border border-line/70 shadow-sm space-y-6">
+      <div className="bg-white rounded-lg p-6 border border-line shadow-sm space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-slate-100">
           <div>
             <h2 className="text-[16px] font-bold text-ink">General Workspace Details</h2>
@@ -197,7 +197,7 @@ export function WorkspaceSettings() {
       </div>
 
       {isAdmin && isSolo && (
-        <div className="bg-white rounded-xl p-6 border border-line/70 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-white rounded-lg p-6 border border-line shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h3 className="text-[15px] font-bold text-ink">Upgrade to Multi-User Team Workspace</h3>
             <p className="text-[13px] text-muted mt-0.5 max-w-lg">
@@ -222,7 +222,7 @@ export function AuditingSettings() {
   const { data, error, saving, patch } = useSettings();
   if (!data) {
     return (
-      <div className="bg-white rounded-xl p-6 border border-line/70 shadow-sm">
+      <div className="bg-white rounded-lg p-6 border border-line shadow-sm">
         <h2 className="text-[16px] font-bold text-ink">Auditing Rules</h2>
         <p className="mt-2 text-sm text-muted">{error ? "Could not load settings." : "Loading…"}</p>
       </div>
@@ -230,7 +230,7 @@ export function AuditingSettings() {
   }
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-line/70 shadow-sm space-y-6">
+    <div className="bg-white rounded-lg p-6 border border-line shadow-sm space-y-6">
       <div>
         <h2 className="text-[16px] font-bold text-ink">Automated Quality Scoring</h2>
         <p className="text-[13px] text-muted mt-0.5">
@@ -241,7 +241,7 @@ export function AuditingSettings() {
         </p>
       </div>
 
-      <div className="flex items-center justify-between gap-6 p-4 rounded-xl border border-slate-200 bg-slate-50/70">
+      <div className="flex items-center justify-between gap-6 p-4 rounded-lg border border-slate-200 bg-slate-50/70">
         <div>
           <p className="font-semibold text-ink text-[14px]">Automatic Post-Transcription Scoring</p>
           <p className="text-[12px] text-muted mt-0.5">

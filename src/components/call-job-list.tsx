@@ -21,9 +21,11 @@ function scoreOf(call: CallRow) {
 export function CallJobList({
   initialCalls,
   action,
+  teamScope,
 }: {
   initialCalls: CallRow[];
   action: "transcribe" | "score";
+  teamScope: string[];
 }) {
   const router = useRouter();
   const [calls, setCalls] = useState(initialCalls);
@@ -39,7 +41,7 @@ export function CallJobList({
       const { data } = await supabase
         .from("calls")
         .select("*, agents(name), call_scores(overall_score, verdict, audit_mode)")
-        .eq("user_id", user.id)
+        .in("user_id", teamScope)
         .order("created_at", { ascending: false });
       if (!data) return;
       const rows = data as CallRow[];
@@ -100,7 +102,7 @@ export function CallJobList({
 
   return (
     <div className="space-y-3 animate-in fade-in duration-500">
-      {error ? <p className="alert-error mb-4 shadow-sm rounded-xl">{error}</p> : null}
+      {error ? <p className="alert-error mb-4 shadow-sm rounded-lg">{error}</p> : null}
       <div className="panel overflow-x-auto rounded-3xl shadow-sm border border-line/40">
         <table className="data-table w-full text-left">
           <thead className="bg-surface/50 text-[12px] uppercase tracking-wider text-muted">
@@ -165,7 +167,7 @@ export function CallJobList({
                         type="button"
                         disabled={working}
                         onClick={() => void startTranscribe(call)}
-                        className={`btn px-5 py-2 text-[13px] rounded-xl shadow-sm transition-all ${
+                        className={`btn px-5 py-2 text-[13px] rounded-lg shadow-sm transition-all ${
                           working 
                             ? "bg-surface-2 text-muted border border-line cursor-not-allowed" 
                             : "btn-blue shadow-blue/20 hover:-translate-y-0.5 active:translate-y-0"

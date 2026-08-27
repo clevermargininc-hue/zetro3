@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getTeamScope } from "@/lib/workspaces";
 import type { Call, CallScore, Utterance } from "@/lib/types";
 
 export async function loadOwnedCall(id: string) {
@@ -8,11 +9,12 @@ export async function loadOwnedCall(id: string) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const teamScope = await getTeamScope(user!.id);
   const { data: call } = await supabase
     .from("calls")
     .select("*, agents(name)")
     .eq("id", id)
-    .eq("user_id", user!.id)
+    .in("user_id", teamScope)
     .maybeSingle();
 
   if (!call) notFound();

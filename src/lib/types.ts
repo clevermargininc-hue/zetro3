@@ -104,7 +104,7 @@ export type AgentPerformance = {
   poor_count: number;
 };
 
-export type AssemblyUtterance = {
+export type GenericUtterance = {
   speaker: string;
   text: string;
   start: number;

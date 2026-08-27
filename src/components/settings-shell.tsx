@@ -92,7 +92,7 @@ function SettingsChrome() {
       <div className="grid gap-8 lg:grid-cols-12">
         {/* Navigation Sidebar */}
         <aside className="lg:col-span-3 space-y-6">
-          <nav className="space-y-5 bg-white rounded-xl p-4 border border-line/70 shadow-sm">
+          <nav className="space-y-5 bg-white rounded-lg p-4 border border-line shadow-sm">
             {NAV.map((group) => (
               <div key={group.label}>
                 <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">

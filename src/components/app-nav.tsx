@@ -85,7 +85,6 @@ const NAV = [
   {
     label: "Quality Intelligence",
     items: [
-      { href: "/analytics", label: "Analytics", icon: Icons.analytics },
       { href: "/leaderboard", label: "Agent Rankings", icon: Icons.ranking },
       { href: "/reports", label: "Reports", icon: Icons.reports },
     ],
@@ -147,7 +146,7 @@ export function AppNav({
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden shrink-0 flex-col border-r border-line/70 bg-slate-50/80 print:hidden lg:sticky lg:top-0 lg:flex lg:h-screen transition-all duration-200 relative ${
+        className={`hidden shrink-0 flex-col border-r border-line bg-slate-50 print:hidden lg:sticky lg:top-0 lg:flex lg:h-screen transition-all duration-200 relative ${
           collapsed ? "w-20" : "w-68"
         }`}
       >
@@ -190,7 +189,7 @@ export function AppNav({
                         key={item.href}
                         href={item.href}
                         title={collapsed ? item.label : undefined}
-                        className={`flex items-center rounded-xl text-[13.5px] font-medium transition-all ${
+                        className={`flex items-center rounded-lg text-[13.5px] font-medium transition-all ${
                           collapsed
                             ? "justify-center h-10 w-full px-0"
                             : "gap-3 px-3.5 py-2.5"
@@ -216,7 +215,7 @@ export function AppNav({
         {/* Bottom User Profile Section */}
         <div className="p-4 border-t border-line/60 bg-white shrink-0">
           {!collapsed ? (
-            <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
+            <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-slate-50 border border-slate-200/80">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-[11px] font-bold shrink-0">
                   {personInitial}
@@ -271,8 +270,8 @@ export function AppNav({
       {/* Mobile Menu Drawer */}
       {open ? (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-ink/40 backdrop-blur-xs transition-opacity" onClick={() => setOpen(false)} />
-          <div className="absolute top-0 right-0 h-full w-72 bg-white p-6 shadow-2xl flex flex-col justify-between">
+          <div className="absolute inset-0 bg-ink/40 none-xs transition-opacity" onClick={() => setOpen(false)} />
+          <div className="absolute top-0 right-0 h-full w-72 bg-white p-6 shadow-md flex flex-col justify-between">
             <div className="space-y-6">
               <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                 <Logo size="sm" />
@@ -302,7 +301,7 @@ export function AppNav({
                             key={item.href}
                             href={item.href}
                             onClick={() => setOpen(false)}
-                            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13.5px] font-medium transition-all ${
+                            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[13.5px] font-medium transition-all ${
                               active
                                 ? "bg-blue text-white font-semibold shadow-sm"
                                 : "text-slate-600 hover:bg-slate-50 hover:text-ink"

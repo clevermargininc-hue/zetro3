@@ -1,11 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import {
-  assemblyNetworkMessage,
-  isAssemblyNetworkError,
-  submitTranscript,
-  uploadToAssemblyAI,
-  waitForTranscript,
-} from "@/lib/assemblyai";
+import { uploadToAssemblyAI, submitTranscript, waitForTranscript } from "@/lib/assemblyai";
 import { analyzeCall } from "@/lib/openai";
 import { collapseTurnList } from "@/lib/collapse-asr";
 import {
@@ -18,7 +12,8 @@ import {
   requireReadableStandards,
 } from "@/lib/qa-documents";
 import { retrieveQaContext } from "@/lib/qa-retrieve";
-import type { AssemblyUtterance, AuditMode, LanguageMode, SpeakerRole } from "@/lib/types";
+import type { AuditMode, LanguageMode, SpeakerRole } from "@/lib/types";
+import { describeAiError } from "@/lib/ai-client";
 import { getAutoAudit } from "@/lib/workspace-settings";
 import { getMembership } from "@/lib/workspaces";
 import { resolvedLanguageMode, workspaceLanguages } from "@/lib/locale";
@@ -96,20 +91,15 @@ export async function transcribeCall(callId: string) {
     }
 
     const bytes = await file.arrayBuffer();
-    const audioUrl = await uploadToAssemblyAI(bytes);
 
     const orgDocs = await loadQaDocuments(call.user_id).catch(() => []);
     const keyterms = extractKeytermsFromScripts(orgDocs);
     const extraLexicon = lexiconFromScripts(orgDocs);
 
-    const submitted = await submitTranscript(audioUrl, languageMode, keyterms);
-
-    await supabase
-      .from("calls")
-      .update({ assembly_id: submitted.id })
-      .eq("id", callId);
-
-    const transcript = await waitForTranscript(submitted.id);
+    const audioUrl = await uploadToAssemblyAI(bytes);
+    const queued = await submitTranscript(audioUrl, languageMode, keyterms);
+    const transcript = await waitForTranscript(queued.id);
+    
     const utterances = transcript.utterances || [];
     if (!utterances.length) {
       throw new Error("No speakers were detected in this recording");
@@ -141,7 +131,7 @@ export async function transcribeCall(callId: string) {
         status: "transcribed",
         duration_seconds: transcript.audio_duration ?? null,
         detected_language: transcript.language_code ?? null,
-        detected_languages: transcript.code_switching_languages ?? null,
+        detected_languages: null,
         error_message: null,
         completed_at: null,
       })
@@ -155,9 +145,7 @@ export async function transcribeCall(callId: string) {
       }
     }
   } catch (err) {
-    const message = isAssemblyNetworkError(err)
-      ? assemblyNetworkMessage(err)
-      : err instanceof Error
+    const message = err instanceof Error
         ? err.message
         : "Unknown transcription error";
     if (supabase) {
@@ -219,7 +207,7 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
         ? (call.agents as { name?: string }).name
         : undefined;
 
-    const asAssembly: AssemblyUtterance[] = stored.map((u) => ({
+    const asAssembly = stored.map((u) => ({
       speaker: u.speaker_label,
       text: u.text,
       start: u.start_ms ?? 0,
@@ -253,9 +241,19 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
       orgDocs,
     );
 
-    for (const row of stored) {
-      const role = roleForSpeaker(row.speaker_label, analysis.speaker_map);
-      await supabase.from("utterances").update({ role }).eq("id", row.id);
+    const roleUpdates = stored
+      .map((row) => ({
+        id: row.id,
+        role: roleForSpeaker(row.speaker_label, analysis.speaker_map),
+        current: row.role,
+      }))
+      .filter((row) => row.role !== row.current);
+    if (roleUpdates.length) {
+      await Promise.all(
+        roleUpdates.map((row) =>
+          supabase.from("utterances").update({ role: row.role }).eq("id", row.id),
+        ),
+      );
     }
 
     await supabase.from("call_scores").delete().eq("call_id", callId);
@@ -313,7 +311,7 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
       })
       .eq("id", callId);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown scoring error";
+    const message = describeAiError(err);
     if (supabase) {
       await supabase
         .from("calls")

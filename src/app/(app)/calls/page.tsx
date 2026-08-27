@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getTeamScope } from "@/lib/workspaces";
 import { CallsBoard } from "@/components/calls-board";
 import type { Call, CallScore } from "@/lib/types";
 
@@ -8,10 +9,11 @@ export default async function CallsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const teamScope = await getTeamScope(user!.id);
   const { data: calls } = await supabase
     .from("calls")
     .select("*, agents(name), call_scores(overall_score, verdict)")
-    .eq("user_id", user!.id)
+    .in("user_id", teamScope)
     .order("created_at", { ascending: false });
 
   return (
@@ -27,6 +29,7 @@ export default async function CallsPage() {
         initialCalls={(calls || []) as Array<
           Call & { agents?: { name: string } | null; call_scores?: CallScore[] | CallScore | null }
         >}
+        teamScope={teamScope}
       />
     </div>
   );

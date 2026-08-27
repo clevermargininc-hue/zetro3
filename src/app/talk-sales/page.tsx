@@ -6,7 +6,7 @@ import { SalesForm } from "@/components/sales-form";
 export default function TalkSalesPage() {
   return (
     <div className="min-h-screen bg-surface-2 flex flex-col">
-      <header className="border-b border-line/40 bg-white/70 backdrop-blur-xl sticky top-0 z-50">
+      <header className="border-b border-line/40 bg-white/70 none-xl sticky top-0 z-50">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Logo />
           <Link href="/" className="text-[14px] font-semibold text-muted hover:text-ink transition-colors">
@@ -34,21 +34,21 @@ export default function TalkSalesPage() {
             
             <div className="space-y-6">
               <div className="flex gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white border border-line/40 shadow-sm text-blue font-bold">1</div>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white border border-line/40 shadow-sm text-blue font-bold">1</div>
                 <div>
                   <h3 className="font-semibold text-ink">Bilingual Mastery</h3>
                   <p className="text-sm text-muted mt-1">Used in Tanzania for Kiswahili and English. English only elsewhere.</p>
                 </div>
               </div>
               <div className="flex gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white border border-line/40 shadow-sm text-blue font-bold">2</div>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white border border-line/40 shadow-sm text-blue font-bold">2</div>
                 <div>
                   <h3 className="font-semibold text-ink">Custom Scorecards</h3>
                   <p className="text-sm text-muted mt-1">Audit against your unique compliance rules and SOPs.</p>
                 </div>
               </div>
               <div className="flex gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white border border-line/40 shadow-sm text-blue font-bold">3</div>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white border border-line/40 shadow-sm text-blue font-bold">3</div>
                 <div>
                   <h3 className="font-semibold text-ink">Actionable Intelligence</h3>
                   <p className="text-sm text-muted mt-1">Stop guessing and start coaching from real evidence.</p>
@@ -58,7 +58,7 @@ export default function TalkSalesPage() {
           </div>
           
           <div className="animate-in fade-in slide-in-from-right-8 duration-700 delay-150">
-            <div className="bg-white rounded-3xl p-8 border border-line/40 shadow-xl shadow-blue/5">
+            <div className="bg-white rounded-3xl p-8 border border-line/40 shadow-sm shadow-blue/5">
               <h2 className="text-2xl font-bold tracking-tight text-ink mb-2">Request a Demo</h2>
               <p className="text-sm text-muted mb-8">Fill out the form below and our sales team will reach out shortly.</p>
               

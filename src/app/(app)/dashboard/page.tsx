@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatDuration, scoreTone, verdictLabel, languageLabel } from "@/lib/format";
+import { getTeamScope } from "@/lib/workspaces";
 import type { AgentPerformance, Call, CallScore } from "@/lib/types";
 import { JoinRequestBanner } from "@/components/join-request-banner";
 
@@ -88,13 +89,14 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const teamScope = await getTeamScope(user!.id);
   const [{ data: calls }, { data: agents }] = await Promise.all([
     supabase
       .from("calls")
       .select("*, agents(name), call_scores(*)")
-      .eq("user_id", user!.id)
+      .in("user_id", teamScope)
       .order("created_at", { ascending: false }),
-    supabase.from("agents").select("id, name").eq("user_id", user!.id),
+    supabase.from("agents").select("id, name").in("user_id", teamScope),
   ]);
 
   const allCalls = calls || [];
@@ -144,22 +146,7 @@ export default async function DashboardPage() {
   const tierNeedsImp = scoreValues.filter((s) => s >= 50 && s < 70).length;
   const tierPoor = scoreValues.filter((s) => s < 50).length;
 
-  // Dimension averages
-  const calcDimAvg = (key: keyof CallScore) => {
-    const vals = scoreObjects
-      .map((s) => s[key])
-      .filter((v): v is number => typeof v === "number");
-    return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
-  };
 
-  const dimensions = [
-    { label: "Greeting & Identity", value: calcDimAvg("greeting") },
-    { label: "Empathy & Active Listening", value: calcDimAvg("empathy") },
-    { label: "Professionalism & Demeanor", value: calcDimAvg("professionalism") },
-    { label: "Issue Resolution & Next Steps", value: calcDimAvg("resolution") },
-    { label: "Communication Clarity", value: calcDimAvg("communication") },
-    { label: "Language Mix & Code-Switching", value: calcDimAvg("language_handling") },
-  ];
 
   const agentLeaderboard = rankAgents(agents || [], allCalls);
 
@@ -176,9 +163,9 @@ export default async function DashboardPage() {
       <JoinRequestBanner />
 
       {/* KPI Cards Grid */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* Card 1: Team Quality Index */}
-        <div className="bg-white rounded-xl p-5 border border-line/70 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
+        <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
           <div>
             <div className="flex items-center justify-between text-muted mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Quality Score Index</span>
@@ -210,7 +197,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Card 2: Audited Volume */}
-        <div className="bg-white rounded-xl p-5 border border-line/70 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
+        <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
           <div>
             <div className="flex items-center justify-between text-muted mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Audited Calls</span>
@@ -230,7 +217,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Card 3: Compliance Health */}
-        <div className="bg-white rounded-xl p-5 border border-line/70 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
+        <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
           <div>
             <div className="flex items-center justify-between text-muted mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Compliance Pass Rate</span>
@@ -251,78 +238,14 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Card 4: Active Workforce */}
-        <div className="bg-white rounded-xl p-5 border border-line/70 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
-          <div>
-            <div className="flex items-center justify-between text-muted mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Active Workforce</span>
-              <span className="text-slate-600 bg-slate-100 p-1.5 rounded-lg">{Icons.users}</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold tracking-tight tabular-nums text-ink">
-                {agents?.length || 0}
-              </span>
-              <span className="text-[12px] text-muted font-medium">agents tracked</span>
-            </div>
-          </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[12px] text-muted">
-            <span>In-Flight Processing:</span>
-            <span className="font-semibold text-blue">{inProgressCalls.length} calls</span>
-          </div>
-        </div>
+
       </section>
 
-      {/* Main Analysis Section (2 Columns) */}
-      <section className="grid gap-6 lg:grid-cols-12">
-        {/* Left Column: Quality Dimensions & Distribution (7 Cols) */}
-        <div className="lg:col-span-7 space-y-6">
-          {/* Dimension Performance Breakdown */}
-          <div className="bg-white rounded-xl border border-line/70 shadow-sm overflow-hidden">
-            <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <div>
-                <h2 className="text-[15px] font-bold text-ink">Quality Dimensions Benchmark</h2>
-                <p className="text-[12px] text-muted mt-0.5">Average scoring performance across the 6 enterprise pillars</p>
-              </div>
-              <Link href="/analytics" className="text-[12px] font-semibold text-blue hover:underline flex items-center gap-1">
-                <span>Detailed metrics</span>
-                {Icons.arrowUpRight}
-              </Link>
-            </div>
-
-            <div className="p-6 space-y-4.5">
-              {dimensions.map((dim) => {
-                const val = dim.value;
-                const toneColor =
-                  val == null
-                    ? "bg-slate-200"
-                    : val >= 80
-                    ? "bg-emerald-500"
-                    : val >= 60
-                    ? "bg-amber-500"
-                    : "bg-rose-500";
-
-                return (
-                  <div key={dim.label} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-[13px]">
-                      <span className="font-medium text-slate-700">{dim.label}</span>
-                      <span className="font-bold tabular-nums text-ink">
-                        {val != null ? `${val}/100` : "—"}
-                      </span>
-                    </div>
-                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${toneColor}`}
-                        style={{ width: `${val ?? 0}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+      {/* Main Analysis Section */}
+      <section className="grid gap-6">
 
           {/* Quality Tier Distribution */}
-          <div className="bg-white rounded-xl border border-line/70 shadow-sm p-6">
+          <div className="bg-white rounded-lg border border-line shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-[14px] font-bold text-ink">Evaluation Score Tier Distribution</h3>
@@ -395,108 +318,12 @@ export default async function DashboardPage() {
               </div>
             )}
           </div>
-        </div>
 
-        {/* Right Column: Agent Leaderboard (5 Cols) */}
-        <div className="lg:col-span-5">
-          <div className="bg-white rounded-xl border border-line/70 shadow-sm overflow-hidden h-full flex flex-col justify-between">
-            <div>
-              <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                <div>
-                  <h2 className="text-[15px] font-bold text-ink">Agent Scorecard Ranking</h2>
-                  <p className="text-[12px] text-muted mt-0.5">Top performing representatives</p>
-                </div>
-                <Link href="/leaderboard" className="text-[12px] font-semibold text-blue hover:underline">
-                  Full Board →
-                </Link>
-              </div>
-
-              <div className="divide-y divide-slate-100">
-                {agentLeaderboard.slice(0, 6).map((agent, index) => {
-                  const rank = index + 1;
-                  const isTop1 = rank === 1;
-                  const isTop2 = rank === 2;
-                  const isTop3 = rank === 3;
-
-                  return (
-                    <div
-                      key={agent.id}
-                      className="px-6 py-3.5 flex items-center justify-between hover:bg-slate-50/70 transition-colors"
-                    >
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        {/* Rank Badge */}
-                        <div
-                          className={`w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-bold shrink-0 ${
-                            isTop1
-                              ? "bg-slate-900 text-white"
-                              : isTop2
-                              ? "bg-slate-700 text-white"
-                              : isTop3
-                              ? "bg-slate-500 text-white"
-                              : "bg-slate-100 text-slate-600 border border-slate-200"
-                          }`}
-                        >
-                          #{rank}
-                        </div>
-
-                        {/* Avatar */}
-                        <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-[11px] font-bold shrink-0 ring-1 ring-slate-200">
-                          {getInitials(agent.name)}
-                        </div>
-
-                        {/* Name & Call Count */}
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-semibold text-ink truncate">{agent.name}</p>
-                          <p className="text-[11px] text-muted">
-                            {agent.call_count} {agent.call_count === 1 ? "audit" : "audits"} evaluated
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Score Badge */}
-                      <div className="text-right shrink-0">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-md text-[13px] font-bold tabular-nums border ${
-                            agent.avg_score != null
-                              ? agent.avg_score >= 80
-                                ? "bg-good/10 text-good border-good/20"
-                                : agent.avg_score >= 60
-                                ? "bg-warn/10 text-warn border-warn/20"
-                                : "bg-rose/10 text-rose border-rose/20"
-                              : "bg-slate-100 text-muted border-slate-200"
-                          }`}
-                        >
-                          {agent.avg_score != null ? `${agent.avg_score}%` : "—"}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {!agentLeaderboard.length && (
-                  <div className="p-8 text-center">
-                    <div className="inline-flex p-3 rounded-full bg-slate-50 mb-3">{Icons.emptyBox}</div>
-                    <p className="text-[14px] font-semibold text-ink">No agent rankings yet</p>
-                    <p className="text-[12px] text-muted mt-1 max-w-xs mx-auto">
-                      Assign agents when uploading calls to automatically generate their performance scorecards.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="p-4 bg-slate-50/50 border-t border-slate-100 text-center">
-              <Link href="/leaderboard" className="text-[12px] font-semibold text-slate-700 hover:text-blue transition-colors">
-                View detailed agent rankings & metrics →
-              </Link>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* Recent Evaluated Calls Stream */}
-      <section className="bg-white rounded-xl border border-line/70 shadow-sm overflow-hidden">
-        <div className="px-6 py-4.5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
+      <section className="bg-white rounded-lg border border-line shadow-sm overflow-hidden">
+        <div className="px-6 py-4.5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50">
           <div>
             <h2 className="text-[15px] font-bold text-ink">Recent Call Audits</h2>
             <p className="text-[12px] text-muted mt-0.5">Recently processed recordings with evaluation scores</p>
@@ -515,7 +342,7 @@ export default async function DashboardPage() {
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                 <th className="px-6 py-3">Call Title / Recording</th>
-                <th className="px-6 py-3">Assigned Agent</th>
+
                 <th className="px-6 py-3">Date & Time</th>
                 <th className="px-6 py-3">Language</th>
                 <th className="px-6 py-3">Compliance</th>
@@ -531,7 +358,7 @@ export default async function DashboardPage() {
                 );
 
                 return (
-                  <tr key={call.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr key={call.id} className="hover:bg-slate-50 transition-colors">
                     {/* Title & Duration */}
                     <td className="px-6 py-3.5">
                       <div className="font-semibold text-ink line-clamp-1 max-w-xs">{call.title || call.file_name || "Audio Recording"}</div>
@@ -540,17 +367,7 @@ export default async function DashboardPage() {
                       </div>
                     </td>
 
-                    {/* Agent */}
-                    <td className="px-6 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
-                          {getInitials(call.agents?.name || "Unassigned")}
-                        </div>
-                        <span className="font-medium text-slate-700 text-[13px]">
-                          {call.agents?.name || <span className="text-slate-400 italic">Unassigned</span>}
-                        </span>
-                      </div>
-                    </td>
+
 
                     {/* Date */}
                     <td className="px-6 py-3.5 text-slate-600 whitespace-nowrap text-[12px]">

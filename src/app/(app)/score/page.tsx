@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CallJobList } from "@/components/call-job-list";
 import { createClient } from "@/lib/supabase/server";
+import { getTeamScope } from "@/lib/workspaces";
 import type { Call, CallScore } from "@/lib/types";
 
 const READY = ["transcribed", "analyzing", "completed"];
@@ -11,10 +12,11 @@ export default async function ScorePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const teamScope = await getTeamScope(user!.id);
   const { data: calls } = await supabase
     .from("calls")
         .select("*, agents(name), call_scores(overall_score, verdict, audit_mode)")
-    .eq("user_id", user!.id)
+    .in("user_id", teamScope)
     .in("status", READY)
     .order("created_at", { ascending: false });
 
@@ -31,7 +33,7 @@ export default async function ScorePage() {
             auditing scores from its own professional judgment and does not use those files.
           </p>
         </div>
-        <Link href="/standards" className="btn bg-surface-2 text-ink border border-line/50 hover:border-blue/30 hover:shadow-sm transition-all px-5 py-2.5 rounded-xl font-bold text-[13px]">
+        <Link href="/standards" className="btn bg-surface-2 text-ink border border-line/50 hover:border-blue/30 hover:shadow-sm transition-all px-5 py-2.5 rounded-lg font-bold text-[13px]">
           View Standards
         </Link>
       </div>
@@ -40,6 +42,7 @@ export default async function ScorePage() {
         initialCalls={(calls || []) as Array<
           Call & { agents?: { name: string } | null; call_scores?: CallScore[] | CallScore | null }
         >}
+        teamScope={teamScope}
       />
     </div>
   );

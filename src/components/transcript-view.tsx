@@ -134,8 +134,8 @@ export function TranscriptView({
                   disabled={!audioUrl}
                   className={`max-w-[85%] sm:max-w-[75%] px-5 py-4 text-left transition-colors ${
                     isAgent
-                      ? `bg-gradient-to-br from-blue to-blue-2 text-white shadow-md shadow-blue/20 ${isConsecutive ? "rounded-2xl rounded-tr-md" : "rounded-3xl rounded-tr-sm"}`
-                      : `bg-surface-2 text-ink border border-line/40 shadow-sm ${isConsecutive ? "rounded-2xl rounded-tl-md" : "rounded-3xl rounded-tl-sm"}`
+                      ? `bg-gradient-to-br from-blue to-blue-2 text-white shadow-md shadow-blue/20 ${isConsecutive ? "rounded-lg rounded-tr-md" : "rounded-3xl rounded-tr-sm"}`
+                      : `bg-surface-2 text-ink border border-line/40 shadow-sm ${isConsecutive ? "rounded-lg rounded-tl-md" : "rounded-3xl rounded-tl-sm"}`
                   } ${isActive ? "ring-2 ring-offset-2 ring-blue" : ""} ${audioUrl ? "cursor-pointer hover:opacity-95" : ""}`}
                 >
                   {!isConsecutive && (

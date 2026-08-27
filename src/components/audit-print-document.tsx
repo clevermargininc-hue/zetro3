@@ -90,7 +90,7 @@ export function AuditPrintDocument({
 
       <section className="mb-8">
         <h2 className="text-[14px] font-bold uppercase tracking-widest text-muted border-b border-line/50 pb-2 mb-4">Summary</h2>
-        <p className="mt-2 text-[13px] leading-relaxed text-ink/90 bg-surface-2/30 p-4 rounded-xl border border-line/40">{score.summary || "No summary."}</p>
+        <p className="mt-2 text-[13px] leading-relaxed text-ink/90 bg-surface-2/30 p-4 rounded-lg border border-line/40">{score.summary || "No summary."}</p>
       </section>
 
       <Notes title="Strengths" items={strengths} />
