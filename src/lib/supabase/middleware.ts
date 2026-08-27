@@ -1,14 +1,47 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { setWorkspaceCookie, WORKSPACE_COOKIE } from "@/lib/workspace-cookie";
 
-const PUBLIC_PATHS = new Set(["/", "/login", "/signup", "/talk-sales", "/about", "/how-it-works", "/solutions", "/pricing", "/forgot-password", "/reset-password"]);
+const WORKSPACE_COOKIE = "zetro-workspace";
+
+const PUBLIC_PATHS = new Set([
+  "/",
+  "/login",
+  "/signup",
+  "/talk-sales",
+  "/about",
+  "/how-it-works",
+  "/solutions",
+  "/pricing",
+  "/forgot-password",
+  "/reset-password",
+]);
+
+function isSafeNext(value: string | null) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
+  return value;
+}
+
+function markWorkspace(response: NextResponse) {
+  response.cookies.set(WORKSPACE_COOKIE, "1", {
+    path: "/",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 400,
+  });
+}
+
+function redirectWithCookies(from: NextResponse, dest: URL) {
+  const redirect = NextResponse.redirect(dest);
+  from.cookies.getAll().forEach((cookie) => {
+    redirect.cookies.set(cookie.name, cookie.value);
+  });
+  return redirect;
+}
 
 async function userHasWorkspace(
   request: NextRequest,
   supabase: ReturnType<typeof createServerClient>,
   userId: string,
-): Promise<boolean | null> {
+) {
   if (request.cookies.get(WORKSPACE_COOKIE)?.value === "1") {
     return true;
   }
@@ -22,13 +55,6 @@ async function userHasWorkspace(
   return Boolean(data);
 }
 
-function withCookies(from: NextResponse, to: NextResponse) {
-  from.cookies.getAll().forEach((cookie) => {
-    to.cookies.set(cookie);
-  });
-  return to;
-}
-
 export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const oauthCode = request.nextUrl.searchParams.get("code");
@@ -39,8 +65,6 @@ export async function updateSession(request: NextRequest) {
     const callback = request.nextUrl.clone();
     callback.pathname = "/auth/callback";
     if (!callback.searchParams.get("next")) {
-      // If we arrived on a specific page (e.g. /reset-password), redirect back
-      // there after the code exchange; otherwise default to /onboarding.
       callback.searchParams.set("next", path === "/" ? "/onboarding" : path);
     }
     return NextResponse.redirect(callback);
@@ -63,9 +87,7 @@ export async function updateSession(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) =>
-          request.cookies.set(name, value),
-        );
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) =>
           response.cookies.set(name, value, options),
@@ -86,11 +108,6 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/api") ||
     isInvite;
 
-  function safeNext(value: string | null) {
-    if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
-    return value;
-  }
-
   if (!user && !isPublic) {
     const login = request.nextUrl.clone();
     login.pathname = "/login";
@@ -100,7 +117,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && (path === "/login" || path === "/signup")) {
-    const next = safeNext(request.nextUrl.searchParams.get("next"));
+    const next = isSafeNext(request.nextUrl.searchParams.get("next"));
     if (next?.startsWith("/invite/")) {
       return NextResponse.redirect(new URL(next.split("?")[0], request.nextUrl.origin));
     }
@@ -108,8 +125,8 @@ export async function updateSession(request: NextRequest) {
     const dest = request.nextUrl.clone();
     dest.pathname = ready === true ? "/dashboard" : "/onboarding";
     dest.search = "";
-    const redirect = withCookies(response, NextResponse.redirect(dest));
-    if (ready === true) setWorkspaceCookie(redirect);
+    const redirect = redirectWithCookies(response, dest);
+    if (ready === true) markWorkspace(redirect);
     return redirect;
   }
 
@@ -122,8 +139,8 @@ export async function updateSession(request: NextRequest) {
         const dest = request.nextUrl.clone();
         dest.pathname = "/dashboard";
         dest.search = "";
-        const redirect = withCookies(response, NextResponse.redirect(dest));
-        setWorkspaceCookie(redirect);
+        const redirect = redirectWithCookies(response, dest);
+        markWorkspace(redirect);
         return redirect;
       }
     }
@@ -135,9 +152,9 @@ export async function updateSession(request: NextRequest) {
       const dest = request.nextUrl.clone();
       dest.pathname = "/onboarding";
       dest.search = "";
-      return withCookies(response, NextResponse.redirect(dest));
+      return redirectWithCookies(response, dest);
     }
-    if (ready === true) setWorkspaceCookie(response);
+    if (ready === true) markWorkspace(response);
   }
 
   return response;
