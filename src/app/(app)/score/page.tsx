@@ -1,18 +1,14 @@
 import Link from "next/link";
 import { CallJobList } from "@/components/call-job-list";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/server";
 import { getTeamScope } from "@/lib/workspaces";
 import type { Call, CallScore } from "@/lib/types";
 
 const READY = ["transcribed", "analyzing", "completed"];
 
 export default async function ScorePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const teamScope = await getTeamScope(user!.id);
+  const { supabase, user } = await requireUser();
+  const teamScope = await getTeamScope(user.id);
   const { data: calls } = await supabase
     .from("calls")
         .select("*, agents(name), call_scores(overall_score, verdict, audit_mode)")

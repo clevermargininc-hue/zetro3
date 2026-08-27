@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
-import { redirect } from "next/navigation";
 import { AppNav } from "@/components/app-nav";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -10,14 +9,7 @@ export default async function AppLayout({
 }: {
   children: ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
+  const { supabase, user } = await requireUser();
 
   const { data: memberRow } = await supabase
     .from("workspace_members")

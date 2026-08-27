@@ -198,15 +198,50 @@ function modelsFor(mode: ModelMode) {
 }
 
 const noTemperature = new Set<string>();
+const noReasoningEffort = new Set<string>();
+
+function isReasoningModel(model: string) {
+  return /^(gpt-5|o1|o3|o4)/i.test(model);
+}
 
 function supportsTemperature(model: string) {
   if (noTemperature.has(model)) return false;
-  return !/^(gpt-5|o1|o3|o4)/i.test(model);
+  return !isReasoningModel(model);
 }
 
-function tokenLimit(model: string) {
-  if (/^(gpt-5|o1|o3|o4)/i.test(model)) return { max_completion_tokens: 1600 };
-  return { max_tokens: 1600 };
+function tokenLimit(model: string, extra = false) {
+  if (isReasoningModel(model)) {
+    return { max_completion_tokens: extra ? 16000 : 8192 };
+  }
+  return { max_tokens: extra ? 8192 : 4096 };
+}
+
+function stripJsonFence(text: string) {
+  const trimmed = text.trim();
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  return (fenced ? fenced[1] : trimmed).trim();
+}
+
+function completionText(completion: OpenAI.Chat.Completions.ChatCompletion) {
+  const choice = completion.choices[0];
+  const message = choice?.message;
+  if (!message) return { text: "", finishReason: choice?.finish_reason ?? null };
+  if (message.refusal) {
+    throw new Error(`OpenAI refused the request: ${message.refusal}`);
+  }
+  return {
+    text: stripJsonFence(typeof message.content === "string" ? message.content : ""),
+    finishReason: choice.finish_reason ?? null,
+  };
+}
+
+function isEmptyCompletionError(error: unknown) {
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("empty response") ||
+    message.includes("ran out of output tokens")
+  );
 }
 
 function clipText(text: string, max: number) {
@@ -214,6 +249,43 @@ function clipText(text: string, max: number) {
   const head = Math.floor(max * 0.55);
   const tail = max - head - 24;
   return `${text.slice(0, head)}\n\n[...truncated...]\n\n${text.slice(-tail)}`;
+}
+
+function parseCompletionJson(completion: OpenAI.Chat.Completions.ChatCompletion) {
+  const { text, finishReason } = completionText(completion);
+  if (!text) {
+    throw new Error(
+      finishReason === "length"
+        ? "OpenAI ran out of output tokens before finishing the score."
+        : "OpenAI returned an empty response",
+    );
+  }
+  return JSON.parse(text);
+}
+
+async function createCompletion(
+  body: OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
+) {
+  try {
+    return await getOpenAI().chat.completions.create(body);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.toLowerCase().includes("temperature") && "temperature" in body) {
+      noTemperature.add(body.model);
+      const { temperature: _t, ...withoutTemp } = body;
+      return getOpenAI().chat.completions.create(withoutTemp);
+    }
+    if (/reasoning_effort/i.test(message) && "reasoning_effort" in body) {
+      noReasoningEffort.add(body.model);
+      const { reasoning_effort: _r, ...withoutEffort } = body;
+      return getOpenAI().chat.completions.create(withoutEffort);
+    }
+    if (/max_tokens|max_completion_tokens/i.test(message)) {
+      const { max_tokens: _a, max_completion_tokens: _b, ...withoutLimit } = body;
+      return getOpenAI().chat.completions.create(withoutLimit);
+    }
+    throw error;
+  }
 }
 
 async function completeJson(
@@ -230,7 +302,6 @@ async function completeJson(
   for (const model of models) {
     try {
       const parsed = await withRetries(async () => {
-        const openai = getOpenAI();
         const body: OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming = {
           model,
           ...tokenLimit(model),
@@ -250,35 +321,28 @@ async function completeJson(
         if (supportsTemperature(model)) {
           body.temperature = aiTemperature;
         }
+        if (isReasoningModel(model) && !noReasoningEffort.has(model)) {
+          body.reasoning_effort = "low";
+        }
+
+        let completion = await createCompletion(body);
         try {
-          const completion = await openai.chat.completions.create(body);
-          const raw = completion.choices[0]?.message?.content;
-          if (!raw) throw new Error("OpenAI returned an empty response");
-          return JSON.parse(raw);
+          return parseCompletionJson(completion);
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          if (message.toLowerCase().includes("temperature")) {
-            noTemperature.add(model);
-            const { temperature: _t, ...withoutTemp } = body;
-            const completion = await getOpenAI().chat.completions.create(withoutTemp);
-            const raw = completion.choices[0]?.message?.content;
-            if (!raw) throw new Error("OpenAI returned an empty response");
-            return JSON.parse(raw);
-          }
-          if (/max_tokens|max_completion_tokens/i.test(message)) {
-            const { max_tokens: _a, max_completion_tokens: _b, ...withoutLimit } = body;
-            const completion = await getOpenAI().chat.completions.create(withoutLimit);
-            const raw = completion.choices[0]?.message?.content;
-            if (!raw) throw new Error("OpenAI returned an empty response");
-            return JSON.parse(raw);
-          }
-          throw error;
+          if (!isEmptyCompletionError(error)) throw error;
+          const finishReason = completion.choices[0]?.finish_reason;
+          if (finishReason !== "length") throw error;
+          completion = await createCompletion({
+            ...body,
+            ...tokenLimit(model, true),
+          });
+          return parseCompletionJson(completion);
         }
       });
       return parsed;
     } catch (error) {
       lastError = error;
-      if (!isModelAccessError(error)) throw error;
+      if (!isModelAccessError(error) && !isEmptyCompletionError(error)) throw error;
     }
   }
 

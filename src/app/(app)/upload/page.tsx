@@ -1,11 +1,10 @@
 import { UploadForm } from "@/components/upload-form";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/server";
 import { getTeamScope } from "@/lib/workspaces";
 
 export default async function UploadPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const teamScope = user ? await getTeamScope(user.id) : [];
+  const { user } = await requireUser();
+  const teamScope = await getTeamScope(user.id);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300 max-w-2xl mx-auto pb-12">

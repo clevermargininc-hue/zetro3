@@ -42,8 +42,8 @@ export function getServerEnv() {
     llmProvider,
     embeddingProvider,
     aiReasoningModel:
-      process.env.AI_REASONING_MODEL || process.env.OPENAI_MODEL || "gpt-5",
-    aiFastModel: process.env.AI_FAST_MODEL || "gpt-5-mini",
+      process.env.AI_REASONING_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini",
+    aiFastModel: process.env.AI_FAST_MODEL || "gpt-4o-mini",
     aiEmbeddingModel: process.env.AI_EMBEDDING_MODEL || "text-embedding-3-small",
     aiTemperature: Number.parseFloat(process.env.AI_TEMPERATURE || "0.1") || 0.1,
     aiMaxRetries: Math.max(1, Math.round(optionalNumber(process.env.AI_MAX_RETRIES, 3))),

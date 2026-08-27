@@ -96,7 +96,14 @@ export function describeAiError(error: unknown) {
   if (isConnectionError(error)) {
     return "Could not reach OpenAI to score this call. Try the audit again in a moment.";
   }
-  return error instanceof Error ? error.message : "AI request failed";
+  const message = error instanceof Error ? error.message : "";
+  if (
+    message.toLowerCase().includes("empty response") ||
+    message.toLowerCase().includes("ran out of output tokens")
+  ) {
+    return "OpenAI returned an empty score. Try the audit again.";
+  }
+  return message || "AI request failed";
 }
 
 export async function withRetries<T>(run: () => Promise<T>) {

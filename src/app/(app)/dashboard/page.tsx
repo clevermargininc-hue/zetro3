@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/server";
 import { formatDate, formatDuration, scoreTone, verdictLabel, languageLabel } from "@/lib/format";
 import { getTeamScope } from "@/lib/workspaces";
 import type { AgentPerformance, Call, CallScore } from "@/lib/types";
@@ -84,12 +84,8 @@ function formatTotalTime(seconds: number) {
 }
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const teamScope = await getTeamScope(user!.id);
+  const { supabase, user } = await requireUser();
+  const teamScope = await getTeamScope(user.id);
   const [{ data: calls }, { data: agents }] = await Promise.all([
     supabase
       .from("calls")

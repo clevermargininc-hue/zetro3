@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/server";
 import { scoreTone, verdictLabel } from "@/lib/format";
 import { getTeamScope } from "@/lib/workspaces";
 import type { CallScore } from "@/lib/types";
@@ -53,12 +53,8 @@ function getInitials(name: string) {
 }
 
 export default async function LeaderboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const teamScope = await getTeamScope(user!.id);
+  const { supabase, user } = await requireUser();
+  const teamScope = await getTeamScope(user.id);
   const [{ data: agents }, { data: calls }] = await Promise.all([
     supabase.from("agents").select("id, name").in("user_id", teamScope),
     supabase

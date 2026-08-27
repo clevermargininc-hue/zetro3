@@ -1,15 +1,11 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/server";
 import { getTeamScope } from "@/lib/workspaces";
 import type { Call, CallScore, Utterance } from "@/lib/types";
 
 export async function loadOwnedCall(id: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const teamScope = await getTeamScope(user!.id);
+  const { supabase, user } = await requireUser();
+  const teamScope = await getTeamScope(user.id);
   const { data: call } = await supabase
     .from("calls")
     .select("*, agents(name)")

@@ -1,15 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/server";
 import { getTeamScope } from "@/lib/workspaces";
 import { CallsBoard } from "@/components/calls-board";
 import type { Call, CallScore } from "@/lib/types";
 
 export default async function CallsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const teamScope = await getTeamScope(user!.id);
+  const { supabase, user } = await requireUser();
+  const teamScope = await getTeamScope(user.id);
   const { data: calls } = await supabase
     .from("calls")
     .select("*, agents(name), call_scores(overall_score, verdict)")
