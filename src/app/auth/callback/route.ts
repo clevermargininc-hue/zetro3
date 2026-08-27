@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { getPublicEnv } from "@/lib/env";
+import { appOrigin } from "@/lib/invites";
+import { maybeSendWelcomeEmail } from "@/lib/welcome-email";
 
 function safeNext(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
@@ -86,6 +88,12 @@ export async function GET(request: NextRequest) {
       }
       return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`);
     }
+    if (!isPasswordRecovery) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      await maybeSendWelcomeEmail(user, appOrigin(request));
+    }
     return redirect;
   }
 
@@ -102,6 +110,13 @@ export async function GET(request: NextRequest) {
       ? "oauth_pkce"
       : error.message;
     return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(message)}`);
+  }
+
+  if (!isPasswordRecovery) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    await maybeSendWelcomeEmail(user, appOrigin(request));
   }
 
   return redirect;

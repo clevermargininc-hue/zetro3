@@ -17,6 +17,7 @@ import {
 
 import { appOrigin, sendWorkspaceInvites } from "@/lib/invites";
 import { parseCountryName } from "@/lib/locale";
+import { maybeSendWelcomeEmail } from "@/lib/welcome-email";
 import { setWorkspaceCookie } from "@/lib/workspace-cookie";
 
 export const runtime = "nodejs";
@@ -73,6 +74,8 @@ export async function GET(request: Request) {
     const pendingForMatch = match
       ? await getPendingJoinRequest(user.id, match.id)
       : null;
+
+    await maybeSendWelcomeEmail(user, appOrigin(request));
 
     return json(
       {

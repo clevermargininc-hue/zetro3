@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
-import { acceptInvite, getInviteByToken } from "@/lib/invites";
+import { acceptInvite, appOrigin, getInviteByToken } from "@/lib/invites";
+import { maybeSendWelcomeEmail } from "@/lib/welcome-email";
 import { setWorkspaceCookie } from "@/lib/workspace-cookie";
 import { syncProfileFromAuth } from "@/lib/workspace-settings";
 
@@ -44,6 +45,7 @@ export async function POST(
   try {
     await acceptInvite(token, user.id, user.email);
     await syncProfileFromAuth(user);
+    await maybeSendWelcomeEmail(user, appOrigin(request));
     const response = NextResponse.json({ ok: true, next: "/dashboard" });
     setWorkspaceCookie(response);
     return response;
