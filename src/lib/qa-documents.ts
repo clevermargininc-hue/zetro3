@@ -27,6 +27,7 @@ function emptyCounts(): Record<(typeof ALL_DOCUMENT_KINDS)[number], number> {
     compliance: 0,
     opening: 0,
     closing: 0,
+    holding: 0,
   };
 }
 

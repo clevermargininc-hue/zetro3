@@ -45,7 +45,10 @@ function roleForSpeaker(
   );
 }
 
-export async function transcribeCall(callId: string) {
+export async function transcribeCall(
+  callId: string,
+  options?: { autoScore?: AuditMode | false },
+) {
   if (transcribing.has(callId)) return;
   transcribing.add(callId);
   let supabase: ReturnType<typeof createAdminClient> | null = null;
@@ -137,9 +140,17 @@ export async function transcribeCall(callId: string) {
       })
       .eq("id", callId);
 
-    if (await getAutoAudit(call.user_id)) {
+    let autoScore: AuditMode | null = null;
+    if (options?.autoScore === false) {
+      autoScore = null;
+    } else if (options?.autoScore) {
+      autoScore = options.autoScore;
+    } else if (await getAutoAudit(call.user_id)) {
+      autoScore = "automatic";
+    }
+    if (autoScore) {
       try {
-        await scoreCall(callId, "automatic");
+        await scoreCall(callId, autoScore);
       } catch (err) {
         console.error("Automatic scoring failed", err);
       }
@@ -220,7 +231,8 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
       .map((u) => `${u.speaker}: ${u.text}`)
       .join("\n");
     if (mode === "documents") {
-      standardsText = await retrieveQaContext(call.user_id, transcriptText, standards);
+      const retrieveQuery = `${transcriptText}\nplease hold stay on the line subiri ngoja check back holding procedure`;
+      standardsText = await retrieveQaContext(call.user_id, retrieveQuery, standards);
       if (standardsText.trim().length < 40) {
         throw new Error(
           "Documents scoring cannot start until the uploaded Standards files have been read. Open Standards and upload them again.",

@@ -80,6 +80,7 @@ export async function retrieveQaContext(userId: string, transcript: string, docs
     document: 4,
     opening: 2,
     closing: 2,
+    holding: 2,
   };
 
   const picked = ALL_DOCUMENT_KINDS.flatMap((kind) =>
@@ -115,7 +116,9 @@ export async function retrieveQaContext(userId: string, transcript: string, docs
     const heading =
       kind === "opening"
         ? "OPENING SCRIPT — retrieved by embeddings"
-        : "CLOSING SCRIPT — retrieved by embeddings";
+        : kind === "closing"
+          ? "CLOSING SCRIPT — retrieved by embeddings"
+          : "HOLDING PROCEDURE — retrieved by embeddings (optional; score only if the call went on hold)";
     return `## ${heading}\n\n${items
       .map((row, index) => `### Chunk ${index + 1}\n${row.content}`)
       .join("\n\n")}`;

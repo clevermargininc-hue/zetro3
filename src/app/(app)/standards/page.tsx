@@ -6,7 +6,7 @@ export default function StandardsPage() {
       <div className="pb-5 border-b border-line/60">
         <h1 className="text-2xl font-bold tracking-tight text-ink">Audit Standards & SOP Governance</h1>
         <p className="mt-1 text-[13px] text-muted">
-          Define scorecard rubrics, compliance rules, and organization scripts for automated call evaluations.
+          Define scorecard rubrics, compliance rules, and optional organization scripts (including holding procedures) for automated call evaluations.
         </p>
       </div>
       <StandardsBoard />

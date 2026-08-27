@@ -78,7 +78,7 @@ const NAV = [
     label: "Operations",
     items: [
       { href: "/dashboard", label: "Overview", icon: Icons.overview },
-      { href: "/upload", label: "Upload Call", icon: Icons.upload },
+      { href: "/upload", label: "Upload Calls", icon: Icons.upload },
       { href: "/calls", label: "Call Audits", icon: Icons.audits },
     ],
   },

@@ -17,6 +17,12 @@ export function formatDuration(seconds: number | null | undefined) {
   return formatClock(seconds * 1000);
 }
 
+/** Average handle time from call duration in seconds (mm:ss or h:mm:ss). */
+export function formatAht(seconds: number | null | undefined) {
+  if (seconds == null || !Number.isFinite(seconds) || seconds <= 0) return "—";
+  return formatDuration(seconds);
+}
+
 export function formatDate(iso: string) {
   return new Intl.DateTimeFormat("en-KE", {
     dateStyle: "medium",

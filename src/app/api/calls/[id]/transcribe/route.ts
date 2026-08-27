@@ -16,6 +16,14 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const body = (await request.json().catch(() => ({}))) as { auto_score?: unknown };
+  const autoScore =
+    body.auto_score === false || body.auto_score === "none"
+      ? false
+      : body.auto_score === "documents" || body.auto_score === "automatic"
+        ? body.auto_score
+        : undefined;
+
   const { data: call } = await supabase
     .from("calls")
     .select("id, user_id, status")
@@ -31,7 +39,10 @@ export async function POST(
     return NextResponse.json({ ok: true, status: "transcribing" });
   }
 
-  const work = transcribeCall(id).catch((error) => {
+  const work = transcribeCall(
+    id,
+    autoScore === undefined ? undefined : { autoScore },
+  ).catch((error) => {
     console.error("Transcription failed", error);
   });
   after(async () => {

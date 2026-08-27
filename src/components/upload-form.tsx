@@ -2,14 +2,19 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { authFetch } from "@/lib/auth-fetch";
 import { createClient } from "@/lib/supabase/client";
 import { workspaceLanguages } from "@/lib/locale";
-import type { LanguageMode } from "@/lib/types";
-
-const ACCEPT =
-  "audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/m4a,audio/aac,audio/ogg,audio/webm,video/mp4,.mp3,.wav,.m4a,.mp4,.ogg,.webm,.aac";
+import type { AuditMode, LanguageMode } from "@/lib/types";
+import { useQaReadiness } from "@/components/use-qa-readiness";
+import {
+  AUDIO_ACCEPT,
+  formatFileSize,
+  filesFromDataTransfer,
+  mergeAudioPicks,
+  type AudioPick,
+} from "@/lib/audio-files";
 
 const Icons = {
   uploadCloud: (
@@ -19,11 +24,15 @@ const Icons = {
       <line x1="12" y1="3" x2="12" y2="15" />
     </svg>
   ),
-  audioFile: (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 18V5l12-2v13" />
-      <circle cx="6" cy="18" r="3" />
-      <circle cx="18" cy="16" r="3" />
+  folder: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+    </svg>
+  ),
+  files: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
     </svg>
   ),
   check: (
@@ -31,18 +40,41 @@ const Icons = {
       <polyline points="20 6 9 17 4 12" />
     </svg>
   ),
+  close: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  ),
 };
+
+type DoneCall = { id: string; title: string };
+type FailedCall = { title: string; error: string };
 
 export function UploadForm({ teamScope }: { teamScope: string[] }) {
   const router = useRouter();
-  const [file, setFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
+  const [picks, setPicks] = useState<AudioPick[]>([]);
+  const [dragOver, setDragOver] = useState(false);
   const [agentName, setAgentName] = useState("");
   const [bilingual, setBilingual] = useState(true);
   const [languageMode, setLanguageMode] = useState<LanguageMode>("sw");
+  const [autoAudit, setAutoAudit] = useState(true);
+  const [auditMode, setAuditMode] = useState<AuditMode>("automatic");
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState<{ id: string; title: string } | null>(null);
+  const [done, setDone] = useState<DoneCall[]>([]);
+  const [failed, setFailed] = useState<FailedCall[]>([]);
+  const { blocked } = useQaReadiness();
+
+  useEffect(() => {
+    const el = folderInputRef.current;
+    if (!el) return;
+    el.setAttribute("webkitdirectory", "");
+    el.setAttribute("directory", "");
+  }, []);
 
   useEffect(() => {
     void (async () => {
@@ -62,16 +94,43 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
     })();
   }, []);
 
+  function addFiles(list: File[]) {
+    setDone([]);
+    setFailed([]);
+    setPicks((current) => {
+      const { files, skipped } = mergeAudioPicks(current, list);
+      if (!files.length) {
+        setError("No audio recordings found. Use MP3, WAV, M4A, AAC, MP4, OGG, or WEBM.");
+      } else {
+        setError(
+          skipped.length
+            ? `Skipped: ${skipped.slice(0, 4).join(", ")}${skipped.length > 4 ? "…" : ""}`
+            : null,
+        );
+      }
+      return files;
+    });
+  }
+
+  async function onDrop(event: React.DragEvent) {
+    event.preventDefault();
+    setDragOver(false);
+    addFiles(await filesFromDataTransfer(event.dataTransfer));
+  }
+
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!file) {
-      setError("Please choose a recording to upload.");
+    if (!picks.length) {
+      setError("Please choose recordings or a folder of calls.");
       return;
     }
     setError(null);
-    setDone(null);
+    setDone([]);
+    setFailed([]);
     setLoading(true);
-    setProgress("Uploading audio to secure storage…");
+
+    const uploaded: DoneCall[] = [];
+    const errors: FailedCall[] = [];
 
     try {
       const supabase = createClient();
@@ -80,17 +139,6 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Authentication expired. Please sign in again.");
 
-      const safeName = file.name.replace(/[^\w.\-]+/g, "_");
-      const path = `${user.id}/${crypto.randomUUID()}-${safeName}`;
-      const { error: uploadError } = await supabase.storage
-        .from("call-audio")
-        .upload(path, file, {
-          contentType: file.type || "audio/mpeg",
-          upsert: false,
-        });
-      if (uploadError) throw uploadError;
-
-      setProgress("Registering call metadata…");
       let agentId: string | null = null;
       const trimmedAgent = agentName.trim();
       if (trimmedAgent) {
@@ -113,81 +161,195 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
         }
       }
 
-      const savedTitle = file.name.replace(/\.[^.]+$/, "");
       const mode: LanguageMode = bilingual ? languageMode : "en";
-      const { data: call, error: callError } = await supabase
-        .from("calls")
-        .insert({
-          user_id: user.id,
-          agent_id: agentId,
-          title: savedTitle,
-          file_name: file.name,
-          audio_path: path,
-          language_mode: mode,
-          status: "queued",
-        })
-        .select("*")
-        .single();
-      if (callError) throw callError;
+      const scoreMode: AuditMode | null =
+        autoAudit && auditMode === "documents" && blocked ? "automatic" : autoAudit ? auditMode : null;
 
-      setDone({ id: call.id, title: savedTitle });
-      setFile(null);
+      for (let i = 0; i < picks.length; i++) {
+        const pick = picks[i];
+        const title = pick.label.replace(/\.[^.]+$/, "") || "Untitled call";
+        setProgress(`Uploading ${i + 1} of ${picks.length} · ${pick.label}`);
+        try {
+          const safeName = pick.label.replace(/[^\w.\-]+/g, "_");
+          const path = `${user.id}/${crypto.randomUUID()}-${safeName}`;
+          const { error: uploadError } = await supabase.storage
+            .from("call-audio")
+            .upload(path, pick.file, {
+              contentType: pick.file.type || "audio/mpeg",
+              upsert: false,
+            });
+          if (uploadError) throw uploadError;
+
+          const { data: call, error: callError } = await supabase
+            .from("calls")
+            .insert({
+              user_id: user.id,
+              agent_id: agentId,
+              title,
+              file_name: pick.relativePath || pick.label,
+              audio_path: path,
+              language_mode: mode,
+              status: "queued",
+            })
+            .select("*")
+            .single();
+          if (callError) throw callError;
+
+          await authFetch(`/api/calls/${call.id}/transcribe`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ auto_score: scoreMode || "none" }),
+          }).catch(() => {
+            // User can retry from the call page if this fails.
+          });
+
+          uploaded.push({ id: call.id, title });
+        } catch (err) {
+          errors.push({
+            title,
+            error: err instanceof Error ? err.message : "Upload failed",
+          });
+        }
+      }
+
+      setDone(uploaded);
+      setFailed(errors);
+      setPicks([]);
       setLoading(false);
       setProgress(null);
 
-      // Kick off background prep so the call is ready to audit after listening.
-      void authFetch(`/api/calls/${call.id}/transcribe`, { method: "POST" }).catch(() => {
-        // User can retry from the call page if this fails.
-      });
-
-      router.push(`/calls/${call.id}/transcribe`);
+      if (uploaded.length && !errors.length) {
+        router.push(uploaded.length === 1 ? `/calls/${uploaded[0].id}/transcribe` : "/calls");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload process encountered an error.");
+      setDone(uploaded);
+      setFailed(errors);
       setLoading(false);
       setProgress(null);
     }
   }
 
+  const count = picks.length;
+  const totalBytes = picks.reduce((sum, row) => sum + row.file.size, 0);
+
   return (
     <div className="space-y-6">
       <form onSubmit={onSubmit} className="bg-white rounded-lg p-6 sm:p-8 border border-line shadow-sm space-y-6">
-        {/* File Dropzone */}
         <div>
-          <label
-            className={`relative flex flex-col items-center justify-center cursor-pointer rounded-lg border-2 border-dashed transition-all p-8 text-center group ${
-              file
-                ? "border-emerald-400 bg-emerald-50/40"
-                : "border-slate-300 bg-slate-50 hover:border-blue hover:bg-blue/5"
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={AUDIO_ACCEPT}
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              addFiles([...(e.target.files || [])]);
+              e.target.value = "";
+            }}
+          />
+          <input
+            ref={folderInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              addFiles([...(e.target.files || [])]);
+              e.target.value = "";
+            }}
+          />
+
+          <div
+            onDragEnter={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+              setDragOver(false);
+            }}
+            onDrop={(e) => void onDrop(e)}
+            className={`rounded-lg border-2 border-dashed transition-all p-8 text-center ${
+              dragOver
+                ? "border-blue bg-blue/5"
+                : count
+                  ? "border-emerald-400 bg-emerald-50/40"
+                  : "border-slate-300 bg-slate-50"
             }`}
           >
-            <input
-              type="file"
-              accept={ACCEPT}
-              className="hidden"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-            />
             <div
-              className={`w-12 h-12 rounded-lg flex items-center justify-center mb-3.5 transition-colors ${
-                file
+              className={`mx-auto w-12 h-12 rounded-lg flex items-center justify-center mb-3.5 ${
+                count
                   ? "bg-emerald-500 text-white"
-                  : "bg-white text-slate-600 border border-slate-200 group-hover:text-blue group-hover:border-blue/30"
+                  : "bg-white text-slate-600 border border-slate-200"
               }`}
             >
-              {file ? Icons.check : Icons.uploadCloud}
+              {count ? Icons.check : Icons.uploadCloud}
             </div>
-
             <p className="text-[15px] font-bold text-ink">
-              {file ? file.name : "Select or drag call recording"}
+              {count
+                ? `${count} recording${count === 1 ? "" : "s"} ready · ${formatFileSize(totalBytes)}`
+                : "Drop files or a folder of calls"}
             </p>
-            <p className="mt-1 text-[12px] text-muted max-w-sm">
-              {file
-                ? `${(file.size / (1024 * 1024)).toFixed(2)} MB · File ready to upload`
-                : "Supported formats: MP3, WAV, M4A, AAC, MP4 (Up to 100MB)"}
+            <p className="mt-1 text-[12px] text-muted max-w-sm mx-auto">
+              MP3, WAV, M4A, AAC, MP4, OGG, WEBM · up to 100MB each · 50 files per batch
             </p>
-          </label>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[12px] px-3.5 py-1.5 font-semibold"
+              >
+                {Icons.files}
+                Choose files
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const el = folderInputRef.current;
+                  if (!el) return;
+                  el.setAttribute("webkitdirectory", "");
+                  el.setAttribute("directory", "");
+                  el.click();
+                }}
+                className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[12px] px-3.5 py-1.5 font-semibold"
+              >
+                {Icons.folder}
+                Choose folder
+              </button>
+            </div>
+          </div>
+
+          {count > 0 && (
+            <ul className="mt-3 max-h-56 overflow-y-auto divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
+              {picks.map((pick) => (
+                <li key={pick.key} className="flex items-center gap-3 px-3 py-2 text-[12px]">
+                  <span className="min-w-0 flex-1 text-left">
+                    <span className="block font-semibold text-ink truncate">{pick.label}</span>
+                    {pick.relativePath !== pick.label ? (
+                      <span className="block text-[11px] text-muted truncate">{pick.relativePath}</span>
+                    ) : null}
+                  </span>
+                  <span className="shrink-0 tabular-nums text-muted">{formatFileSize(pick.file.size)}</span>
+                  <button
+                    type="button"
+                    aria-label={`Remove ${pick.label}`}
+                    onClick={() => setPicks((rows) => rows.filter((row) => row.key !== pick.key))}
+                    className="shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                  >
+                    {Icons.close}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
-        {/* Inputs */}
         <div className={`grid gap-4 ${bilingual ? "sm:grid-cols-2" : ""}`}>
           <div className="space-y-1.5">
             <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500 block">
@@ -200,7 +362,9 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
               className="field bg-slate-50/70 border-slate-200 text-ink text-[13px]"
               autoComplete="off"
             />
-            <p className="text-[11px] text-muted">Enter agent name to link this call to their scorecard.</p>
+            <p className="text-[11px] text-muted">
+              Applied to every file in this batch. Leave blank to assign later.
+            </p>
           </div>
 
           {bilingual ? (
@@ -223,6 +387,51 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
           ) : null}
         </div>
 
+        <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={autoAudit}
+              onChange={(e) => setAutoAudit(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue"
+            />
+            <span>
+              <span className="block text-[13px] font-semibold text-ink">Audit automatically after upload</span>
+              <span className="block text-[12px] text-muted mt-0.5">
+                Transcribe, diarize, and score each call without opening it first.
+              </span>
+            </span>
+          </label>
+          {autoAudit ? (
+            <div className="pl-7 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setAuditMode("automatic")}
+                className={`text-[12px] font-semibold px-3 py-1.5 rounded-lg border ${
+                  auditMode === "automatic"
+                    ? "bg-blue text-white border-blue"
+                    : "bg-white text-slate-700 border-slate-200"
+                }`}
+              >
+                Autonomous audit
+              </button>
+              <button
+                type="button"
+                disabled={blocked}
+                onClick={() => setAuditMode("documents")}
+                title={blocked ? "Upload scorecard and compliance files under Standards first." : undefined}
+                className={`text-[12px] font-semibold px-3 py-1.5 rounded-lg border disabled:opacity-50 ${
+                  auditMode === "documents"
+                    ? "bg-blue text-white border-blue"
+                    : "bg-white text-slate-700 border-slate-200"
+                }`}
+              >
+                SOP standards audit
+              </button>
+            </div>
+          ) : null}
+        </div>
+
         {error && <div className="alert-error text-[13px]">{error}</div>}
 
         {progress && (
@@ -235,33 +444,49 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
         <div className="pt-2">
           <button
             type="submit"
-            disabled={loading || !file}
+            disabled={loading || !count}
             className="btn bg-blue hover:bg-blue-2 text-white shadow-sm w-full py-2.5 text-[14px] font-semibold"
           >
-            {loading ? "Processing Upload…" : "Upload & Begin Processing"}
+            {loading
+              ? "Processing upload…"
+              : count > 1
+                ? `Upload & ${autoAudit ? "audit" : "process"} ${count} calls`
+                : `Upload & ${autoAudit ? "begin audit" : "begin processing"}`}
           </button>
         </div>
       </form>
 
-      {/* Done notification */}
-      {done && (
+      {(done.length > 0 || failed.length > 0) && (
         <div className="bg-white rounded-lg p-6 border border-emerald-200 bg-emerald-50/30 shadow-sm space-y-4">
           <div className="flex items-center gap-2.5">
             <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[12px] font-bold">
               {Icons.check}
             </div>
-            <h3 className="text-[15px] font-bold text-emerald-900">Recording Uploaded Successfully</h3>
+            <h3 className="text-[15px] font-bold text-emerald-900">
+              {done.length} recording{done.length === 1 ? "" : "s"} uploaded
+              {autoAudit ? " · auditing in the background" : " · transcription started"}
+            </h3>
           </div>
-          <p className="text-[13px] text-slate-700">
-            <span className="font-semibold">{done.title}</span> has been stored. Audio transcription and speaker diarization are running in the background.
-          </p>
-          <div className="pt-1">
+          {failed.length > 0 && (
+            <p className="text-[13px] text-rose-700">
+              {failed.length} failed: {failed.map((row) => `${row.title} (${row.error})`).join("; ")}
+            </p>
+          )}
+          <div className="pt-1 flex flex-wrap gap-2">
             <Link
-              href={`/calls/${done.id}/transcribe`}
+              href="/calls"
               className="btn bg-emerald-600 hover:bg-emerald-700 text-white text-[13px] px-4 py-2 font-semibold inline-flex"
             >
-              View Transcription & Evaluation →
+              View call audits →
             </Link>
+            {done.length === 1 && (
+              <Link
+                href={`/calls/${done[0].id}/transcribe`}
+                className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[13px] px-4 py-2 font-semibold inline-flex"
+              >
+                Open this call
+              </Link>
+            )}
           </div>
         </div>
       )}

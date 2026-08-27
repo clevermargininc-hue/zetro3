@@ -1,4 +1,5 @@
 import { scoreTone, verdictLabel } from "@/lib/format";
+import { QA_KIND_LABELS } from "@/lib/qa-kinds";
 import type { CallScore, ScoreDimension } from "@/lib/types";
 
 const DIMENSIONS: { key: ScoreDimension; label: string }[] = [
@@ -156,6 +157,39 @@ export function ScoreCard({ score }: { score: CallScore }) {
             bulletColor="bg-amber-500"
           />
 
+          {score.metric_evidence?.holding ? (
+            <AnalysisCard
+              title="Holding procedure"
+              subtitle={
+                score.metric_evidence.holding.verdict === "hit"
+                  ? "Hold/wait heard on the call and checked against the company holding procedure"
+                  : "Hold/wait heard on the call — compared with the company holding procedure"
+              }
+              icon={Icons.target}
+              iconColor={
+                score.metric_evidence.holding.verdict === "miss"
+                  ? "bg-rose-50 text-rose-700 border-rose-200"
+                  : score.metric_evidence.holding.verdict === "hit"
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : "bg-amber-50 text-amber-700 border-amber-200"
+              }
+              items={
+                score.metric_evidence.holding.findings?.length
+                  ? score.metric_evidence.holding.findings
+                  : [
+                      score.metric_evidence.holding.note,
+                      score.metric_evidence.holding.quote
+                        ? `Heard: “${score.metric_evidence.holding.quote}”`
+                        : "",
+                    ]
+              }
+              emptyText="Hold was reviewed; no extra notes."
+              bulletColor={
+                score.metric_evidence.holding.verdict === "miss" ? "bg-rose-500" : "bg-blue-500"
+              }
+            />
+          ) : null}
+
           {/* Compliance Findings */}
           <AnalysisCard
             title="Compliance & Risk Adherence"
@@ -192,7 +226,7 @@ export function ScoreCard({ score }: { score: CallScore }) {
                 <span className="text-slate-400">{Icons.file}</span>
                 <div>
                   <span className="font-bold uppercase tracking-wider text-slate-400 text-[10px] block">
-                    {doc.kind}
+                    {QA_KIND_LABELS[doc.kind] || doc.kind}
                   </span>
                   <span className="font-semibold text-ink">{doc.title}</span>
                 </div>

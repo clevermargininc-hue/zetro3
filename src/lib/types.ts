@@ -31,9 +31,12 @@ export type MetricEvidenceItem = {
   quote: string;
   note: string;
   start_s: number | null;
+  findings?: string[];
 };
 
-export type MetricEvidence = Partial<Record<ScoreDimension, MetricEvidenceItem>>;
+export type MetricEvidence = Partial<Record<ScoreDimension, MetricEvidenceItem>> & {
+  holding?: MetricEvidenceItem;
+};
 
 export type Agent = {
   id: string;
@@ -89,6 +92,7 @@ export type CallScore = {
   strengths: string[];
   improvements: string[];
   compliance_findings: string[];
+  hold_findings?: string[];
   standards_used: StandardRef[];
   metric_evidence?: MetricEvidence | null;
   audit_mode?: AuditMode | null;
@@ -129,6 +133,7 @@ export type CallAnalysis = {
   strengths: string[];
   improvements: string[];
   compliance_findings: string[];
+  hold_findings: string[];
   standards_used: StandardRef[];
   metric_evidence: MetricEvidence;
   audit_mode: AuditMode;

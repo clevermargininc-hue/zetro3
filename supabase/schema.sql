@@ -82,7 +82,7 @@ create table if not exists public.call_scores (
 create table if not exists public.qa_documents (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
-  kind text not null check (kind in ('document', 'scorecard', 'compliance', 'opening', 'closing')),
+  kind text not null check (kind in ('document', 'scorecard', 'compliance', 'opening', 'closing', 'holding')),
   title text not null,
   file_name text not null,
   file_path text not null,

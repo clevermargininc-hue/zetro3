@@ -1,4 +1,3 @@
-import { formatDuration } from "@/lib/format";
 import {
   periodRange,
   REPORT_PERIODS,
@@ -102,10 +101,7 @@ function dimAvg(scores: CallScore[], key: keyof CallScore) {
   return avg(values);
 }
 
-export function formatHandlingTime(seconds: number | null | undefined) {
-  if (seconds == null || !Number.isFinite(seconds) || seconds <= 0) return "—";
-  return formatDuration(seconds);
-}
+export { formatAht as formatHandlingTime } from "@/lib/format";
 
 function isYmd(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);

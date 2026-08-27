@@ -14,6 +14,7 @@ import type {
 import type { QaDocument } from "@/lib/qa-kinds";
 import { SCRIPT_KINDS } from "@/lib/qa-kinds";
 import { scriptsOf } from "@/lib/call-scripts";
+import { detectHoldEvents, formatHoldListenBlock } from "@/lib/detect-holds";
 
 const SCORE_DIMENSIONS: ScoreDimension[] = [
   "greeting",
@@ -33,6 +34,7 @@ const EVIDENCE_ITEM_SCHEMA = {
     note: { type: "string" },
     utterance_index: { type: "integer" },
     start_s: { type: "integer" },
+    findings: { type: "array", items: { type: "string" } },
   },
   required: ["verdict", "quote", "note", "utterance_index"],
 } as const;
@@ -88,6 +90,7 @@ const ANALYSIS_SCHEMA = {
         resolution: EVIDENCE_ITEM_SCHEMA,
         communication: EVIDENCE_ITEM_SCHEMA,
         language_handling: EVIDENCE_ITEM_SCHEMA,
+        holding: EVIDENCE_ITEM_SCHEMA,
       },
       required: [
         "greeting",
@@ -97,6 +100,11 @@ const ANALYSIS_SCHEMA = {
         "communication",
         "language_handling",
       ],
+    },
+    hold_detected: { type: "boolean" },
+    hold_findings: {
+      type: "array",
+      items: { type: "string" },
     },
   },
   required: [
@@ -115,6 +123,8 @@ const ANALYSIS_SCHEMA = {
     "improvements",
     "compliance_findings",
     "metric_evidence",
+    "hold_detected",
+    "hold_findings",
   ],
 } as const;
 
@@ -140,7 +150,7 @@ function normalizeMetricEvidence(
       : {};
   const out: MetricEvidence = {};
 
-  for (const key of SCORE_DIMENSIONS) {
+  for (const key of [...SCORE_DIMENSIONS, "holding"] as const) {
     const row = source[key];
     if (!row || typeof row !== "object" || Array.isArray(row)) continue;
     const item = row as Record<string, unknown>;
@@ -163,12 +173,16 @@ function normalizeMetricEvidence(
       .replace(/\s+/g, " ")
       .trim()
       .slice(0, 280);
-    if (!quote && !note) continue;
+    if (!quote && !note && key !== "holding") continue;
+    const findings = Array.isArray(item.findings)
+      ? item.findings.map((f) => String(f).trim()).filter(Boolean).slice(0, 8)
+      : undefined;
     out[key] = {
       verdict: normalizeEvidenceVerdict(item.verdict),
       quote,
       note,
       start_s,
+      ...(findings?.length ? { findings } : {}),
     } satisfies MetricEvidenceItem;
   }
 
@@ -178,11 +192,15 @@ function normalizeMetricEvidence(
 const EVIDENCE_PROMPT_BLOCK = `
 metric_evidence (required for every score dimension):
 - For greeting, empathy, professionalism, resolution, communication, language_handling, pick ONE short moment from the transcript that best explains that score.
+- If a hold/wait was heard AND a company HOLDING PROCEDURE file is provided, also fill metric_evidence.holding from that hold moment (verdict hit/miss/partial against the company file). If no hold, omit holding.
 - verdict: "hit" if the agent did it well, "miss" if they failed or skipped it, "partial" if mixed.
 - quote: exact short words from that moment (keep original language; do not invent).
 - note: one short coaching sentence on why this raises or lowers the score.
 - utterance_index: the [i] index from the transcript lines (required).
-Do not dump the full transcript — only these short evidence snippets.`;
+Do not dump the full transcript — only these short evidence snippets.
+
+hold_detected: true if the timed transcript/audio shows a hold or wait (hold language or a silence gap).
+hold_findings: if hold_detected and a HOLDING PROCEDURE file exists, list each company hold rule that was followed or missed, with a timestamp. If no hold, return []. If no holding procedure file, return [].`;
 
 
 const FALLBACK_REASONING = ["gpt-4o-mini", "gpt-4o", "gpt-5-mini"];
@@ -351,6 +369,15 @@ async function completeJson(
     : new Error("OpenAI returned an empty response");
 }
 
+const SCRIPT_PROMPT_BLOCK = `
+When an OPENING SCRIPT or CLOSING SCRIPT is provided, score greeting and closing against those org-wide scripts (shared by all agents). Note key terms the agent should have used.
+
+HOLDING PROCEDURE — listen to the call first, then apply that company's rules only when a hold actually happened:
+- You are given a CALL LISTENING block built from audio timestamps (silence gaps ≥ 8s) and hold/wait phrases in English and Kiswahili. Treat that as having heard the recording. hold_detected must match that listening result unless the timed transcript clearly shows a hold the listener missed.
+- If a HOLDING PROCEDURE file is provided AND hold/wait was heard, you MUST walk through THAT company's rules only (permission to hold, hold language/key terms, check-back interval, what to say when returning). Do not use a generic hold policy. Missed rules go in hold_findings and should lower professionalism.
+- If no hold/wait was heard, ignore the holding file even if it is uploaded. hold_detected=false, hold_findings=[]. Do not penalize holding.
+- If no holding procedure file is provided, do not invent hold rules.`;
+
 const DOCUMENTS_PROMPT = `You are a bilingual (Kiswahili + English) call-center quality analyst.
 
 PATH: DOCUMENTS AUDIT.
@@ -371,7 +398,7 @@ How to identify speakers:
 - Customer cues: stating a problem, complaining, giving personal details.
 - Always assume the submitted agent name belongs to the Agent speaker. Do not invent names.
 
-When an OPENING SCRIPT or CLOSING SCRIPT is provided, score greeting and closing against those org-wide scripts (shared by all agents). Note key terms the agent should have used.
+${SCRIPT_PROMPT_BLOCK}
 
 Numeric fields (map the scorecard onto these names; use the closest match):
 - greeting, empathy, professionalism, resolution, communication, language_handling, overall_score
@@ -400,7 +427,7 @@ How to identify speakers:
 - Customer cues: stating a problem, complaining, giving personal details.
 - Always assume the submitted agent name belongs to the Agent speaker.
 
-When an OPENING SCRIPT or CLOSING SCRIPT is provided, use it as the expected greeting/closing for this organization and score adherence (including key terms).
+${SCRIPT_PROMPT_BLOCK}
 
 Scoring (each 0–100):
 - greeting: prompt, polite opening and identity
@@ -437,7 +464,7 @@ How to identify speakers:
 - Customer cues: stating a problem, complaining, giving personal details.
 - Always assume the submitted agent name belongs to the Agent speaker. Do not invent names.
 
-When an OPENING SCRIPT or CLOSING SCRIPT is provided, score greeting and closing against those org-wide scripts (shared by all agents). Note key terms the agent should have used.
+${SCRIPT_PROMPT_BLOCK}
 
 Numeric fields (map the scorecard onto these names; use the closest match):
 - greeting, empathy, professionalism, resolution, communication, language_handling, overall_score
@@ -466,7 +493,7 @@ How to identify speakers:
 - Customer cues: stating a problem, complaining, giving personal details.
 - Always assume the submitted agent name belongs to the Agent speaker.
 
-When an OPENING SCRIPT or CLOSING SCRIPT is provided, use it as the expected greeting/closing for this organization and score adherence (including key terms).
+${SCRIPT_PROMPT_BLOCK}
 
 Scoring (each 0–100):
 - greeting: prompt, polite opening and identity
@@ -503,14 +530,28 @@ export async function analyzeCall(
     12000,
   );
 
+  const holdListen = detectHoldEvents(utterances);
+  const holdingDocs = scriptsOf(scriptDocs, "holding");
+  const hasHoldingProcedure = holdingDocs.length > 0;
+  const holdBlock = formatHoldListenBlock(holdListen, hasHoldingProcedure);
+  const applyHoldingNow =
+    holdListen.detected && hasHoldingProcedure
+      ? `\n\nAPPLY THIS COMPANY HOLDING PROCEDURE NOW (hold/wait was heard on this recording — follow these company rules only, do not invent others):\n${clipText(
+          holdingDocs
+            .map((doc) => `### ${doc.title} (${doc.file_name})\n${(doc.extracted_text || "").trim()}`)
+            .join("\n\n"),
+          3500,
+        )}`
+      : "";
+
   const scriptsBlock = scriptsText.trim()
-    ? `\n\nORGANIZATION CALL SCRIPTS (shared by all agents):\n${clipText(scriptsText.trim(), 2500)}`
+    ? `\n\nORGANIZATION CALL SCRIPTS (shared by all agents; holding procedure is optional and applies only if a hold was heard):\n${clipText(scriptsText.trim(), 4000)}`
     : "";
 
   const userPrompt =
     mode === "documents"
-      ? `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}WORKSPACE STANDARDS (you have read these files; score only from them; use company names/key terms from here):\n${clipText(standardsText, 8000)}${scriptsBlock}\n\nTranscript:\n${transcript}`
-      : `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}Automatic audit — no company scorecard required.${scriptsBlock}\n\nTranscript:\n${transcript}`;
+      ? `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}WORKSPACE STANDARDS (you have read these files; score only from them; use company names/key terms from here):\n${clipText(standardsText, 8000)}${scriptsBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript (listen via timestamps):\n${transcript}`
+      : `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}Automatic audit — no company scorecard required.${scriptsBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript (listen via timestamps):\n${transcript}`;
 
   const parsed = (await completeJson(
     mode === "documents"
@@ -528,6 +569,8 @@ export async function analyzeCall(
     speaker_assignments?: { speaker_label: string; role: SpeakerRole }[];
     compliance_findings?: string[];
     metric_evidence?: unknown;
+    hold_detected?: unknown;
+    hold_findings?: unknown;
   };
   const speakerMap: Record<string, SpeakerRole> = {
     ...(parsed.speaker_map || {}),
@@ -538,6 +581,34 @@ export async function analyzeCall(
 
   if (!Object.values(speakerMap).includes("agent") && utterances.length) {
     speakerMap[utterances[0].speaker] = "agent";
+  }
+
+  const holdFindings = (Array.isArray(parsed.hold_findings) ? parsed.hold_findings : [])
+    .map((item) => String(item).trim())
+    .filter((item) => {
+      const n = item.toLowerCase();
+      return item && n !== "no hold in this call" && n !== "none" && n !== "n/a" && n !== "none identified";
+    });
+  const holdDetected = holdListen.detected || parsed.hold_detected === true;
+  const metric_evidence = normalizeMetricEvidence(parsed.metric_evidence, utterances);
+  if (holdDetected && hasHoldingProcedure && !metric_evidence.holding && (holdFindings.length || holdListen.events[0])) {
+    const first = holdListen.events[0];
+    metric_evidence.holding = {
+      verdict: holdFindings.some((f) => /miss|did not|failed|skipped|no check/i.test(f))
+        ? "miss"
+        : holdFindings.length
+          ? "partial"
+          : "hit",
+      quote: first?.quote || "",
+      note: holdFindings[0] || "Hold procedure reviewed against the company file.",
+      start_s: first?.start_s ?? null,
+      findings: holdFindings.length ? holdFindings : undefined,
+    };
+  } else if (metric_evidence.holding && holdFindings.length && !metric_evidence.holding.findings) {
+    metric_evidence.holding.findings = holdFindings;
+  }
+  if (!holdDetected || !hasHoldingProcedure) {
+    delete metric_evidence.holding;
   }
 
   return {
@@ -557,7 +628,8 @@ export async function analyzeCall(
     compliance_findings: Array.isArray(parsed.compliance_findings)
       ? parsed.compliance_findings
       : [],
-    metric_evidence: normalizeMetricEvidence(parsed.metric_evidence, utterances),
+    hold_findings: holdDetected && hasHoldingProcedure ? holdFindings : [],
+    metric_evidence,
     standards_used: (() => {
       const fromStandards =
         mode === "documents"

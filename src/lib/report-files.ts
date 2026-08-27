@@ -1,3 +1,4 @@
+import { formatAht } from "@/lib/format";
 import * as XLSX from "xlsx";
 import {
   auditModeLabel,
@@ -29,6 +30,8 @@ export function excelBuffer(report: QaReport): Buffer {
     ["Metric", "Value"],
     ["Calls audited", summary.calls_audited],
     ["Average overall score", dash(summary.avg_overall)],
+    ["Average handle time (AHT)", formatAht(summary.aht_seconds)],
+    ["Total talk time", formatAht(summary.total_handling_seconds)],
     ["Average greeting", dash(summary.avg_greeting)],
     ["Average empathy", dash(summary.avg_empathy)],
     ["Average professionalism", dash(summary.avg_professionalism)],
@@ -52,6 +55,7 @@ export function excelBuffer(report: QaReport): Buffer {
       "Audited at",
       "Call",
       "Agent",
+      "AHT",
       "Overall",
       "Greeting",
       "Empathy",
@@ -69,6 +73,7 @@ export function excelBuffer(report: QaReport): Buffer {
       formatReportDate(row.audited_at),
       row.title,
       row.agent_name,
+      formatAht(row.duration_seconds),
       row.overall_score,
       dash(row.greeting),
       dash(row.empathy),
@@ -87,6 +92,7 @@ export function excelBuffer(report: QaReport): Buffer {
     { wch: 22 },
     { wch: 28 },
     { wch: 18 },
+    { wch: 10 },
     { wch: 10 },
     { wch: 10 },
     { wch: 10 },
@@ -119,6 +125,8 @@ export function excelBuffer(report: QaReport): Buffer {
       "Agent",
       "Calls audited",
       "Average score",
+      "AHT",
+      "Talk time",
       "Excellent",
       "Good",
       "Needs improvement",
@@ -130,6 +138,8 @@ export function excelBuffer(report: QaReport): Buffer {
       row.agent_name,
       row.call_count,
       dash(row.avg_score),
+      formatAht(row.aht_seconds),
+      formatAht(row.total_handling_seconds),
       row.excellent,
       row.good,
       row.needs_improvement,
@@ -142,6 +152,8 @@ export function excelBuffer(report: QaReport): Buffer {
     { wch: 22 },
     { wch: 14 },
     { wch: 14 },
+    { wch: 10 },
+    { wch: 12 },
     { wch: 12 },
     { wch: 10 },
     { wch: 18 },
@@ -356,6 +368,8 @@ export function pdfBuffer(report: QaReport): Buffer {
     [
       ["Calls audited", String(s.calls_audited)],
       ["Average overall score", scoreLabel(s.avg_overall)],
+      ["Average handle time (AHT)", formatAht(s.aht_seconds)],
+      ["Total talk time", formatAht(s.total_handling_seconds)],
       ["Average greeting", scoreLabel(s.avg_greeting)],
       ["Average empathy", scoreLabel(s.avg_empathy)],
       ["Average professionalism", scoreLabel(s.avg_professionalism)],
@@ -384,32 +398,32 @@ export function pdfBuffer(report: QaReport): Buffer {
   if (report.agents.length) {
     doc.heading("Agents");
     doc.table(
-      ["Agent", "Calls", "Avg", "Excellent", "Poor", "Compliance"],
+      ["Agent", "Calls", "Avg", "AHT", "Poor", "Compliance"],
       report.agents.map((row) => [
         row.agent_name,
         String(row.call_count),
         scoreLabel(row.avg_score),
-        String(row.excellent),
+        formatAht(row.aht_seconds),
         String(row.poor),
         `${row.compliance_findings} findings / ${row.compliance_calls} calls`,
       ]),
-      [130, 50, 50, 70, 50, 160],
+      [120, 45, 45, 50, 45, 165],
     );
     doc.gap(12);
   }
 
   doc.heading("Call scores");
   doc.table(
-    ["When", "Call", "Agent", "Score", "Verdict", "Path"],
+    ["When", "Call", "Agent", "AHT", "Score", "Verdict"],
     report.calls.map((row) => [
       formatReportDate(row.audited_at),
       row.title,
       row.agent_name,
+      formatAht(row.duration_seconds),
       String(row.overall_score),
       verdictCell(String(row.verdict)),
-      auditModeLabel(row.audit_mode),
     ]),
-    [95, 130, 90, 45, 90, 70],
+    [90, 115, 80, 50, 45, 90],
   );
   doc.gap(12);
 

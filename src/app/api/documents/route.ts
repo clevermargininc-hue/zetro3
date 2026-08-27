@@ -15,7 +15,7 @@ function emptyReadiness(setupRequired: boolean) {
   return {
     ready: false,
     missing: [...QA_KINDS],
-    counts: { document: 0, scorecard: 0, compliance: 0, opening: 0, closing: 0 },
+    counts: { document: 0, scorecard: 0, compliance: 0, opening: 0, closing: 0, holding: 0 },
     documents: [],
     setupRequired,
   };
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
   }
   if (!(ALL_DOCUMENT_KINDS as readonly string[]).includes(kind)) {
     return NextResponse.json(
-      { error: "Choose document, scorecard, compliance, opening, or closing." },
+      { error: "Choose document, scorecard, compliance, opening, closing, or holding." },
       { status: 400 },
     );
   }
@@ -128,8 +128,8 @@ export async function POST(request: Request) {
       {
         error: setup
           ? "Run supabase/qa-standards.sql in the Supabase SQL Editor, then try again."
-          : kindConstraint && (kind === "opening" || kind === "closing")
-            ? "Run supabase/call-scripts.sql in the Supabase SQL Editor, then upload opening/closing scripts again."
+          : kindConstraint && (kind === "opening" || kind === "closing" || kind === "holding")
+            ? "Run supabase/holding-procedure.sql (or supabase/call-scripts.sql) in the Supabase SQL Editor, then upload again."
             : insertError.message,
       },
       { status: 500 },

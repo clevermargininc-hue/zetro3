@@ -309,7 +309,7 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                 Upload customer recordings to begin transcription, speaker diarization, and automated quality auditing.
               </p>
               <Link href="/upload" className="mt-5 btn btn-blue text-[13px] px-5 py-2 inline-flex font-semibold">
-                Upload Call Recording
+                Upload Call Recordings
               </Link>
             </div>
           )}

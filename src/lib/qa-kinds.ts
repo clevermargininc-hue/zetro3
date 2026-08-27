@@ -1,5 +1,5 @@
 export const QA_KINDS = ["document", "scorecard", "compliance"] as const;
-export const SCRIPT_KINDS = ["opening", "closing"] as const;
+export const SCRIPT_KINDS = ["opening", "closing", "holding"] as const;
 export const ALL_DOCUMENT_KINDS = [...QA_KINDS, ...SCRIPT_KINDS] as const;
 
 export type QaKind = (typeof ALL_DOCUMENT_KINDS)[number];
@@ -30,6 +30,7 @@ export const QA_KIND_LABELS: Record<QaKind, string> = {
   compliance: "compliance file",
   opening: "opening script",
   closing: "closing script",
+  holding: "holding procedure",
 };
 
 export type QaReadiness = {

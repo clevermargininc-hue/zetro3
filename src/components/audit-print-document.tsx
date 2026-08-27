@@ -1,4 +1,5 @@
 import { formatDuration, languageLabel, verdictLabel } from "@/lib/format";
+import { QA_KIND_LABELS } from "@/lib/qa-kinds";
 import { auditModeLabel, formatReportDate, scoreLabel } from "@/lib/reports";
 import type { Call, CallScore } from "@/lib/types";
 
@@ -103,7 +104,7 @@ export function AuditPrintDocument({
           <ul className="mt-3 space-y-2">
             {standards.map((doc) => (
               <li key={doc.id} className="text-[12px] bg-surface-2/30 p-3 rounded-lg border border-line/40 flex items-center gap-2">
-                <span className="font-bold text-muted uppercase tracking-wider">{doc.kind}</span>
+                <span className="font-bold text-muted uppercase tracking-wider">{QA_KIND_LABELS[doc.kind] || doc.kind}</span>
                 <span className="text-line/40">&middot;</span>
                 <span className="font-medium text-ink">{doc.title}</span>
               </li>

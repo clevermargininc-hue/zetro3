@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { authFetch } from "@/lib/auth-fetch";
-import { scoreTone, verdictLabel } from "@/lib/format";
+import { formatAht, scoreTone, verdictLabel } from "@/lib/format";
 import {
   REPORT_PERIODS,
   todayInNairobi,
@@ -248,10 +248,10 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
             footer={`${summary.total_compliance_findings} total findings logged`}
           />
           <StatCard
-            label="Evaluation Scope"
-            value={report?.agent_label || "All agents"}
-            subtitle={report?.period_label}
-            footer="Timezone: Africa/Nairobi"
+            label="Avg Handle Time (AHT)"
+            value={formatAht(summary.aht_seconds)}
+            subtitle="Average audited call duration"
+            footer={`Total talk time: ${formatAht(summary.total_handling_seconds)}`}
           />
         </section>
       ) : null}
@@ -300,7 +300,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                   <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                     <th className="px-6 py-3">Timestamp</th>
                     <th className="px-6 py-3">Call Title / Recording</th>
-
+                    <th className="px-6 py-3 text-right">AHT</th>
                     <th className="px-6 py-3 text-right">Score</th>
                     <th className="px-6 py-3">Verdict</th>
                     <th className="px-6 py-3">Audit Method</th>
@@ -323,6 +323,10 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                         >
                           {row.title}
                         </Link>
+                      </td>
+
+                      <td className="px-6 py-3.5 text-right whitespace-nowrap tabular-nums text-slate-600 text-[12px]">
+                        {formatAht(row.duration_seconds)}
                       </td>
 
                       <td className="px-6 py-3.5 text-right whitespace-nowrap">

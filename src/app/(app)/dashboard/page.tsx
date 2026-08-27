@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
-import { formatDate, formatDuration, scoreTone, verdictLabel, languageLabel } from "@/lib/format";
+import { formatAht, formatDate, formatDuration, scoreTone, verdictLabel, languageLabel } from "@/lib/format";
 import { getTeamScope } from "@/lib/workspaces";
 import type { AgentPerformance, Call, CallScore } from "@/lib/types";
 import { JoinRequestBanner } from "@/components/join-request-banner";
@@ -47,6 +47,12 @@ const Icons = {
       <circle cx="9" cy="7" r="4" />
       <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
+  clock: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
     </svg>
   ),
   activity: (
@@ -116,8 +122,14 @@ export default async function DashboardPage() {
   const passedCalls = scoreValues.filter((s) => s >= 70).length;
   const passRate = scoreValues.length ? Math.round((passedCalls / scoreValues.length) * 100) : null;
 
-  // Total evaluated talk time
-  const totalAudioSeconds = completedCalls.reduce((acc, c) => acc + (c.duration_seconds || 0), 0);
+  // Total evaluated talk time and AHT
+  const handleDurations = completedCalls
+    .map((c) => Number(c.duration_seconds))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  const totalAudioSeconds = handleDurations.reduce((acc, n) => acc + n, 0);
+  const ahtSeconds = handleDurations.length
+    ? Math.round(totalAudioSeconds / handleDurations.length)
+    : null;
 
   // Compliance metrics
   let totalBreaches = 0;
@@ -159,7 +171,7 @@ export default async function DashboardPage() {
       <JoinRequestBanner />
 
       {/* KPI Cards Grid */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Card 1: Team Quality Index */}
         <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
           <div>
@@ -231,6 +243,26 @@ export default async function DashboardPage() {
             <span className={`font-semibold ${totalBreaches > 0 ? 'text-rose' : 'text-slate-700'}`}>
               {totalBreaches} {totalBreaches === 1 ? "finding" : "findings"}
             </span>
+          </div>
+        </div>
+
+        {/* Card 4: Average Handle Time */}
+        <div className="bg-white rounded-lg p-5 border border-line shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
+          <div>
+            <div className="flex items-center justify-between text-muted mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Avg Handle Time (AHT)</span>
+              <span className="text-blue bg-blue/10 p-1.5 rounded-lg">{Icons.clock}</span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold tracking-tight tabular-nums text-ink">
+                {formatAht(ahtSeconds)}
+              </span>
+              <span className="text-[12px] text-muted font-medium">per audited call</span>
+            </div>
+          </div>
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[12px] text-muted">
+            <span>Total talk time:</span>
+            <span className="font-semibold text-ink">{formatTotalTime(totalAudioSeconds)}</span>
           </div>
         </div>
 

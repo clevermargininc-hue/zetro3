@@ -1,5 +1,6 @@
 import type { QaDocument } from "@/lib/qa-kinds";
 import { SCRIPT_KINDS, type ScriptKind } from "@/lib/qa-kinds";
+import { HOLD_ASR_KEYTERMS } from "@/lib/detect-holds";
 
 const STOPWORDS = new Set(
   [
@@ -63,15 +64,21 @@ export function scriptsOf(docs: QaDocument[], kind: ScriptKind) {
   return docs.filter((doc) => doc.kind === kind && (doc.extracted_text || "").trim());
 }
 
+function scriptHeading(kind: ScriptKind) {
+  if (kind === "opening") {
+    return "OPENING SCRIPT — expected agent greeting / identity / first steps (organization-wide)";
+  }
+  if (kind === "closing") {
+    return "CLOSING SCRIPT — expected agent wrap-up / confirmation / goodbye (organization-wide)";
+  }
+  return "HOLDING PROCEDURE — expected hold / wait / check-back protocol (optional; organization-specific). Score hold moments against this file only. If the customer was never placed on hold, do not penalize.";
+}
+
 export function formatCallScripts(docs: QaDocument[]) {
   return SCRIPT_KINDS.map((kind) => {
     const items = scriptsOf(docs, kind);
     if (!items.length) return "";
-    const heading =
-      kind === "opening"
-        ? "OPENING SCRIPT — expected agent greeting / identity / first steps (organization-wide)"
-        : "CLOSING SCRIPT — expected agent wrap-up / confirmation / goodbye (organization-wide)";
-    return `## ${heading}\n\n${items
+    return `## ${scriptHeading(kind)}\n\n${items
       .map((doc) => `### ${doc.title} (${doc.file_name})\n${doc.extracted_text.trim()}`)
       .join("\n\n")}`;
   })
@@ -95,6 +102,9 @@ export function extractKeytermsFromScripts(docs: QaDocument[], limit = 48): stri
     seen.add(key);
     out.push(cleaned);
   }
+
+  for (const term of HOLD_ASR_KEYTERMS) push(term);
+  for (const term of DEFAULT_KEYTERMS) push(term);
 
   for (const text of texts) {
     for (const match of text.matchAll(/"([^"]{3,80})"|'([^']{3,80})'/g)) {
@@ -126,7 +136,6 @@ export function extractKeytermsFromScripts(docs: QaDocument[], limit = 48): stri
     }
   }
 
-  for (const term of DEFAULT_KEYTERMS) push(term);
   return out.slice(0, limit);
 }
 

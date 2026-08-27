@@ -13,6 +13,7 @@ export type ReportCallRow = {
   agent_id: string | null;
   agent_name: string;
   audited_at: string;
+  duration_seconds: number | null;
   overall_score: number;
   greeting: number | null;
   empathy: number | null;
@@ -32,6 +33,8 @@ export type ReportAgentRow = {
   agent_name: string;
   call_count: number;
   avg_score: number | null;
+  aht_seconds: number | null;
+  total_handling_seconds: number;
   excellent: number;
   good: number;
   needs_improvement: number;
@@ -59,6 +62,8 @@ export type QaReport = {
   summary: {
     calls_audited: number;
     avg_overall: number | null;
+    aht_seconds: number | null;
+    total_handling_seconds: number;
     avg_greeting: number | null;
     avg_empathy: number | null;
     avg_professionalism: number | null;
@@ -194,12 +199,24 @@ function avg(values: Array<number | null | undefined>): number | null {
   return Math.round(nums.reduce((sum, n) => sum + n, 0) / nums.length);
 }
 
+function ahtFromDurations(values: Array<number | null | undefined>) {
+  const nums = values.filter(
+    (n): n is number => typeof n === "number" && Number.isFinite(n) && n > 0,
+  );
+  const total_handling_seconds = Math.round(nums.reduce((sum, n) => sum + n, 0));
+  return {
+    aht_seconds: nums.length ? Math.round(total_handling_seconds / nums.length) : null,
+    total_handling_seconds,
+  };
+}
+
 type CallRecord = {
   id: string;
   title: string | null;
   agent_id: string | null;
   created_at: string;
   completed_at: string | null;
+  duration_seconds?: number | null;
   agents?: { name?: string } | { name?: string }[] | null;
   call_scores?: Record<string, unknown> | Record<string, unknown>[] | null;
 };
@@ -239,12 +256,16 @@ export function buildQaReport(
       }
       if (opts.agentId && call.agent_id !== opts.agentId) return null;
       const findings = realComplianceFindings(score.compliance_findings);
+      const durationRaw = Number(call.duration_seconds);
+      const duration_seconds =
+        Number.isFinite(durationRaw) && durationRaw > 0 ? Math.round(durationRaw) : null;
       return {
         call_id: call.id,
         title: call.title || "Untitled call",
         agent_id: call.agent_id,
         agent_name: agentNameOf(call),
         audited_at: auditedAt,
+        duration_seconds,
         overall_score: Number(score.overall_score),
         greeting: score.greeting == null ? null : Number(score.greeting),
         empathy: score.empathy == null ? null : Number(score.empathy),
@@ -281,18 +302,23 @@ export function buildQaReport(
   }
 
   const agents: ReportAgentRow[] = [...byAgent.entries()]
-    .map(([key, list]) => ({
-      agent_id: key === "unassigned" ? null : key,
-      agent_name: list[0]?.agent_name || "Unassigned",
-      call_count: list.length,
-      avg_score: avg(list.map((r) => r.overall_score)),
-      excellent: list.filter((r) => r.verdict === "excellent").length,
-      good: list.filter((r) => r.verdict === "good").length,
-      needs_improvement: list.filter((r) => r.verdict === "needs_improvement").length,
-      poor: list.filter((r) => r.verdict === "poor").length,
-      compliance_calls: list.filter((r) => r.compliance_findings.length > 0).length,
-      compliance_findings: list.reduce((sum, r) => sum + r.compliance_findings.length, 0),
-    }))
+    .map(([key, list]) => {
+      const handling = ahtFromDurations(list.map((r) => r.duration_seconds));
+      return {
+        agent_id: key === "unassigned" ? null : key,
+        agent_name: list[0]?.agent_name || "Unassigned",
+        call_count: list.length,
+        avg_score: avg(list.map((r) => r.overall_score)),
+        aht_seconds: handling.aht_seconds,
+        total_handling_seconds: handling.total_handling_seconds,
+        excellent: list.filter((r) => r.verdict === "excellent").length,
+        good: list.filter((r) => r.verdict === "good").length,
+        needs_improvement: list.filter((r) => r.verdict === "needs_improvement").length,
+        poor: list.filter((r) => r.verdict === "poor").length,
+        compliance_calls: list.filter((r) => r.compliance_findings.length > 0).length,
+        compliance_findings: list.reduce((sum, r) => sum + r.compliance_findings.length, 0),
+      };
+    })
     .sort((a, b) => (b.avg_score ?? -1) - (a.avg_score ?? -1));
 
   return {
@@ -306,6 +332,7 @@ export function buildQaReport(
     summary: {
       calls_audited: rows.length,
       avg_overall: avg(rows.map((r) => r.overall_score)),
+      ...ahtFromDurations(rows.map((r) => r.duration_seconds)),
       avg_greeting: avg(rows.map((r) => r.greeting)),
       avg_empathy: avg(rows.map((r) => r.empathy)),
       avg_professionalism: avg(rows.map((r) => r.professionalism)),
@@ -359,7 +386,7 @@ export async function loadQaReport(
   const teamScope = await getTeamScope(userId);
   const callsQuery = supabase
     .from("calls")
-    .select("id, title, agent_id, created_at, completed_at, status, agents(name), call_scores(*)")
+    .select("id, title, agent_id, created_at, completed_at, duration_seconds, status, agents(name), call_scores(*)")
     .in("user_id", teamScope)
     .eq("status", "completed");
 

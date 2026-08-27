@@ -18,6 +18,8 @@ const KIND_HELP: Record<QaKind, string> = {
     "Standardized opening greeting and identity verification script. Key terms improve transcription accuracy.",
   closing:
     "Standardized closing statement and resolution confirmation script. Key terms improve wrap-up scoring.",
+  holding:
+    "Your company's hold / wait / check-back procedure. Optional — skip if you have no hold policy. Audits use it only when a call actually goes on hold.",
 };
 
 const FILE_ACCEPT =
@@ -42,6 +44,12 @@ const Icons = {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       <path d="m9 12 2 2 4-4" />
+    </svg>
+  ),
+  hold: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="6" y="4" width="4" height="16" rx="1" />
+      <rect x="14" y="4" width="4" height="16" rx="1" />
     </svg>
   ),
   script: (
@@ -79,6 +87,8 @@ function getKindIcon(kind: QaKind) {
     case "opening":
     case "closing":
       return Icons.script;
+    case "holding":
+      return Icons.hold;
     default:
       return Icons.document;
   }
@@ -130,7 +140,7 @@ function KindSection({
                   </span>
                 ) : (
                   <span className="text-[11px] font-medium px-2 py-0.2 rounded bg-slate-50 text-slate-500 border border-slate-200">
-                    Optional Script
+                    Optional
                   </span>
                 )}
                 {ok && (
@@ -260,7 +270,7 @@ export function StandardsBoard() {
           <h2 className="text-[15px] font-bold text-ink">Enable standards storage</h2>
           <p className="mt-1 text-[13px] text-slate-600 leading-relaxed">
             Run <code className="text-ink font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">supabase/qa-standards.sql</code> and{" "}
-            <code className="text-ink font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">supabase/call-scripts.sql</code> in the
+            <code className="text-ink font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">supabase/holding-procedure.sql</code> in the
             Supabase SQL Editor, then refresh this page.
           </p>
         </div>
@@ -320,7 +330,7 @@ export function StandardsBoard() {
         <div>
           <h2 className="text-[15px] font-bold text-ink">Organization Call Scripts</h2>
           <p className="text-[12px] text-muted">
-            Opening and closing scripts shared across all agents to calibrate transcription key terms and greeting/wrap-up adherence.
+            Opening, closing, and holding procedures are optional. Upload only the ones your company uses. Holding is scored only when a call actually goes on hold.
           </p>
         </div>
         {SCRIPT_KINDS.map((kind) => (
