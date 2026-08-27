@@ -166,8 +166,9 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
   let supabase: ReturnType<typeof createAdminClient> | null = null;
 
   try {
-    supabase = createAdminClient();
-    const { data: call, error } = await supabase
+    const db = createAdminClient();
+    supabase = db;
+    const { data: call, error } = await db
       .from("calls")
       .select("*, agents(name)")
       .eq("id", callId)
@@ -177,7 +178,7 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
       throw new Error(error?.message || "Call not found");
     }
 
-    const { data: stored, error: uttError } = await supabase
+    const { data: stored, error: uttError } = await db
       .from("utterances")
       .select("*")
       .eq("call_id", callId)
@@ -197,7 +198,7 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
       standards = requireReadableStandards(orgDocs);
     }
 
-    await supabase
+    await db
       .from("calls")
       .update({ status: "analyzing", error_message: null })
       .eq("id", callId);
@@ -251,12 +252,12 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
     if (roleUpdates.length) {
       await Promise.all(
         roleUpdates.map((row) =>
-          supabase.from("utterances").update({ role: row.role }).eq("id", row.id),
+          db.from("utterances").update({ role: row.role }).eq("id", row.id),
         ),
       );
     }
 
-    await supabase.from("call_scores").delete().eq("call_id", callId);
+    await db.from("call_scores").delete().eq("call_id", callId);
     const scoreRow = {
       call_id: callId,
       overall_score: analysis.overall_score,
@@ -276,11 +277,11 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
       metric_evidence: analysis.metric_evidence,
       audit_mode: mode,
     };
-    let { error: scoreError } = await supabase.from("call_scores").insert(scoreRow);
+    let { error: scoreError } = await db.from("call_scores").insert(scoreRow);
     if (scoreError && /metric_evidence/.test(scoreError.message)) {
       const withoutEvidence = { ...scoreRow };
       delete (withoutEvidence as { metric_evidence?: unknown }).metric_evidence;
-      ({ error: scoreError } = await supabase.from("call_scores").insert(withoutEvidence));
+      ({ error: scoreError } = await db.from("call_scores").insert(withoutEvidence));
     }
     if (scoreError && /compliance_findings|standards_used|audit_mode/.test(scoreError.message)) {
       const legacy = {
@@ -298,11 +299,11 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
         strengths: scoreRow.strengths,
         improvements: scoreRow.improvements,
       };
-      ({ error: scoreError } = await supabase.from("call_scores").insert(legacy));
+      ({ error: scoreError } = await db.from("call_scores").insert(legacy));
     }
     if (scoreError) throw new Error(scoreError.message);
 
-    await supabase
+    await db
       .from("calls")
       .update({
         status: "completed",

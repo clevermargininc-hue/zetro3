@@ -112,6 +112,8 @@ export type GenericUtterance = {
   confidence: number;
 };
 
+export type AssemblyUtterance = GenericUtterance;
+
 export type CallAnalysis = {
   speaker_map: Record<string, SpeakerRole>;
   overall_score: number;
