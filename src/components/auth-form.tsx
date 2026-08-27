@@ -6,8 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 
 type Mode = "login" | "signup";
 
-function safeNext(value?: string) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/onboarding";
+function safeNext(value: string | undefined, fallback: string) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return fallback;
   return value;
 }
 
@@ -20,7 +20,7 @@ export function AuthForm({
   next?: string;
   email?: string;
 }) {
-  const dest = safeNext(next);
+  const dest = safeNext(next, mode === "signup" ? "/onboarding" : "/dashboard");
   const [email, setEmail] = useState(emailPrefill || "");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -51,21 +51,18 @@ export function AuthForm({
           return;
         }
         setInfo("Check your email to confirm the account, then sign in.");
+        setLoading(false);
       } else {
         const { error: signError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (signError) throw signError;
-        
-        // Force a hard navigation. This completely clears Next.js router cache 
-        // and transitions from the unauthenticated layout to the dashboard layout 
-        // much faster than a client-side transition.
         window.location.href = dest;
+        return;
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
       setLoading(false);
     }
   }

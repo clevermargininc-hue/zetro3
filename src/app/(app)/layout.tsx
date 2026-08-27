@@ -11,15 +11,24 @@ export default async function AppLayout({
 }) {
   const { supabase, user } = await requireUser();
 
-  const { data: memberRow } = await supabase
+  const memberQuery = supabase
     .from("workspace_members")
     .select("workspace_id, role")
     .eq("user_id", user.id)
     .limit(1)
     .maybeSingle();
+  const profileQuery = supabase
+    .from("profiles")
+    .select("username, full_name")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const [{ data: memberRow }, profileRes] = await Promise.all([memberQuery, profileQuery]);
 
   let workspaceName: string | null = null;
   let plan: string | null = null;
+  let username: string | null = null;
+  let displayName: string | null = null;
   if (memberRow?.workspace_id) {
     const { data: workspace } = await supabase
       .from("workspaces")
@@ -29,14 +38,6 @@ export default async function AppLayout({
     workspaceName = (workspace?.name as string) || null;
     plan = (workspace?.plan as string) || null;
   }
-
-  let username: string | null = null;
-  let displayName: string | null = null;
-  const profileRes = await supabase
-    .from("profiles")
-    .select("username, full_name")
-    .eq("id", user.id)
-    .maybeSingle();
   if (profileRes.error && /username/i.test(profileRes.error.message)) {
     const fallback = await supabase
       .from("profiles")

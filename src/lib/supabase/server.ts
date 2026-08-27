@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { getPublicEnv } from "@/lib/env";
 
 export async function createClient() {
@@ -25,7 +26,7 @@ export async function createClient() {
   });
 }
 
-export async function requireUser() {
+export const requireUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -34,4 +35,4 @@ export async function requireUser() {
     redirect("/login");
   }
   return { supabase, user };
-}
+});

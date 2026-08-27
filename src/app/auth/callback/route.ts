@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { getPublicEnv } from "@/lib/env";
 import { appOrigin } from "@/lib/invites";
-import { maybeSendWelcomeEmail } from "@/lib/welcome-email";
+import { scheduleWelcomeEmail } from "@/lib/welcome-email";
 
 function safeNext(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
 
   // Handle token_hash flow (used by Supabase email links for recovery, signup confirmation, etc.)
   if (tokenHash && type) {
-    const { error } = await supabase.auth.verifyOtp({
+    const { data, error } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
       type: type as "recovery" | "signup" | "email",
     });
@@ -89,16 +89,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`);
     }
     if (!isPasswordRecovery) {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      await maybeSendWelcomeEmail(user, appOrigin(request));
+      scheduleWelcomeEmail(data.user ?? data.session?.user, appOrigin(request));
     }
     return redirect;
   }
 
   // Handle code exchange flow (PKCE)
-  const { error } = await supabase.auth.exchangeCodeForSession(code!);
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code!);
   if (error) {
     if (isPasswordRecovery) {
       // For password recovery, redirect back to forgot-password with a friendly message
@@ -113,10 +110,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!isPasswordRecovery) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    await maybeSendWelcomeEmail(user, appOrigin(request));
+    scheduleWelcomeEmail(data.user ?? data.session?.user, appOrigin(request));
   }
 
   return redirect;

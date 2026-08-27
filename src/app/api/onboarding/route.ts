@@ -17,7 +17,7 @@ import {
 
 import { appOrigin, sendWorkspaceInvites } from "@/lib/invites";
 import { parseCountryName } from "@/lib/locale";
-import { maybeSendWelcomeEmail } from "@/lib/welcome-email";
+import { scheduleWelcomeEmail } from "@/lib/welcome-email";
 import { setWorkspaceCookie } from "@/lib/workspace-cookie";
 
 export const runtime = "nodejs";
@@ -59,27 +59,53 @@ export async function GET(request: Request) {
   }
 
   try {
-    const profile = await profileFor(
-      user.id,
-      user.email || "",
-      (user.user_metadata?.full_name as string) || "",
-    );
+    const [profile, membership] = await Promise.all([
+      profileFor(
+        user.id,
+        user.email || "",
+        (user.user_metadata?.full_name as string) || "",
+      ),
+      getMembership(user.id),
+    ]);
     const email = profile.email;
-    const membership = await getMembership(user.id);
     const domain = emailDomain(email);
     const personal = isPersonalEmail(email);
-    const pendingRequest = await getPendingJoinRequest(user.id);
-    const invite = email ? await findInviteForEmail(email) : null;
-    const match = !personal && domain ? await findWorkspaceByDomain(domain) : null;
+
+    scheduleWelcomeEmail(user, appOrigin(request));
+
+    if (membership) {
+      return json(
+        {
+          ready: true,
+          profile: {
+            email,
+            fullName: profile.fullName,
+            firstName: firstNameFrom(profile.fullName, email),
+          },
+          membership,
+          domain,
+          isPersonalEmail: personal,
+          suggestedName: domain && !personal ? guessWorkspaceName(domain) : "My team",
+          match: null,
+          pendingRequest: null,
+          invite: null,
+        },
+        true,
+      );
+    }
+
+    const [pendingRequest, invite, match] = await Promise.all([
+      getPendingJoinRequest(user.id),
+      email ? findInviteForEmail(email) : Promise.resolve(null),
+      !personal && domain ? findWorkspaceByDomain(domain) : Promise.resolve(null),
+    ]);
     const pendingForMatch = match
       ? await getPendingJoinRequest(user.id, match.id)
       : null;
 
-    await maybeSendWelcomeEmail(user, appOrigin(request));
-
     return json(
       {
-        ready: Boolean(membership),
+        ready: false,
         profile: {
           email,
           fullName: profile.fullName,
@@ -93,7 +119,7 @@ export async function GET(request: Request) {
         pendingRequest: pendingForMatch || pendingRequest,
         invite,
       },
-      Boolean(membership),
+      false,
     );
   } catch (error) {
     return jsonError(error);

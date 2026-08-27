@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { WORKSPACE_COOKIE } from "@/lib/workspace-cookie";
+import { setWorkspaceCookie, WORKSPACE_COOKIE } from "@/lib/workspace-cookie";
 
 const PUBLIC_PATHS = new Set(["/", "/login", "/signup", "/talk-sales", "/about", "/how-it-works", "/solutions", "/pricing", "/forgot-password", "/reset-password"]);
 
@@ -20,6 +20,13 @@ async function userHasWorkspace(
     .maybeSingle();
   if (error) return null;
   return Boolean(data);
+}
+
+function withCookies(from: NextResponse, to: NextResponse) {
+  from.cookies.getAll().forEach((cookie) => {
+    to.cookies.set(cookie);
+  });
+  return to;
 }
 
 export async function updateSession(request: NextRequest) {
@@ -101,7 +108,9 @@ export async function updateSession(request: NextRequest) {
     const dest = request.nextUrl.clone();
     dest.pathname = ready === true ? "/dashboard" : "/onboarding";
     dest.search = "";
-    return NextResponse.redirect(dest);
+    const redirect = withCookies(response, NextResponse.redirect(dest));
+    if (ready === true) setWorkspaceCookie(redirect);
+    return redirect;
   }
 
   const isOnboarding = path.startsWith("/onboarding");
@@ -113,7 +122,9 @@ export async function updateSession(request: NextRequest) {
         const dest = request.nextUrl.clone();
         dest.pathname = "/dashboard";
         dest.search = "";
-        return NextResponse.redirect(dest);
+        const redirect = withCookies(response, NextResponse.redirect(dest));
+        setWorkspaceCookie(redirect);
+        return redirect;
       }
     }
   }
@@ -124,8 +135,9 @@ export async function updateSession(request: NextRequest) {
       const dest = request.nextUrl.clone();
       dest.pathname = "/onboarding";
       dest.search = "";
-      return NextResponse.redirect(dest);
+      return withCookies(response, NextResponse.redirect(dest));
     }
+    if (ready === true) setWorkspaceCookie(response);
   }
 
   return response;

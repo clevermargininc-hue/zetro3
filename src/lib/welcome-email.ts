@@ -1,4 +1,5 @@
 import type { User } from "@supabase/supabase-js";
+import { after } from "next/server";
 import { sendResendEmail, escapeHtml } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { firstNameFrom } from "@/lib/workspaces";
@@ -59,6 +60,14 @@ function welcomeHtml(firstName: string, origin: string) {
       </tr>
     </table>
   `;
+}
+
+/** Send the welcome email after the HTTP response so sign-in is not blocked. */
+export function scheduleWelcomeEmail(user: User | null | undefined, origin: string) {
+  if (!user?.email) return;
+  after(() => {
+    void maybeSendWelcomeEmail(user, origin);
+  });
 }
 
 export async function maybeSendWelcomeEmail(user: User | null | undefined, origin: string) {
