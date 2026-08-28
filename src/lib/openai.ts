@@ -13,7 +13,7 @@ import type {
 } from "@/lib/types";
 import type { QaDocument } from "@/lib/qa-kinds";
 import { SCRIPT_KINDS } from "@/lib/qa-kinds";
-import { scriptsOf } from "@/lib/call-scripts";
+import { extractKeytermsFromDocuments, scriptsOf } from "@/lib/call-scripts";
 import { detectHoldEvents, formatHoldListenBlock } from "@/lib/detect-holds";
 
 const SCORE_DIMENSIONS: ScoreDimension[] = [
@@ -189,7 +189,19 @@ function normalizeMetricEvidence(
   return out;
 }
 
-const EVIDENCE_PROMPT_BLOCK = `
+const DOCUMENTS_EVIDENCE_BLOCK = `
+metric_evidence (required for every score dimension):
+- The REFERENCE is the company file (scorecard, process document, compliance, opening/closing script). Name that file and rule in "note".
+- quote: a short proof from the call that the agent hit or missed that document rule. Do not treat transcript wording as the definition of a product, company, or required phrase.
+- Key terms in notes must match the company documents list, not invented transcript spellings.
+- verdict: "hit" if the agent followed the document, "miss" if they skipped it, "partial" if mixed.
+- utterance_index: the [i] index from the transcript lines (required).
+Do not dump the full transcript — only these short evidence snippets.
+
+hold_detected: true if the timed transcript/audio shows a hold or wait (hold language or a silence gap).
+hold_findings: if hold_detected and a HOLDING PROCEDURE file exists, list each company hold rule that was followed or missed, with a timestamp. If no hold, return []. If no holding procedure file, return [].`;
+
+const AUTOMATIC_EVIDENCE_BLOCK = `
 metric_evidence (required for every score dimension):
 - For greeting, empathy, professionalism, resolution, communication, language_handling, pick ONE short moment from the transcript that best explains that score.
 - If a hold/wait was heard AND a company HOLDING PROCEDURE file is provided, also fill metric_evidence.holding from that hold moment (verdict hit/miss/partial against the company file). If no hold, omit holding.
@@ -369,8 +381,104 @@ async function completeJson(
     : new Error("OpenAI returned an empty response");
 }
 
+const SWAHILI_REPAIR_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    turns: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          index: { type: "integer" },
+          text: { type: "string" },
+        },
+        required: ["index", "text"],
+      },
+    },
+  },
+  required: ["turns"],
+} as const;
+
+const SWAHILI_REPAIR_SYSTEM = `You repair broken Kiswahili produced by speech-to-text for East African contact-center calls.
+
+Rules:
+- Fix misspelled, fused, or garbled Kiswahili so it is correct Kiswahili (example: assante → asante, tafadhari → tafadhali, subirikidogo → subiri kidogo).
+- Do NOT translate Kiswahili into English. Keep Kiswahili as Kiswahili.
+- Leave English words and names unchanged unless they are a known company/product spelling from the key-terms list.
+- Do not add facts, numbers, or names the speaker did not say.
+- Prefer spellings from the company key-terms list when a product or company name is intended.
+- Return the same number of turns with the same index values.`;
+
+function chunkTurns<T>(items: T[], maxChars: number) {
+  const batches: T[][] = [];
+  let current: T[] = [];
+  let size = 0;
+  for (const item of items) {
+    const extra = JSON.stringify(item).length + 8;
+    if (current.length && size + extra > maxChars) {
+      batches.push(current);
+      current = [];
+      size = 0;
+    }
+    current.push(item);
+    size += extra;
+  }
+  if (current.length) batches.push(current);
+  return batches;
+}
+
+/** Correct broken Kiswahili ASR. English-only text is left alone. Fails open. */
+export async function repairBrokenSwahiliUtterances<T extends { text: string }>(
+  turns: T[],
+  keyTerms: string[] = [],
+): Promise<T[]> {
+  if (!turns.length) return turns;
+
+  const keyed = turns.map((turn, index) => ({
+    index,
+    text: turn.text,
+  }));
+  const terms = keyTerms.filter(Boolean).slice(0, 40);
+  const out = [...turns];
+
+  try {
+    for (const batch of chunkTurns(keyed, 7000)) {
+      const parsed = (await completeJson(
+        SWAHILI_REPAIR_SYSTEM,
+        `${terms.length ? `Company key terms (preferred spellings):\n${terms.join(", ")}\n\n` : ""}Repair broken Kiswahili in these turns. Keep English. Do not translate.\n${JSON.stringify(batch)}`,
+        "swahili_repair",
+        SWAHILI_REPAIR_SCHEMA,
+        "fast",
+      )) as { turns?: { index?: unknown; text?: unknown }[] };
+
+      for (let i = 0; i < (parsed.turns || []).length; i++) {
+        const row = parsed.turns![i];
+        const text = String(row.text || "").replace(/\s+/g, " ").trim();
+        if (!text) continue;
+        const claimed = Number(row.index);
+        const fallback = batch[i]?.index;
+        const index =
+          Number.isInteger(claimed) && batch.some((item) => item.index === claimed)
+            ? claimed
+            : fallback;
+        if (index == null || index < 0 || index >= out.length) continue;
+        out[index] = { ...out[index], text };
+      }
+    }
+    return out;
+  } catch (error) {
+    console.error(
+      "Swahili repair skipped:",
+      error instanceof Error ? error.message : error,
+    );
+    return turns;
+  }
+}
+
 const SCRIPT_PROMPT_BLOCK = `
-When an OPENING SCRIPT or CLOSING SCRIPT is provided, score greeting and closing against those org-wide scripts (shared by all agents). Note key terms the agent should have used.
+When an OPENING SCRIPT or CLOSING SCRIPT is provided, score greeting and closing against those org-wide scripts (shared by all agents). Required key terms come from those files and the other company documents, not from the transcript.
 
 HOLDING PROCEDURE — listen to the call first, then apply that company's rules only when a hold actually happened:
 - You are given a CALL LISTENING block built from audio timestamps (silence gaps ≥ 8s) and hold/wait phrases in English and Kiswahili. Treat that as having heard the recording. hold_detected must match that listening result unless the timed transcript clearly shows a hold the listener missed.
@@ -382,7 +490,9 @@ const DOCUMENTS_PROMPT = `You are a bilingual (Kiswahili + English) call-center 
 
 PATH: DOCUMENTS AUDIT.
 You MUST read the retrieved SCORECARD, COMPLIANCE, and PROCESS DOCUMENT chunks before scoring.
-Do not use a generic QA rubric. Do not invent criteria that are not in those files.
+Those company files are the only REFERENCE for criteria, required phrases, product names, and key terms.
+Do not invent criteria, company names, or key terms from the call transcript.
+Do not use a generic QA rubric.
 If a required behaviour is in the documents and the agent skipped it, mark it as a miss.
 If a behaviour is not in the scorecard or process documents, do not penalize it unless it breaks compliance.
 
@@ -390,7 +500,7 @@ Your job:
 1. Decide which speaker label is the CALL CENTER AGENT and which is the CUSTOMER.
 2. Score the AGENT using only the uploaded scorecard (0–100).
 3. Check every compliance rule from the uploaded files and list breaches.
-4. Keep original languages for quotes. Write your analysis (summary, strengths, improvements, notes) in the primary language spoken during the call (e.g. Swahili if they spoke Swahili).
+4. Keep original languages for quotes. You MAY correct broken Kiswahili ASR spelling (asante not assante) using company-document key terms. Never translate Kiswahili into English. Write analysis in the primary language spoken on the call.
 5. Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. For the Company Name and key terms, rely strictly on the provided company documents. Only use the Customer's name if clearly spoken.
 
 How to identify speakers:
@@ -409,7 +519,7 @@ Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–4
 compliance_findings: specific breaches with a short quote, or ["None identified"].
 Cite the company file by name in summary, strengths, and improvements.
 speaker_assignments must cover every speaker label.
-${EVIDENCE_PROMPT_BLOCK}`;
+${DOCUMENTS_EVIDENCE_BLOCK}`;
 
 const AUTOMATIC_PROMPT = `You are a bilingual (Kiswahili + English) call-center quality analyst.
 
@@ -419,7 +529,7 @@ Score from your own professional judgment of contact-center quality. Do not wait
 Your job:
 1. Decide which speaker label is the CALL CENTER AGENT and which is the CUSTOMER.
 2. Score the AGENT from 0–100 using standard service-quality practice.
-3. Keep original languages for quotes. Write your analysis (summary, strengths, improvements, notes) in the primary language spoken during the call.
+3. Keep original languages for quotes. You MAY correct broken Kiswahili ASR spelling. Never translate Kiswahili into English. Write analysis in the primary language spoken on the call.
 4. Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. Only use the Customer's name if clearly spoken. Do not invent names.
 
 How to identify speakers:
@@ -442,13 +552,15 @@ Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–4
 compliance_findings: obvious legal/ethical issues only, or ["None identified"].
 Write summary, strengths, and improvements from the call itself.
 speaker_assignments must cover every speaker label.
-${EVIDENCE_PROMPT_BLOCK}`;
+${AUTOMATIC_EVIDENCE_BLOCK}`;
 
 const DOCUMENTS_PROMPT_EN = `You are an English-language call-center quality analyst.
 
 PATH: DOCUMENTS AUDIT.
 You MUST read the retrieved SCORECARD, COMPLIANCE, and PROCESS DOCUMENT chunks before scoring.
-Do not use a generic QA rubric. Do not invent criteria that are not in those files.
+Those company files are the only REFERENCE for criteria, required phrases, product names, and key terms.
+Do not invent criteria, company names, or key terms from the call transcript.
+Do not use a generic QA rubric.
 If a required behaviour is in the documents and the agent skipped it, mark it as a miss.
 If a behaviour is not in the scorecard or process documents, do not penalize it unless it breaks compliance.
 
@@ -475,7 +587,7 @@ Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–4
 compliance_findings: specific breaches with a short quote, or ["None identified"].
 Cite the company file by name in summary, strengths, and improvements.
 speaker_assignments must cover every speaker label.
-${EVIDENCE_PROMPT_BLOCK}`;
+${DOCUMENTS_EVIDENCE_BLOCK}`;
 
 const AUTOMATIC_PROMPT_EN = `You are an English-language call-center quality analyst.
 
@@ -508,7 +620,7 @@ Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–4
 compliance_findings: obvious legal/ethical issues only, or ["None identified"].
 Write summary, strengths, and improvements from the call itself.
 speaker_assignments must cover every speaker label.
-${EVIDENCE_PROMPT_BLOCK}`;
+${AUTOMATIC_EVIDENCE_BLOCK}`;
 
 export async function analyzeCall(
   utterances: GenericUtterance[],
@@ -548,9 +660,18 @@ export async function analyzeCall(
     ? `\n\nORGANIZATION CALL SCRIPTS (shared by all agents; holding procedure is optional and applies only if a hold was heard):\n${clipText(scriptsText.trim(), 4000)}`
     : "";
 
+  const documentKeyTerms =
+    mode === "documents"
+      ? extractKeytermsFromDocuments(scriptDocs.length ? scriptDocs : standards, 40)
+      : [];
+  const keyTermsBlock =
+    mode === "documents" && documentKeyTerms.length
+      ? `\n\nKEY TERMS FROM COMPANY DOCUMENTS (use these spellings only; do not invent terms from the transcript):\n${documentKeyTerms.join(", ")}`
+      : "";
+
   const userPrompt =
     mode === "documents"
-      ? `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}WORKSPACE STANDARDS (you have read these files; score only from them; use company names/key terms from here):\n${clipText(standardsText, 8000)}${scriptsBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript (listen via timestamps):\n${transcript}`
+      ? `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}WORKSPACE STANDARDS (company files are the only reference; score only from them; company names and key terms come from here, not from the call):\n${clipText(standardsText, 8000)}${scriptsBlock}${keyTermsBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript (check whether the agent followed the files above):\n${transcript}`
       : `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}Automatic audit — no company scorecard required.${scriptsBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript (listen via timestamps):\n${transcript}`;
 
   const parsed = (await completeJson(

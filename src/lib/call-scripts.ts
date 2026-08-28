@@ -1,6 +1,5 @@
 import type { QaDocument } from "@/lib/qa-kinds";
-import { SCRIPT_KINDS, type ScriptKind } from "@/lib/qa-kinds";
-import { HOLD_ASR_KEYTERMS } from "@/lib/detect-holds";
+import { ALL_DOCUMENT_KINDS, SCRIPT_KINDS, type ScriptKind } from "@/lib/qa-kinds";
 
 const STOPWORDS = new Set(
   [
@@ -58,8 +57,6 @@ const STOPWORDS = new Set(
   ].map((w) => w.toLowerCase()),
 );
 
-const DEFAULT_KEYTERMS = ["TANESCO", "LUKU", "token", "tokeni", "umeme", "M-Pesa", "mafundi"];
-
 export function scriptsOf(docs: QaDocument[], kind: ScriptKind) {
   return docs.filter((doc) => doc.kind === kind && (doc.extracted_text || "").trim());
 }
@@ -86,10 +83,12 @@ export function formatCallScripts(docs: QaDocument[]) {
     .join("\n\n");
 }
 
-/** Distinctive words/phrases from org scripts for ASR keyterms + lexicon repair. */
-export function extractKeytermsFromScripts(docs: QaDocument[], limit = 48): string[] {
-  const texts = SCRIPT_KINDS.flatMap((kind) =>
-    scriptsOf(docs, kind).map((doc) => doc.extracted_text || ""),
+/** Distinctive words/phrases from company documents (not from the call). */
+export function extractKeytermsFromDocuments(docs: QaDocument[], limit = 48): string[] {
+  const texts = ALL_DOCUMENT_KINDS.flatMap((kind) =>
+    docs
+      .filter((doc) => doc.kind === kind && (doc.extracted_text || "").trim())
+      .map((doc) => doc.extracted_text || ""),
   );
   const seen = new Set<string>();
   const out: string[] = [];
@@ -102,9 +101,6 @@ export function extractKeytermsFromScripts(docs: QaDocument[], limit = 48): stri
     seen.add(key);
     out.push(cleaned);
   }
-
-  for (const term of HOLD_ASR_KEYTERMS) push(term);
-  for (const term of DEFAULT_KEYTERMS) push(term);
 
   for (const text of texts) {
     for (const match of text.matchAll(/"([^"]{3,80})"|'([^']{3,80})'/g)) {
@@ -139,9 +135,17 @@ export function extractKeytermsFromScripts(docs: QaDocument[], limit = 48): stri
   return out.slice(0, limit);
 }
 
-export function lexiconFromScripts(docs: QaDocument[]) {
-  return extractKeytermsFromScripts(docs, 120)
+export function extractKeytermsFromScripts(docs: QaDocument[], limit = 48) {
+  return extractKeytermsFromDocuments(docs, limit);
+}
+
+export function lexiconFromDocuments(docs: QaDocument[]) {
+  return extractKeytermsFromDocuments(docs, 120)
     .flatMap((term) => term.split(/\s+/))
     .map((w) => w.toLowerCase().replace(/[^\p{L}]/gu, ""))
     .filter((w) => w.length >= 4 && !STOPWORDS.has(w));
+}
+
+export function lexiconFromScripts(docs: QaDocument[]) {
+  return lexiconFromDocuments(docs);
 }

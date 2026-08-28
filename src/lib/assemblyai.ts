@@ -93,16 +93,9 @@ function transcriptBody(
     },
   };
 
-  const defaults =
-    languageMode === "en"
-      ? ["TANESCO", "LUKU", "token", "M-Pesa"]
-      : languageMode === "sw" || languageMode === "mixed"
-        ? ["TANESCO", "LUKU", "tokeni", "umeme", "M-Pesa", "mafundi"]
-        : ["TANESCO", "LUKU", "token", "tokeni", "M-Pesa"];
-
   const merged: string[] = [];
   const seen = new Set<string>();
-  for (const term of [...keyterms, ...defaults]) {
+  for (const term of keyterms) {
     const cleaned = term.replace(/\s+/g, " ").trim();
     if (!cleaned) continue;
     const key = cleaned.toLowerCase();
@@ -115,10 +108,10 @@ function transcriptBody(
   if (languageMode === "en") {
     body.speech_models = ["universal-3-5-pro", "universal-2"];
     body.language_code = "en";
-    body.keyterms_prompt = merged;
+    if (merged.length) body.keyterms_prompt = merged;
   } else if (languageMode === "sw" || languageMode === "mixed") {
     body.language_code = "sw";
-    body.keyterms_prompt = merged;
+    if (merged.length) body.keyterms_prompt = merged;
   } else {
     body.language_detection = true;
     body.language_detection_options = {

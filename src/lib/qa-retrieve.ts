@@ -51,7 +51,21 @@ export async function indexQaDocument(doc: QaDocument) {
   }
 }
 
-export async function retrieveQaContext(userId: string, transcript: string, docs: QaDocument[]) {
+function documentReferenceQuery(docs: QaDocument[]) {
+  const parts = docs.map((doc) => {
+    const text = (doc.extracted_text || "").replace(/\s+/g, " ").trim();
+    return `${doc.kind}: ${doc.title} (${doc.file_name})\n${text.slice(0, 500)}`;
+  });
+  return [
+    "Company standards reference: scorecard criteria, compliance rules, process steps, product names, and required key terms.",
+    "Do not use a call transcript. Rank chunks from these uploaded files.",
+    parts.join("\n\n"),
+  ]
+    .join("\n\n")
+    .slice(0, 4000);
+}
+
+export async function retrieveQaContext(userId: string, docs: QaDocument[]) {
   const supabase = createAdminClient();
   const teamScope = await getTeamScope(userId);
   const { data, error } = await supabase
@@ -63,9 +77,7 @@ export async function retrieveQaContext(userId: string, transcript: string, docs
     return formatQaContext(docs);
   }
 
-  const query = await embedQuery(
-    `Call transcript for QA scoring and compliance review:\n${transcript.slice(0, 1500)}`,
-  );
+  const query = await embedQuery(documentReferenceQuery(docs));
 
   const ranked = (data as StoredChunk[])
     .map((chunk) => ({
@@ -75,12 +87,12 @@ export async function retrieveQaContext(userId: string, transcript: string, docs
     .sort((a, b) => b.score - a.score);
 
   const limits: Record<QaKind, number> = {
-    scorecard: 6,
-    compliance: 6,
-    document: 4,
-    opening: 2,
-    closing: 2,
-    holding: 2,
+    scorecard: 8,
+    compliance: 8,
+    document: 6,
+    opening: 3,
+    closing: 3,
+    holding: 3,
   };
 
   const picked = ALL_DOCUMENT_KINDS.flatMap((kind) =>
@@ -101,10 +113,10 @@ export async function retrieveQaContext(userId: string, transcript: string, docs
     }
     const heading =
       kind === "scorecard"
-        ? "SCORECARD — retrieved by embeddings; this is the scoring rubric"
+        ? "SCORECARD — from company files; this is the only scoring rubric"
         : kind === "compliance"
-          ? "COMPLIANCE — retrieved by embeddings; flag every breach"
-          : "PROCESS DOCUMENTS — retrieved by embeddings; required scripts and steps";
+          ? "COMPLIANCE — from company files; flag every breach"
+          : "PROCESS DOCUMENTS — from company files; required scripts, steps, and key terms";
     return `## ${heading}\n\n${items
       .map((row, index) => `### Chunk ${index + 1}\n${row.content}`)
       .join("\n\n")}`;
@@ -115,10 +127,10 @@ export async function retrieveQaContext(userId: string, transcript: string, docs
     if (!items.length) return "";
     const heading =
       kind === "opening"
-        ? "OPENING SCRIPT — retrieved by embeddings"
+        ? "OPENING SCRIPT — from company files"
         : kind === "closing"
-          ? "CLOSING SCRIPT — retrieved by embeddings"
-          : "HOLDING PROCEDURE — retrieved by embeddings (optional; score only if the call went on hold)";
+          ? "CLOSING SCRIPT — from company files"
+          : "HOLDING PROCEDURE — from company files (optional; score only if the call went on hold)";
     return `## ${heading}\n\n${items
       .map((row, index) => `### Chunk ${index + 1}\n${row.content}`)
       .join("\n\n")}`;

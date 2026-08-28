@@ -1,11 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { uploadToAssemblyAI, submitTranscript, waitForTranscript } from "@/lib/assemblyai";
-import { analyzeCall } from "@/lib/openai";
+import { analyzeCall, repairBrokenSwahiliUtterances } from "@/lib/openai";
 import { collapseTurnList } from "@/lib/collapse-asr";
 import {
-  extractKeytermsFromScripts,
+  extractKeytermsFromDocuments,
   formatCallScripts,
-  lexiconFromScripts,
+  lexiconFromDocuments,
 } from "@/lib/call-scripts";
 import {
   loadQaDocuments,
@@ -16,6 +16,7 @@ import type { AuditMode, LanguageMode, SpeakerRole } from "@/lib/types";
 import { describeAiError } from "@/lib/ai-client";
 import { getAutoAudit } from "@/lib/workspace-settings";
 import { getMembership } from "@/lib/workspaces";
+import { HOLD_ASR_KEYTERMS } from "@/lib/detect-holds";
 import { resolvedLanguageMode, workspaceLanguages } from "@/lib/locale";
 
 function inferRoleFromLabel(label: string): SpeakerRole | null {
@@ -96,8 +97,8 @@ export async function transcribeCall(
     const bytes = await file.arrayBuffer();
 
     const orgDocs = await loadQaDocuments(call.user_id).catch(() => []);
-    const keyterms = extractKeytermsFromScripts(orgDocs);
-    const extraLexicon = lexiconFromScripts(orgDocs);
+    const keyterms = [...HOLD_ASR_KEYTERMS, ...extractKeytermsFromDocuments(orgDocs)];
+    const extraLexicon = lexiconFromDocuments(orgDocs);
 
     const audioUrl = await uploadToAssemblyAI(bytes);
     const queued = await submitTranscript(audioUrl, languageMode, keyterms);
@@ -108,10 +109,18 @@ export async function transcribeCall(
       throw new Error("No speakers were detected in this recording");
     }
 
-    const rows = collapseTurnList(utterances, {
+    let collapsed = collapseTurnList(utterances, {
       bilingual: langs.bilingual,
       extraLexicon,
-    }).map((u, index) => ({
+    });
+    if (langs.bilingual) {
+      collapsed = await repairBrokenSwahiliUtterances(
+        collapsed,
+        extractKeytermsFromDocuments(orgDocs, 40),
+      );
+    }
+
+    const rows = collapsed.map((u, index) => ({
       call_id: callId,
       sequence: index,
       speaker_label: u.speaker,
@@ -219,29 +228,30 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
         ? (call.agents as { name?: string }).name
         : undefined;
 
-    const asAssembly = stored.map((u) => ({
+    const membership = await getMembership(call.user_id).catch(() => null);
+    const bilingual = workspaceLanguages(membership?.country).bilingual;
+
+    let asAssembly = stored.map((u) => ({
       speaker: u.speaker_label,
       text: u.text,
       start: u.start_ms ?? 0,
       end: u.end_ms ?? 0,
       confidence: Number(u.confidence ?? 0),
     }));
-
-    const transcriptText = asAssembly
-      .map((u) => `${u.speaker}: ${u.text}`)
-      .join("\n");
+    if (bilingual) {
+      asAssembly = await repairBrokenSwahiliUtterances(
+        asAssembly,
+        extractKeytermsFromDocuments(orgDocs, 40),
+      );
+    }
     if (mode === "documents") {
-      const retrieveQuery = `${transcriptText}\nplease hold stay on the line subiri ngoja check back holding procedure`;
-      standardsText = await retrieveQaContext(call.user_id, retrieveQuery, standards);
+      standardsText = await retrieveQaContext(call.user_id, standards);
       if (standardsText.trim().length < 40) {
         throw new Error(
           "Documents scoring cannot start until the uploaded Standards files have been read. Open Standards and upload them again.",
         );
       }
     }
-
-    const membership = await getMembership(call.user_id).catch(() => null);
-    const bilingual = workspaceLanguages(membership?.country).bilingual;
 
     const analysis = await analyzeCall(
       asAssembly,

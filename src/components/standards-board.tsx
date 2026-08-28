@@ -11,13 +11,13 @@ import {
 } from "@/lib/qa-kinds";
 
 const KIND_HELP: Record<QaKind, string> = {
-  document: "Product documentation, service protocols, and standard operating procedures (SOPs) agents must follow.",
+  document: "Product documentation, SOPs, and key terms. Scoring and transcription take company names and phrases from these files — not from the call.",
   scorecard: "The evaluation rubric, weightings, and grading criteria used to score conversations.",
   compliance: "Mandatory regulatory disclosures, risk rules, and prohibited statements flagged during audits.",
   opening:
-    "Standardized opening greeting and identity verification script. Key terms improve transcription accuracy.",
+    "Standardized opening greeting and identity verification script. Required phrases come from this file.",
   closing:
-    "Standardized closing statement and resolution confirmation script. Key terms improve wrap-up scoring.",
+    "Standardized closing statement and resolution confirmation script. Required wrap-up phrases come from this file.",
   holding:
     "Your company's hold / wait / check-back procedure. Optional — skip if you have no hold policy. Audits use it only when a call actually goes on hold.",
 };
