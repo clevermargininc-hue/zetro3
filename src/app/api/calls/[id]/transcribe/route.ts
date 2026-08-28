@@ -20,7 +20,7 @@ export async function POST(
   const autoScore =
     body.auto_score === false || body.auto_score === "none"
       ? false
-      : body.auto_score === "documents" || body.auto_score === "automatic"
+      : body.auto_score === "documents"
         ? body.auto_score
         : undefined;
 

@@ -82,7 +82,7 @@ export function requireReadableStandards(docs: QaDocument[]) {
   const missing = QA_KINDS.filter((kind) => !readable.some((doc) => doc.kind === kind));
   if (missing.length) {
     throw new Error(
-      `Documents scoring is blocked until Zetro can read a ${missing.map((kind) => QA_KIND_LABELS[kind]).join(", ")}. Open Standards to upload them. Automatic auditing does not need these files.`,
+      `Documents scoring is blocked until Zetro can read a ${missing.map((kind) => QA_KIND_LABELS[kind]).join(", ")}. Open Standards to upload them.`,
     );
   }
   return readable;

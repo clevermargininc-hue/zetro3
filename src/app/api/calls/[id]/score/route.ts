@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 function parseMode(value: unknown): AuditMode | null {
-  if (value === "documents" || value === "automatic") return value;
+  if (value === "documents") return value;
   return null;
 }
 
@@ -28,7 +28,7 @@ export async function POST(
   const mode = parseMode(body.mode);
   if (!mode) {
     return NextResponse.json(
-      { error: "Choose documents scoring or automatic auditing." },
+      { error: "Only documents-based scoring is supported. Upload Standards files first." },
       { status: 400 },
     );
   }

@@ -362,15 +362,9 @@ export function AnalyticsBoard() {
               {/* Audit Methods & Language Breakdown */}
               <Panel title="Evaluation Methodology & Languages" subtitle="Breakdown of audit paths and language context">
                 <div className="space-y-4 pt-1">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 bg-slate-50 border border-line">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">SOP Document Audits</span>
-                      <span className="text-xl font-bold tabular-nums text-ink">{data.documents_audits}</span>
-                    </div>
-                    <div className="p-3 bg-slate-50 border border-line">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Standard AI Audits</span>
-                      <span className="text-xl font-bold tabular-nums text-ink">{data.automatic_audits}</span>
-                    </div>
+                  <div className="p-3 bg-slate-50 border border-line">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">SOP Document Audits</span>
+                    <span className="text-xl font-bold tabular-nums text-ink">{data.documents_audits}</span>
                   </div>
 
                   {data.languages.length > 0 && (

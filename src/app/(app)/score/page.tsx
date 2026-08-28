@@ -21,7 +21,7 @@ export default async function ScorePage() {
     <div className="space-y-6 pb-10">
       <PageHeader
         title="Score agents"
-        description="Documents scoring uses your Standards files. Autonomous scoring uses a professional QA rubric."
+        description="Score agent calls against your uploaded Standards files (scorecard, compliance, and process documents)."
         actions={
           <Link href="/standards" className="btn btn-ghost">
             Standards

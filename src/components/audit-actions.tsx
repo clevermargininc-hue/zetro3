@@ -90,17 +90,9 @@ export function AuditActions({
           type="button"
           disabled={busy}
           onClick={() => void start("documents")}
-          className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[12px] px-3 py-1.5 font-medium"
+          className="btn bg-blue hover:bg-blue-2 text-white text-[12px] px-3 py-1.5 font-medium"
         >
           {pending === "documents" ? "Scoring with SOPs…" : "SOP Standards Audit"}
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void start("automatic")}
-          className="btn bg-blue hover:bg-blue-2 text-white text-[12px] px-3 py-1.5 font-semibold"
-        >
-          {pending === "automatic" ? "Analyzing Call…" : "Autonomous Audit"}
         </button>
       </div>
     );
@@ -113,19 +105,15 @@ export function AuditActions({
           <div className="h-6 w-6 rounded-full border-2 border-blue/30 border-t-blue animate-spin shrink-0" />
           <div>
             <h3 className="text-[14px] font-bold text-ink">
-              {pending === "documents"
-                ? "Evaluating Call Against Organization SOP Rubrics…"
-                : "Conducting Autonomous QA Evaluation…"}
+              Evaluating Call Against Organization SOP Rubrics…
             </h3>
             <p className="text-[12px] text-muted mt-0.5">
-              {pending === "documents"
-                ? "Scoring agent greeting, empathy, compliance breaches, and resolution against uploaded standards."
-                : "Auditing communication, empathy, professionalism, and problem resolution from conversation transcript."}
+              Scoring agent greeting, empathy, compliance breaches, and resolution against uploaded standards.
             </p>
           </div>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-1 max-w-lg">
           {/* Card 1: SOP Standards Audit */}
           <div className="surface p-5 flex flex-col justify-between space-y-4">
             <div>
@@ -144,34 +132,9 @@ export function AuditActions({
               type="button"
               disabled={busy}
               onClick={() => void start("documents")}
-              className="btn bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-[13px] font-semibold w-full justify-center py-2"
-            >
-              <span>Score via SOP Standards</span>
-              {Icons.arrowRight}
-            </button>
-          </div>
-
-          {/* Card 2: Autonomous AI Audit */}
-          <div className="surface p-5 flex flex-col justify-between space-y-4">
-            <div>
-              <div className="flex items-center gap-2.5 mb-2">
-                <span className="text-slate-500 shrink-0">{Icons.sparkles}</span>
-                <div>
-                  <h3 className="text-[14px] font-bold text-ink">Autonomous QA Audit</h3>
-                  <span className="chip">Universal benchmark</span>
-                </div>
-              </div>
-              <p className="text-[12px] text-muted leading-relaxed">
-                Evaluates greeting protocol, empathy, issue resolution, and professionalism using general contact center QA benchmarks.
-              </p>
-            </div>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void start("automatic")}
               className="btn bg-blue hover:bg-blue-2 text-white text-[13px] font-semibold w-full justify-center py-2"
             >
-              <span>Run Autonomous Audit</span>
+              <span>Score via SOP Standards</span>
               {Icons.arrowRight}
             </button>
           </div>

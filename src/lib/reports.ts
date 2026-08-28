@@ -77,7 +77,6 @@ export type QaReport = {
     calls_with_compliance_issue: number;
     total_compliance_findings: number;
     documents_audits: number;
-    automatic_audits: number;
   };
   calls: ReportCallRow[];
   agents: ReportAgentRow[];
@@ -346,7 +345,6 @@ export function buildQaReport(
       calls_with_compliance_issue: rows.filter((r) => r.compliance_findings.length > 0).length,
       total_compliance_findings: compliance.length,
       documents_audits: rows.filter((r) => r.audit_mode === "documents").length,
-      automatic_audits: rows.filter((r) => r.audit_mode === "automatic").length,
     },
     calls: rows,
     agents,
@@ -363,9 +361,8 @@ export function formatReportDate(iso: string) {
 }
 
 export function auditModeLabel(mode: string | null | undefined) {
-  if (mode === "automatic") return "Automatic";
   if (mode === "documents") return "Documents";
-  return "—";
+  return "Documents";
 }
 
 export function scoreLabel(score: number | null | undefined) {

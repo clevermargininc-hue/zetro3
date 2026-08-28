@@ -192,7 +192,8 @@ function normalizeMetricEvidence(
 const DOCUMENTS_EVIDENCE_BLOCK = `
 metric_evidence (required for every score dimension):
 - The REFERENCE is the company file (scorecard, process document, compliance, opening/closing script). Name that file and rule in "note".
-- quote: a short proof from the call that the agent hit or missed that document rule. Do not treat transcript wording as the definition of a product, company, or required phrase.
+- note: one concise, professional analytical explanation on why this score was given. When writing in Kiswahili, use clean, polished, grammatically correct Kiswahili (Kiswahili Fasaha).
+- quote: a short internal snippet from the call for backend verification (kept in backend; not exposed to UI).
 - Key terms in notes must match the company documents list, not invented transcript spellings.
 - verdict: "hit" if the agent followed the document, "miss" if they skipped it, "partial" if mixed.
 - utterance_index: the [i] index from the transcript lines (required).
@@ -200,20 +201,6 @@ Do not dump the full transcript — only these short evidence snippets.
 
 hold_detected: true if the timed transcript/audio shows a hold or wait (hold language or a silence gap).
 hold_findings: if hold_detected and a HOLDING PROCEDURE file exists, list each company hold rule that was followed or missed, with a timestamp. If no hold, return []. If no holding procedure file, return [].`;
-
-const AUTOMATIC_EVIDENCE_BLOCK = `
-metric_evidence (required for every score dimension):
-- For greeting, empathy, professionalism, resolution, communication, language_handling, pick ONE short moment from the transcript that best explains that score.
-- If a hold/wait was heard AND a company HOLDING PROCEDURE file is provided, also fill metric_evidence.holding from that hold moment (verdict hit/miss/partial against the company file). If no hold, omit holding.
-- verdict: "hit" if the agent did it well, "miss" if they failed or skipped it, "partial" if mixed.
-- quote: exact short words from that moment (keep original language; do not invent).
-- note: one short coaching sentence on why this raises or lowers the score.
-- utterance_index: the [i] index from the transcript lines (required).
-Do not dump the full transcript — only these short evidence snippets.
-
-hold_detected: true if the timed transcript/audio shows a hold or wait (hold language or a silence gap).
-hold_findings: if hold_detected and a HOLDING PROCEDURE file exists, list each company hold rule that was followed or missed, with a timestamp. If no hold, return []. If no holding procedure file, return [].`;
-
 
 const FALLBACK_REASONING = ["gpt-4o-mini", "gpt-4o", "gpt-5-mini"];
 const FALLBACK_FAST = ["gpt-4o-mini", "gpt-4o", "gpt-5-mini"];
@@ -401,12 +388,13 @@ const SWAHILI_REPAIR_SCHEMA = {
   required: ["turns"],
 } as const;
 
-const SWAHILI_REPAIR_SYSTEM = `You repair broken Kiswahili produced by speech-to-text for East African contact-center calls.
+const SWAHILI_REPAIR_SYSTEM = `You repair broken, fused, or misspelled Kiswahili produced by speech-to-text for East African contact-center calls.
 
 Rules:
-- Fix misspelled, fused, or garbled Kiswahili so it is correct Kiswahili (example: assante → asante, tafadhari → tafadhali, subirikidogo → subiri kidogo).
+- Fix misspelled, fused, truncated, or garbled Kiswahili words into clean, standard, grammatically correct Kiswahili (Kiswahili Sanifu / Fasaha). Examples: assante/sante → asante, tafadhari → tafadhali, subirikidogo → subiri kidogo, habar/habariak → habari yako, ndio/ndyo → ndiyo, sawa/sawasawa → sawa sawa, asanteni → asante sana.
+- Ensure natural, clean sentence structure while retaining the exact meaning of what the speaker intended.
 - Do NOT translate Kiswahili into English. Keep Kiswahili as Kiswahili.
-- Leave English words and names unchanged unless they are a known company/product spelling from the key-terms list.
+- Leave English words and proper nouns unchanged unless they are a known company/product spelling from the key-terms list.
 - Do not add facts, numbers, or names the speaker did not say.
 - Prefer spellings from the company key-terms list when a product or company name is intended.
 - Return the same number of turns with the same index values.`;
@@ -486,7 +474,7 @@ HOLDING PROCEDURE — listen to the call first, then apply that company's rules 
 - If no hold/wait was heard, ignore the holding file even if it is uploaded. hold_detected=false, hold_findings=[]. Do not penalize holding.
 - If no holding procedure file is provided, do not invent hold rules.`;
 
-const DOCUMENTS_PROMPT = `You are a bilingual (Kiswahili + English) call-center quality analyst.
+const DOCUMENTS_PROMPT = `You are a bilingual (Kiswahili + English) call-center quality assurance analyst.
 
 PATH: DOCUMENTS AUDIT.
 You MUST read the retrieved SCORECARD, COMPLIANCE, and PROCESS DOCUMENT chunks before scoring.
@@ -500,8 +488,28 @@ Your job:
 1. Decide which speaker label is the CALL CENTER AGENT and which is the CUSTOMER.
 2. Score the AGENT using only the uploaded scorecard (0–100).
 3. Check every compliance rule from the uploaded files and list breaches.
-4. Keep original languages for quotes. You MAY correct broken Kiswahili ASR spelling (asante not assante) using company-document key terms. Never translate Kiswahili into English. Write analysis in the primary language spoken on the call.
-5. Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. For the Company Name and key terms, rely strictly on the provided company documents. Only use the Customer's name if clearly spoken.
+4. CLEAN SWAHILI LANGUAGE (KISWAHILI FASAHA):
+   - When writing your notes, summaries, strengths, improvements, and compliance findings in Kiswahili, you MUST use clean, standard, fluent, and grammatically correct Kiswahili (Kiswahili Fasaha).
+   - NEVER output broken, misspelled, or garbled speech-to-text words in your descriptions. Express evaluations with professional call-center terminology (mfano: "Mhudumu alijitambulisha kwa ufasaha", "Mhudumu alishindwa kufuata utaratibu wa kusikiliza mteja", "Mteja alieleza shida yake kwa ufasaha").
+   - Never translate Kiswahili into English. Write analysis in the primary language spoken on the call (Kiswahili or English).
+5. PRIVACY & TRANSCRIPTS:
+   - Transcripts are strictly private and kept on the backend.
+   - Do NOT dump raw transcript lines or verbatim speech into descriptions. Write high-level analytical evaluations.
+6. AGENT & COMPANY NAMES:
+   - Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. For the Company Name and key terms, rely strictly on the provided company documents. Only use the Customer's name if clearly spoken.
+7. SPEAKER ROLES IN TEXT:
+   - When writing your notes, summaries, and findings, always refer to the speakers as 'Agent' (or their name) and 'Customer' (or 'Mteja'). Do NOT use raw transcript labels like 'Speaker A' or 'Speaker 1' in your written analysis, though you must still output the exact speaker_label string in the speaker_assignments array.
+8. DEEP TONE, SARCASM & ATTITUDE DETECTION (UTAMBUZI WA DHIHAKA, KEJELI NA DHARAU YA CHINICHINI):
+   - You MUST analyze the subtle emotional, conversational, and behavioral tone of both the agent and customer beyond just volume or shouting.
+   - LOW-TONE SARCASM & MOCKERY (Kejeli na dhihaka ya chinichini): An agent does NOT need to yell or raise their voice to be rude. If the agent speaks in a quiet, soft, flat, or normal voice but uses words, phrases, or rhetorical questions that are sarcastic, cynical, mocking, patronizing, or dismissive (mfano: "Sasa unataka nikufanyie nini?", "Hata mtoto anajua hilo", "Si nilishakwambia?", "Huwezi kusoma?", "Haya bwana wewe ndio unajua", "Ulitaka niseme nini sasa?", "Ndio hivyo huwezi kubadilisha", "Hapo sina msaada wowote", au kejeli kama "Haya asante sana kwa kutufundisha kazi"), you MUST detect and penalize this severely.
+   - DISMISSIVENESS & PASSIVE-AGGRESSION (Kupuuza na dharau): Giving curt, indifferent, dismissive, or reluctant one-word answers, brushing off the customer's problem without attempting genuine resolution, sighing with irritation, or acting bored/uninterested.
+   - CONDESCENSION & SUPERIORITY (Kujiona na kumdharau mteja): Belittling the customer, speaking down to them, or making them feel foolish for asking questions or not understanding technical details.
+   - SCORING IMPACT OF NEGATIVE TONES:
+     * Professionalism: Severe penalty (drop to 20-50/100). Sarcasm, mockery, or subtle insults completely violate professional contact center standards.
+     * Empathy: Severe penalty (drop to 10-40/100). Cold, dismissive, or mocking responses to customer distress represent zero active empathy.
+     * Resolution: Penalize if dismissive tone led to incomplete, careless, or unhelpful support.
+     * Overall Score: A call with evident mockery, sarcasm, or contempt must NEVER receive a passing/high score.
+   - COACHING & FEEDBACK: If low-tone mockery or sarcasm is detected, clearly identify it in 'improvements' and 'metric_evidence.professionalism.note' / 'metric_evidence.empathy.note' (mfano: "Ingawa mhudumu hakuinua sauti, alitumia maneno yenye dhihaka, kejeli au kupuuza maelezo ya mteja aliposema...").
 
 How to identify speakers:
 - Agent cues: company greeting, scripted opening from the process documents or opening script, offering solutions.
@@ -516,43 +524,10 @@ Numeric fields (map the scorecard onto these names; use the closest match):
 - A serious compliance breach should cap overall_score at 49 unless the scorecard says otherwise
 
 Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–49.
-compliance_findings: specific breaches with a short quote, or ["None identified"].
+compliance_findings: specific breaches explained in clean professional language, or ["None identified"].
 Cite the company file by name in summary, strengths, and improvements.
 speaker_assignments must cover every speaker label.
 ${DOCUMENTS_EVIDENCE_BLOCK}`;
-
-const AUTOMATIC_PROMPT = `You are a bilingual (Kiswahili + English) call-center quality analyst.
-
-PATH: AUTOMATIC AUDIT.
-Score from your own professional judgment of contact-center quality. Do not wait for company documents. Do not invent that you read a scorecard or compliance file.
-
-Your job:
-1. Decide which speaker label is the CALL CENTER AGENT and which is the CUSTOMER.
-2. Score the AGENT from 0–100 using standard service-quality practice.
-3. Keep original languages for quotes. You MAY correct broken Kiswahili ASR spelling. Never translate Kiswahili into English. Write analysis in the primary language spoken on the call.
-4. Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. Only use the Customer's name if clearly spoken. Do not invent names.
-
-How to identify speakers:
-- Agent cues: company greeting, offering solutions, verifying account details.
-- Customer cues: stating a problem, complaining, giving personal details.
-- Always assume the submitted agent name belongs to the Agent speaker.
-
-${SCRIPT_PROMPT_BLOCK}
-
-Scoring (each 0–100):
-- greeting: prompt, polite opening and identity
-- empathy: acknowledgement of the customer's issue and feelings
-- professionalism: courtesy, calm tone, no talking-over
-- resolution: actually helping / next steps / ownership
-- communication: clear answers in the language the customer is using
-- language_handling: follows the customer's language mix
-- overall_score: weighted blend; resolution and empathy count most
-
-Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–49.
-compliance_findings: obvious legal/ethical issues only, or ["None identified"].
-Write summary, strengths, and improvements from the call itself.
-speaker_assignments must cover every speaker label.
-${AUTOMATIC_EVIDENCE_BLOCK}`;
 
 const DOCUMENTS_PROMPT_EN = `You are an English-language call-center quality analyst.
 
@@ -570,6 +545,16 @@ Your job:
 3. Check every compliance rule from the uploaded files and list breaches.
 4. Keep the transcript in English. Never translate.
 5. Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. For the Company Name and key terms, rely strictly on the provided company documents. Only use the Customer's name if clearly spoken.
+7. DEEP TONE, SARCASM & ATTITUDE DETECTION:
+   - Analyze the subtle emotional and behavioral tone of both the agent and customer. Agents do NOT need to shout or raise their voice to be rude or unprofessional.
+   - LOW-TONE SARCASM, MOCKERY & CONDESCENSION: If the agent speaks in a quiet, calm, or normal volume but uses sarcastic remarks, mockery, condescension, passive-aggressive phrasing, patronizing comments, or contempt (e.g., "What did you expect me to do?", "As I already told you multiple times", "Well, that's not my problem", "If you had bothered to read...", or sarcastic "Thanks for telling me how to do my job"), detect this and penalize severely.
+   - DISMISSIVENESS & INDIFFERENCE: Giving curt, dismissive, reluctant, or unhelpful answers, brushing off customer issues, or acting bored and uncaring.
+   - SCORING IMPACT:
+     * Professionalism: Heavily penalize (drop to 20-50/100).
+     * Empathy: Heavily penalize (drop to 10-40/100).
+     * Resolution: Penalize if dismissiveness prevented genuine customer assistance.
+     * Overall Score: A call with evident mockery, sarcasm, or contempt must not receive a high score.
+   - FEEDBACK: Explicitly highlight the subtle tone issue in 'improvements' and 'metric_evidence' notes so managers can coach on attitude and tone.
 
 How to identify speakers:
 - Agent cues: company greeting, scripted opening from the process documents or opening script, offering solutions.
@@ -588,39 +573,6 @@ compliance_findings: specific breaches with a short quote, or ["None identified"
 Cite the company file by name in summary, strengths, and improvements.
 speaker_assignments must cover every speaker label.
 ${DOCUMENTS_EVIDENCE_BLOCK}`;
-
-const AUTOMATIC_PROMPT_EN = `You are an English-language call-center quality analyst.
-
-PATH: AUTOMATIC AUDIT.
-Score from your own professional judgment of contact-center quality. Do not wait for company documents. Do not invent that you read a scorecard or compliance file.
-
-Your job:
-1. Decide which speaker label is the CALL CENTER AGENT and which is the CUSTOMER.
-2. Score the AGENT from 0–100 using standard service-quality practice.
-3. Keep the transcript in English. Never translate.
-4. Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. Only use the Customer's name if clearly spoken. Do not invent names.
-
-How to identify speakers:
-- Agent cues: company greeting, offering solutions, verifying account details.
-- Customer cues: stating a problem, complaining, giving personal details.
-- Always assume the submitted agent name belongs to the Agent speaker.
-
-${SCRIPT_PROMPT_BLOCK}
-
-Scoring (each 0–100):
-- greeting: prompt, polite opening and identity
-- empathy: acknowledgement of the customer's issue and feelings
-- professionalism: courtesy, calm tone, no talking-over
-- resolution: actually helping / next steps / ownership
-- communication: clear answers in English
-- language_handling: clear, professional English
-- overall_score: weighted blend; resolution and empathy count most
-
-Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–49.
-compliance_findings: obvious legal/ethical issues only, or ["None identified"].
-Write summary, strengths, and improvements from the call itself.
-speaker_assignments must cover every speaker label.
-${AUTOMATIC_EVIDENCE_BLOCK}`;
 
 export async function analyzeCall(
   utterances: GenericUtterance[],
@@ -669,19 +621,12 @@ export async function analyzeCall(
       ? `\n\nKEY TERMS FROM COMPANY DOCUMENTS (use these spellings only; do not invent terms from the transcript):\n${documentKeyTerms.join(", ")}`
       : "";
 
-  const userPrompt =
-    mode === "documents"
-      ? `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}WORKSPACE STANDARDS (company files are the only reference; score only from them; company names and key terms come from here, not from the call):\n${clipText(standardsText, 8000)}${scriptsBlock}${keyTermsBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript (check whether the agent followed the files above):\n${transcript}`
-      : `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}Automatic audit — no company scorecard required.${scriptsBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript (listen via timestamps):\n${transcript}`;
+  const userPrompt = `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}WORKSPACE STANDARDS (company files are the only reference; score only from them; company names and key terms come from here, not from the call):\n${clipText(standardsText, 8000)}${scriptsBlock}${keyTermsBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript (check whether the agent followed the files above):\n${transcript}`;
 
   const parsed = (await completeJson(
-    mode === "documents"
-      ? bilingual
-        ? DOCUMENTS_PROMPT
-        : DOCUMENTS_PROMPT_EN
-      : bilingual
-        ? AUTOMATIC_PROMPT
-        : AUTOMATIC_PROMPT_EN,
+    bilingual
+      ? DOCUMENTS_PROMPT
+      : DOCUMENTS_PROMPT_EN,
     userPrompt,
     "call_analysis",
     ANALYSIS_SCHEMA,

@@ -50,7 +50,6 @@ export type WorkspaceAnalytics = {
   compliance_clean: number;
   compliance_issues: number;
   documents_audits: number;
-  automatic_audits: number;
   verdicts: Record<"excellent" | "good" | "needs_improvement" | "poor", number>;
   dimensions: {
     greeting: number | null;
@@ -251,7 +250,7 @@ export function buildWorkspaceAnalytics(
     audited > 0 ? Math.round((compliance_clean / audited) * 100) : null;
 
   const documents_audits = scores.filter((s) => s.audit_mode === "documents").length;
-  const automatic_audits = scores.filter((s) => s.audit_mode === "automatic").length;
+
 
   const verdicts = {
     excellent: scores.filter((s) => s.verdict === "excellent").length,
@@ -377,7 +376,6 @@ export function buildWorkspaceAnalytics(
     compliance_clean,
     compliance_issues,
     documents_audits,
-    automatic_audits,
     verdicts,
     dimensions,
     languages,

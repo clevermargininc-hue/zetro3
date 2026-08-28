@@ -12,7 +12,7 @@ export type CallStatus =
 
 export type SpeakerRole = "agent" | "customer" | "unknown";
 
-export type AuditMode = "documents" | "automatic";
+export type AuditMode = "documents";
 
 export type Verdict = "excellent" | "good" | "needs_improvement" | "poor";
 

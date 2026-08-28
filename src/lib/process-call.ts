@@ -155,13 +155,13 @@ export async function transcribeCall(
     } else if (options?.autoScore) {
       autoScore = options.autoScore;
     } else if (await getAutoAudit(call.user_id)) {
-      autoScore = "automatic";
+      autoScore = "documents";
     }
     if (autoScore) {
       try {
         await scoreCall(callId, autoScore);
       } catch (err) {
-        console.error("Automatic scoring failed", err);
+        console.error("Auto scoring failed", err);
       }
     }
   } catch (err) {

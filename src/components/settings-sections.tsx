@@ -243,7 +243,7 @@ export function AuditingSettings() {
         <div>
           <p className="font-semibold text-ink text-[14px]">Automatic Post-Transcription Scoring</p>
           <p className="text-[12px] text-muted mt-0.5">
-            Automatically trigger QA scoring as soon as audio transcription and speaker diarization finish.
+            Automatically score calls against your Standards files as soon as transcription and speaker diarization finish.
           </p>
         </div>
         <button
@@ -255,7 +255,7 @@ export function AuditingSettings() {
             void patch(
               { auto_audit: !data.auto_audit },
               "audit",
-              data.auto_audit ? "Automatic scoring is off." : "Calls will score automatically after transcription.",
+              data.auto_audit ? "Automatic scoring is off." : "Calls will score against Standards files automatically after transcription.",
             )
           }
           className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${

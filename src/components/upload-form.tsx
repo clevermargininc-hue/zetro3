@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { authFetch } from "@/lib/auth-fetch";
 import { createClient } from "@/lib/supabase/client";
-import { workspaceLanguages } from "@/lib/locale";
-import type { AuditMode, LanguageMode } from "@/lib/types";
+import type { AuditMode } from "@/lib/types";
 import { useQaReadiness } from "@/components/use-qa-readiness";
 import {
   FILE_ACCEPT,
@@ -68,13 +67,8 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const zipInputRef = useRef<HTMLInputElement>(null);
-  const [picks, setPicks] = useState<AudioPick[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [agentName, setAgentName] = useState("");
-  const [bilingual, setBilingual] = useState(true);
-  const [languageMode, setLanguageMode] = useState<LanguageMode>("sw");
-  const [autoAudit, setAutoAudit] = useState(true);
-  const [auditMode, setAuditMode] = useState<AuditMode>("automatic");
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -89,78 +83,45 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
     el.setAttribute("directory", "");
   }, []);
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        const response = await authFetch("/api/settings");
-        const data = (await response.json()) as {
-          workspace?: { country?: string; languages?: { bilingual?: boolean; defaultMode?: LanguageMode } };
-        };
-        if (!response.ok) return;
-        const langs =
-          data.workspace?.languages || workspaceLanguages(data.workspace?.country);
-        setBilingual(langs.bilingual !== false);
-        setLanguageMode(langs.defaultMode || (langs.bilingual === false ? "en" : "sw"));
-      } catch {
-        // Keep Tanzania defaults if settings are unavailable.
-      }
-    })();
-  }, []);
+
 
   function addFiles(list: File[]) {
-    void ingestFiles(list);
+    void handleDropAndUpload(list);
   }
 
-  async function ingestFiles(list: File[]) {
+  async function handleDropAndUpload(list: File[]) {
     if (loading || !list.length) return;
     setDone([]);
     setFailed([]);
+    setError(null);
+    setLoading(true);
     const hasZip = list.some(isZipFile);
     if (hasZip) setProgress("Opening ZIP and listing recordings…");
+
+    let validPicks: AudioPick[] = [];
     try {
       const expanded = await expandIncomingFiles(list);
-      setPicks((current) => {
-        const { files, skipped } = mergeAudioPicks(current, expanded.files);
-        const allSkipped = [...expanded.skipped, ...skipped];
-        if (!files.length) {
-          setError(
-            allSkipped.length
-              ? `No audio recordings found. ${allSkipped.slice(0, 3).join("; ")}`
-              : "No audio recordings found. Use MP3, WAV, M4A, AAC, MP4, OGG, WEBM, or a ZIP of those files.",
-          );
-        } else {
-          setError(
-            allSkipped.length
-              ? `Skipped: ${allSkipped.slice(0, 4).join(", ")}${allSkipped.length > 4 ? "…" : ""}`
-              : null,
-          );
-        }
-        return files;
-      });
+      const merged = mergeAudioPicks([], expanded.files);
+      validPicks = merged.files;
+      const allSkipped = [...expanded.skipped, ...merged.skipped];
+      if (!validPicks.length) {
+        setError(
+          allSkipped.length
+            ? `No audio recordings found. ${allSkipped.slice(0, 3).join("; ")}`
+            : "No audio recordings found. Use MP3, WAV, M4A, AAC, MP4, OGG, WEBM, or a ZIP of those files.",
+        );
+        setLoading(false);
+        setProgress(null);
+        return;
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not read those files.");
-    } finally {
-      if (hasZip) setProgress(null);
-    }
-  }
-
-  async function onDrop(event: React.DragEvent) {
-    event.preventDefault();
-    setDragOver(false);
-    addFiles(await filesFromDataTransfer(event.dataTransfer));
-  }
-
-  async function onSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    if (!picks.length) {
-      setError("Please choose recordings, a folder, or a ZIP of calls.");
+      setLoading(false);
+      setProgress(null);
       return;
     }
-    setError(null);
-    setDone([]);
-    setFailed([]);
-    setLoading(true);
 
+    // Process upload immediately
     const uploaded: DoneCall[] = [];
     const errors: FailedCall[] = [];
 
@@ -193,14 +154,12 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
         }
       }
 
-      const mode: LanguageMode = bilingual ? languageMode : "en";
-      const scoreMode: AuditMode | null =
-        autoAudit && auditMode === "documents" && blocked ? "automatic" : autoAudit ? auditMode : null;
+      const scoreMode: AuditMode | null = blocked ? null : "documents";
 
-      for (let i = 0; i < picks.length; i++) {
-        const pick = picks[i];
+      for (let i = 0; i < validPicks.length; i++) {
+        const pick = validPicks[i];
         const title = pick.label.replace(/\.[^.]+$/, "") || "Untitled call";
-        setProgress(`Uploading ${i + 1} of ${picks.length} · ${pick.label}`);
+        setProgress(`Uploading ${i + 1} of ${validPicks.length} · ${pick.label}`);
         try {
           const safeName = pick.label.replace(/[^\w.\-]+/g, "_");
           const path = `${user.id}/${crypto.randomUUID()}-${safeName}`;
@@ -220,7 +179,7 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
               title,
               file_name: pick.relativePath || pick.label,
               audio_path: path,
-              language_mode: mode,
+              language_mode: "auto",
               status: "queued",
             })
             .select("*")
@@ -246,12 +205,11 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
 
       setDone(uploaded);
       setFailed(errors);
-      setPicks([]);
       setLoading(false);
       setProgress(null);
 
       if (uploaded.length && !errors.length) {
-        router.push(uploaded.length === 1 ? `/calls/${uploaded[0].id}/transcribe` : "/calls");
+        router.push(uploaded.length === 1 ? `/calls/${uploaded[0].id}/score` : "/calls");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload process encountered an error.");
@@ -262,12 +220,14 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
     }
   }
 
-  const count = picks.length;
-  const totalBytes = picks.reduce((sum, row) => sum + row.file.size, 0);
-
+  async function onDrop(event: React.DragEvent) {
+    event.preventDefault();
+    setDragOver(false);
+    addFiles(await filesFromDataTransfer(event.dataTransfer));
+  }
   return (
     <div className="space-y-6">
-      <form onSubmit={onSubmit} className="surface p-6 sm:p-8 space-y-6">
+      <div className="surface p-6 sm:p-8 space-y-6">
         <div>
           <input
             ref={fileInputRef}
@@ -317,21 +277,17 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
               setDragOver(false);
             }}
             onDrop={(e) => void onDrop(e)}
-            className={`border border-dashed p-8 text-center ${
+            className={`border border-dashed p-8 text-center transition-colors ${
               dragOver
                 ? "border-blue bg-blue-soft"
-                : count
-                  ? "border-line bg-white"
-                  : "border-line bg-slate-50"
+                : "border-line bg-slate-50 hover:bg-slate-100/50"
             }`}
           >
             <div className="mx-auto mb-3.5 flex items-center justify-center text-slate-500">
-              {count ? Icons.check : Icons.uploadCloud}
+              {Icons.uploadCloud}
             </div>
             <p className="text-[15px] font-bold text-ink">
-              {count
-                ? `${count} recording${count === 1 ? "" : "s"} ready · ${formatFileSize(totalBytes)}`
-                : "Drop files, a folder, or a ZIP of calls"}
+              Drop files, a folder, or a ZIP of calls
             </p>
             <p className="mt-1 text-[12px] text-muted max-w-sm mx-auto">
               MP3, WAV, M4A, AAC, MP4, OGG, WEBM, or ZIP · up to 100MB each · 100 files per batch
@@ -369,137 +325,33 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
               </button>
             </div>
           </div>
-
-          {count > 0 && (
-            <ul className="mt-3 max-h-56 overflow-y-auto divide-y divide-slate-100 border border-line bg-white">
-              {picks.map((pick) => (
-                <li key={pick.key} className="flex items-center gap-3 px-3 py-2 text-[12px]">
-                  <span className="min-w-0 flex-1 text-left">
-                    <span className="block font-semibold text-ink truncate">{pick.label}</span>
-                    {pick.relativePath !== pick.label ? (
-                      <span className="block text-[11px] text-muted truncate">{pick.relativePath}</span>
-                    ) : null}
-                  </span>
-                  <span className="shrink-0 tabular-nums text-muted">{formatFileSize(pick.file.size)}</span>
-                  <button
-                    type="button"
-                    aria-label={`Remove ${pick.label}`}
-                    onClick={() => setPicks((rows) => rows.filter((row) => row.key !== pick.key))}
-                    className="shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                  >
-                    {Icons.close}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
 
-        <div className={`grid gap-4 ${bilingual ? "sm:grid-cols-2" : ""}`}>
-          <div className="space-y-1.5">
-            <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500 block">
-              Representative / Agent Name
-            </label>
-            <input
-              value={agentName}
-              onChange={(e) => setAgentName(e.target.value)}
-              placeholder="e.g. Amina Mwangi"
-              className="field bg-slate-50/70 border-slate-200 text-ink text-[13px]"
-              autoComplete="off"
-            />
-            <p className="text-[11px] text-muted">
-              Applied to every file in this batch. Leave blank to assign later.
-            </p>
-          </div>
-
-          {bilingual ? (
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500 block">
-                Language Model Scope
-              </label>
-              <select
-                value={languageMode}
-                onChange={(e) => setLanguageMode(e.target.value as LanguageMode)}
-                className="field bg-slate-50/70 border-slate-200 text-ink text-[13px] font-medium"
-              >
-                <option value="sw">Kiswahili (Primary)</option>
-                <option value="mixed">Bilingual: English + Kiswahili</option>
-                <option value="auto">Auto-detect Language</option>
-                <option value="en">English (Primary)</option>
-              </select>
-              <p className="text-[11px] text-muted">Optimizes bilingual diarization and vocabulary.</p>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="border border-line bg-slate-50 p-4 space-y-3">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={autoAudit}
-              onChange={(e) => setAutoAudit(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue"
-            />
-            <span>
-              <span className="block text-[13px] font-semibold text-ink">Audit automatically after upload</span>
-              <span className="block text-[12px] text-muted mt-0.5">
-                Transcribe, diarize, and score each call without opening it first.
-              </span>
-            </span>
+        <div className="space-y-1.5 max-w-md">
+          <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500 block">
+            Representative / Agent Name
           </label>
-          {autoAudit ? (
-            <div className="pl-7 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setAuditMode("automatic")}
-                className={`text-[12px] font-semibold px-3 py-1.5 border ${
-                  auditMode === "automatic"
-                    ? "bg-blue text-white border-blue"
-                    : "bg-white text-slate-700 border-line"
-                }`}
-              >
-                Autonomous audit
-              </button>
-              <button
-                type="button"
-                disabled={blocked}
-                onClick={() => setAuditMode("documents")}
-                title={blocked ? "Upload scorecard and compliance files under Standards first." : undefined}
-                className={`text-[12px] font-semibold px-3 py-1.5 border disabled:opacity-50 ${
-                  auditMode === "documents"
-                    ? "bg-blue text-white border-blue"
-                    : "bg-white text-slate-700 border-line"
-                }`}
-              >
-                SOP standards audit
-              </button>
-            </div>
-          ) : null}
+          <input
+            value={agentName}
+            onChange={(e) => setAgentName(e.target.value)}
+            placeholder="e.g. Amina Mwangi"
+            className="field bg-slate-50/70 border-slate-200 text-ink text-[13px]"
+            autoComplete="off"
+          />
+          <p className="text-[11px] text-muted">
+            Applied to every file in this batch. Leave blank to assign later.
+          </p>
         </div>
 
         {error && <div className="alert-error text-[13px]">{error}</div>}
 
         {progress && (
-          <div className="flex items-center gap-3 text-[13px] font-medium text-ink surface p-3.5">
+          <div className="flex items-center gap-3 text-[13px] font-medium text-ink surface p-3.5 border border-line">
             <div className="h-4 w-4 rounded-full border-2 border-blue/30 border-t-blue animate-spin shrink-0" />
             <span>{progress}</span>
           </div>
         )}
-
-        <div className="pt-2">
-          <button
-            type="submit"
-            disabled={loading || !count}
-            className="btn bg-blue hover:bg-blue-2 text-white w-full py-2.5 text-[14px] font-semibold"
-          >
-            {loading
-              ? "Processing upload…"
-              : count > 1
-                ? `Upload & ${autoAudit ? "audit" : "process"} ${count} calls`
-                : `Upload & ${autoAudit ? "begin audit" : "begin processing"}`}
-          </button>
-        </div>
-      </form>
+      </div>
 
       {(done.length > 0 || failed.length > 0) && (
         <div className="surface p-6 space-y-4">
@@ -507,7 +359,7 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
             <span className="chip chip-ok">Uploaded</span>
             <h3 className="text-[15px] font-bold text-ink">
               {done.length} recording{done.length === 1 ? "" : "s"} uploaded
-              {autoAudit ? " · auditing in the background" : " · transcription started"}
+              {!blocked ? " · auditing in the background" : " · transcription started"}
             </h3>
           </div>
           {failed.length > 0 && (
@@ -524,7 +376,7 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
             </Link>
             {done.length === 1 && (
               <Link
-                href={`/calls/${done[0].id}/transcribe`}
+                href={`/calls/${done[0].id}/score`}
                 className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[13px] px-4 py-2 font-semibold inline-flex"
               >
                 Open this call

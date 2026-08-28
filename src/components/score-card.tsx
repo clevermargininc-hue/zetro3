@@ -26,7 +26,7 @@ export function ScoreCard({ score }: { score: CallScore }) {
         <div className="flex-1 min-w-0 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="chip">
-              {score.audit_mode === "automatic" ? "Autonomous audit" : "SOP standards audit"}
+              SOP standards audit
             </span>
             {score.customer_sentiment && (
               <span className="chip capitalize">Sentiment: {score.customer_sentiment}</span>
@@ -41,18 +41,39 @@ export function ScoreCard({ score }: { score: CallScore }) {
           <h3 className="text-[14px] font-semibold text-ink">Scorecard</h3>
           <p className="text-[12px] text-muted mt-0.5">Six quality dimensions</p>
         </div>
-        <div className="grid gap-x-10 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-2">
           {DIMENSIONS.map((dim) => {
             const value = Number(score[dim.key] ?? 0);
+            const evidence = score.metric_evidence?.[dim.key];
+
             return (
-              <div key={dim.key} className="space-y-1.5">
-                <div className="flex justify-between items-center text-[13px]">
-                  <span className="text-slate-700">{dim.label}</span>
-                  <span className="font-medium tabular-nums text-ink">{value}</span>
+              <div key={dim.key} className="border border-line rounded-xl p-5 space-y-4 surface">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="w-full">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-[14px] font-semibold text-ink">{dim.label}</h4>
+                        {evidence?.verdict && (
+                          <span className={`chip chip-${evidence.verdict === 'hit' ? 'ok' : evidence.verdict === 'miss' ? 'error' : 'wait'} text-[11px] py-0.5 uppercase`}>
+                            {evidence.verdict}
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-bold text-[14px] tabular-nums text-ink">{value}/100</span>
+                    </div>
+                    <div className="bar mt-2.5">
+                      <span style={{ width: `${value}%` }} className={value < 50 ? 'bg-red-500' : value < 80 ? 'bg-amber-500' : 'bg-green-500'} />
+                    </div>
+                  </div>
                 </div>
-                <div className="bar">
-                  <span style={{ width: `${value}%` }} />
-                </div>
+
+                {evidence?.note && (
+                  <div className="pt-4 border-t border-line/70">
+                    <div className="text-[13px] text-slate-700 leading-relaxed">
+                      {evidence.note}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}

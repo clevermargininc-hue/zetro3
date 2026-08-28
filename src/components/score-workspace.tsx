@@ -85,7 +85,7 @@ export function ScoreWorkspace({
         <section className="surface no-print p-8 max-w-xl mx-auto mt-8 text-center space-y-4">
           <h2 className="text-[16px] font-semibold text-ink">Score this interaction</h2>
           <p className="text-[13px] text-muted max-w-md mx-auto">
-            SOP scoring uses your Standards files. Autonomous scoring uses a professional QA rubric.
+            Scoring uses your uploaded Standards files (scorecard, compliance, and process documents).
           </p>
           <div className="pt-2 text-left">
             <AuditActions

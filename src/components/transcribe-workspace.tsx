@@ -10,6 +10,7 @@ import { auditStatus, formatDate, formatDuration, languageLabel } from "@/lib/fo
 import type { Call, CallScore, CallStatus } from "@/lib/types";
 import { useCallLive } from "@/components/use-call-live";
 import { PageHeader } from "@/components/ui";
+import { useRouter } from "next/navigation";
 
 const Icons = {
   arrowLeft: (
@@ -48,6 +49,13 @@ export function TranscribeWorkspace({
   const canAudit = readyForAudit(callStatus);
   const preparingBusy =
     preparing || callStatus === "transcribing" || callStatus === "queued";
+  const router = useRouter();
+
+  useEffect(() => {
+    if (callStatus === "completed") {
+      router.push(`/calls/${callId}/score`);
+    }
+  }, [callStatus, callId, router]);
 
   useEffect(() => {
     if (callStatus !== "queued" || autoPrepareStarted.current) return;
@@ -179,7 +187,7 @@ export function TranscribeWorkspace({
             <p className="mt-1 text-[13px] text-muted">
               {preparingBusy
                 ? "The server is processing the recording so scoring can run. The transcript is not shown in the product."
-                : "Start server-side processing so you can run an SOP or autonomous audit."}
+                : "Start server-side processing so you can run an SOP standards audit."}
             </p>
 
             {preparingBusy ? (
@@ -204,7 +212,7 @@ export function TranscribeWorkspace({
             <div>
               <h2 className="text-[15px] font-semibold text-ink">Audit this call</h2>
               <p className="text-[12px] text-muted mt-0.5">
-                SOP scoring uses your Standards files. Autonomous scoring uses a professional QA rubric.
+                Scoring uses your uploaded Standards files (scorecard, compliance, and process documents).
               </p>
             </div>
             {call.status === "completed" && (

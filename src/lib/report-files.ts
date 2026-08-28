@@ -45,7 +45,6 @@ export function excelBuffer(report: QaReport): Buffer {
     ["Calls with compliance issues", summary.calls_with_compliance_issue],
     ["Compliance findings", summary.total_compliance_findings],
     ["Documents audits", summary.documents_audits],
-    ["Automatic audits", summary.automatic_audits],
   ]);
   summarySheet["!cols"] = [{ wch: 38 }, { wch: 48 }];
   XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
@@ -378,7 +377,6 @@ export function pdfBuffer(report: QaReport): Buffer {
       ["Average language mix", scoreLabel(s.avg_language_handling)],
       ["Excellent / Good / Needs improvement / Poor", `${s.excellent} / ${s.good} / ${s.needs_improvement} / ${s.poor}`],
       ["Documents audits", String(s.documents_audits)],
-      ["Automatic audits", String(s.automatic_audits)],
     ],
     [280, 230],
   );

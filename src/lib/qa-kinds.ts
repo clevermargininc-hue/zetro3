@@ -57,5 +57,5 @@ export function readinessErrorMessage(
   if (!missing.length) return "";
   return `Documents scoring reads your company files first. Go to Standards and upload a ${missing
     .map((kind) => QA_KIND_LABELS[kind])
-    .join(", ")} before using that path. Automatic auditing does not need these files.`;
+    .join(", ")} before using that path.`;
 }

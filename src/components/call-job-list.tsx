@@ -149,7 +149,7 @@ export function CallJobList({
                           {score.overall_score}% · {verdictLabel(score.verdict)}
                           {score.audit_mode ? (
                             <span className="ml-1 text-muted font-normal">
-                              {score.audit_mode === "automatic" ? "Auto" : score.audit_mode === "documents" ? "Docs" : ""}
+                              Docs
                             </span>
                           ) : null}
                         </span>
