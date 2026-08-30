@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
 import { callAuditExcel, callAuditFilename, callAuditPdf } from "@/lib/call-audit-file";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getTeamScope } from "@/lib/workspaces";
-import type { Call, CallScore } from "@/lib/types";
+import type { Call, CallScore, Utterance } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -46,10 +47,17 @@ export async function GET(
     );
   }
 
+  const admin = createAdminClient();
+  const { data: utterances } = await admin
+    .from("utterances")
+    .select("*")
+    .eq("call_id", id)
+    .order("sequence");
+
   const pack = {
     call: call as Call & { agents?: { name: string } | null },
     score: score as CallScore,
-    utterances: [],
+    utterances: (utterances as Utterance[] | null) || [],
   };
   const body = format === "xlsx" ? callAuditExcel(pack) : callAuditPdf(pack);
   const filename = callAuditFilename(pack, format);

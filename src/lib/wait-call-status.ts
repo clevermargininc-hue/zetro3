@@ -8,7 +8,7 @@ export async function waitForCallStatus(
   done: CallStatus[],
   options?: { timeoutMs?: number; intervalMs?: number },
 ) {
-  const timeoutMs = options?.timeoutMs ?? 8 * 60 * 1000;
+    const timeoutMs = options?.timeoutMs ?? 12 * 60 * 1000;
   const intervalMs = options?.intervalMs ?? 1000;
   const supabase = createClient();
   const started = Date.now();

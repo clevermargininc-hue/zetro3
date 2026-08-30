@@ -57,9 +57,9 @@ export function TranscriptView({
     <section className="surface p-6">
       <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-[15px] font-semibold tracking-tight text-ink">Speaker script</h2>
+          <h2 className="text-[15px] font-semibold tracking-tight text-ink">Transcript</h2>
           <p className="text-[13px] text-muted mt-1">
-            Verbatim transcript. Click a line to hear that moment in the original recording.
+            Speech-to-text from the recording. Click a line to hear that moment. This is not rewritten by AI.
           </p>
         </div>
 
@@ -108,7 +108,7 @@ export function TranscriptView({
         <div className="py-16 text-center">
           <p className="text-[15px] font-semibold text-ink">No script yet</p>
           <p className="mt-2 text-[13px] text-muted max-w-sm mx-auto">
-            Press the transcribe button above to generate the conversation transcript.
+            Press Prepare for audit to generate the conversation transcript.
           </p>
         </div>
       ) : (

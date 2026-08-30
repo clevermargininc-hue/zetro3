@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAutoAudit, setAutoAudit, syncProfileFromAuth, updateProfileName, updateUsername } from "@/lib/workspace-settings";
+import { syncProfileFromAuth, updateProfileName, updateUsername } from "@/lib/workspace-settings";
 import { displayCountry, workspaceLanguages } from "@/lib/locale";
 import {
   getMembership,
@@ -72,7 +72,7 @@ export async function GET(request: Request) {
           "",
         username: (profile?.username as string) || "",
       },
-      auto_audit: await getAutoAudit(user.id),
+      auto_audit: false,
       workspace: {
         id: membership.workspaceId,
         name: membership.name,
@@ -113,8 +113,14 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "No workspace yet." }, { status: 404 });
     }
 
-    if (typeof body.auto_audit === "boolean") {
-      await setAutoAudit(user.id, body.auto_audit);
+    if (body.auto_audit === true) {
+      return NextResponse.json(
+        {
+          error:
+            "Automatic auditing is not allowed. After the transcript is ready, start a documents audit from the call page.",
+        },
+        { status: 400 },
+      );
     }
 
     if (typeof body.full_name === "string") {
@@ -154,7 +160,7 @@ export async function PATCH(request: Request) {
     }
 
     if (
-      typeof body.auto_audit !== "boolean" &&
+      body.auto_audit !== false &&
       typeof body.full_name !== "string" &&
       typeof body.username !== "string" &&
       typeof body.workspace_name !== "string" &&

@@ -326,7 +326,7 @@ export default async function DashboardPage() {
                     {/* Action */}
                     <td className="px-6 py-3.5 text-right whitespace-nowrap">
                       <Link
-                        href={score ? `/calls/${call.id}/score` : `/calls/${call.id}/transcribe`}
+                        href={score ? `/upload/score/${call.id}` : `/upload/prepare/${call.id}`}
                         className="inline-flex items-center gap-1 font-semibold text-[12px] text-blue hover:text-blue-2 transition-colors"
                       >
                         <span>{score ? "View Scorecard" : "View Progress"}</span>

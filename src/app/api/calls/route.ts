@@ -4,6 +4,9 @@ import { resolvedLanguageMode } from "@/lib/locale";
 import type { LanguageMode } from "@/lib/types";
 import { getMembership, getTeamScope } from "@/lib/workspaces";
 
+export const runtime = "nodejs";
+export const maxDuration = 800;
+
 const MODES: LanguageMode[] = ["auto", "en", "sw", "mixed"];
 
 export async function GET(request: Request) {
@@ -99,5 +102,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ call });
+  return NextResponse.json({ call, status: "queued" });
 }

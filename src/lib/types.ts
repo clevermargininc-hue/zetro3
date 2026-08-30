@@ -32,10 +32,27 @@ export type MetricEvidenceItem = {
   note: string;
   start_s: number | null;
   findings?: string[];
+  source_file?: string;
+  criterion?: string;
+  key_terms?: string[];
+};
+
+export type DocumentReference = {
+  file_name: string;
+  criterion: string;
+  result: MetricEvidenceVerdict;
+};
+
+export type KeyTermFinding = {
+  term: string;
+  status: "said" | "missed";
+  file_name?: string;
 };
 
 export type MetricEvidence = Partial<Record<ScoreDimension, MetricEvidenceItem>> & {
   holding?: MetricEvidenceItem;
+  document_references?: DocumentReference[];
+  key_terms?: KeyTermFinding[];
 };
 
 export type Agent = {

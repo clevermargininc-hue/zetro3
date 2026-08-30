@@ -58,7 +58,7 @@ export function statusLabel(status: CallStatus) {
     case "queued":
       return "Uploaded";
     case "transcribing":
-      return "Preparing for audit";
+      return "Transcribing";
     case "transcribed":
       return "Ready to audit";
     case "analyzing":
@@ -90,6 +90,30 @@ export function auditLabel(status: CallStatus) {
     default:
       return "Processing";
   }
+}
+
+export function isCallAudited(status: CallStatus) {
+  return status === "completed";
+}
+
+/** Calls still in the prepare workflow (not yet audited). */
+export const PREPARE_QUEUE_STATUSES: CallStatus[] = [
+  "queued",
+  "transcribing",
+  "failed",
+];
+
+/** Calls waiting on Score. Audited calls live in Call inventory. */
+export const SCORE_QUEUE_STATUSES: CallStatus[] = ["transcribed", "analyzing"];
+
+export function pipelineQueueCounts(statuses: Array<CallStatus | string>) {
+  let prepare = 0;
+  let score = 0;
+  for (const status of statuses) {
+    if (PREPARE_QUEUE_STATUSES.includes(status as CallStatus)) prepare += 1;
+    else if (SCORE_QUEUE_STATUSES.includes(status as CallStatus)) score += 1;
+  }
+  return { prepare, score };
 }
 
 export function languageLabel(mode: string | null) {

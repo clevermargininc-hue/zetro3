@@ -4,14 +4,17 @@ export function PageHeader({
   title,
   description,
   actions,
+  kicker,
 }: {
   title: string;
   description?: string;
   actions?: ReactNode;
+  kicker?: string;
 }) {
   return (
     <div className="page-head">
       <div>
+        {kicker ? <p className="page-kicker mb-1.5">{kicker}</p> : null}
         <h1>{title}</h1>
         {description ? <p>{description}</p> : null}
       </div>

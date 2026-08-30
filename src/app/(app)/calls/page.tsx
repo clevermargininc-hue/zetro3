@@ -16,8 +16,8 @@ export default async function CallsPage() {
   return (
     <div className="space-y-6 pb-10">
       <PageHeader
-        title="Call audits"
-        description="Uploaded recordings and evaluation scorecards. Transcripts stay on the server."
+        title="Call inventory"
+        description="Every recording, with whether it is already audited or not yet."
       />
 
       <CallsBoard

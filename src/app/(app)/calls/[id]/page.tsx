@@ -6,5 +6,5 @@ export default async function CallPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  redirect(`/calls/${id}/transcribe`);
+  redirect(`/upload/prepare/${id}`);
 }

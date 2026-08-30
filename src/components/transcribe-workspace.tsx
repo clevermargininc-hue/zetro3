@@ -5,12 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import { authFetch } from "@/lib/auth-fetch";
 import { waitForCallStatus } from "@/lib/wait-call-status";
 import { DeleteCallButton } from "@/components/delete-call-button";
-import { AuditActions } from "@/components/audit-actions";
+import { CallDownloads } from "@/components/call-downloads";
 import { auditStatus, formatDate, formatDuration, languageLabel } from "@/lib/format";
-import type { Call, CallScore, CallStatus } from "@/lib/types";
+import type { Call, CallScore, CallStatus, Utterance } from "@/lib/types";
 import { useCallLive } from "@/components/use-call-live";
 import { PageHeader } from "@/components/ui";
-import { useRouter } from "next/navigation";
 
 const Icons = {
   arrowLeft: (
@@ -35,31 +34,36 @@ function readyForAudit(status: CallStatus | undefined | null) {
 export function TranscribeWorkspace({
   initialCall,
   initialScore,
+  initialUtterances = [],
 }: {
   initialCall: Call & { agents?: { name: string } | null };
   initialScore: CallScore | null;
+  initialUtterances?: Utterance[];
 }) {
-  const { call, setCall, audioUrl } = useCallLive(initialCall, initialScore);
+  const { call, setCall, audioUrl, utterances } = useCallLive(
+    initialCall,
+    initialScore,
+    initialUtterances,
+  );
   const [preparing, setPreparing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const autoPrepareStarted = useRef(false);
+  const startedFor = useRef<string | null>(null);
 
   const callId = call?.id ?? initialCall.id;
   const callStatus = call?.status ?? initialCall.status;
-  const canAudit = readyForAudit(callStatus);
+  const hasTranscript = utterances.length > 0;
+  const canScore = readyForAudit(callStatus) || hasTranscript;
   const preparingBusy =
-    preparing || callStatus === "transcribing" || callStatus === "queued";
-  const router = useRouter();
+    (preparing || callStatus === "transcribing" || callStatus === "queued") &&
+    !hasTranscript;
 
   useEffect(() => {
-    if (callStatus === "completed") {
-      router.push(`/calls/${callId}/score`);
+    if (hasTranscript || readyForAudit(callStatus) || callStatus === "failed") {
+      return;
     }
-  }, [callStatus, callId, router]);
-
-  useEffect(() => {
-    if (callStatus !== "queued" || autoPrepareStarted.current) return;
-    autoPrepareStarted.current = true;
+    if (callStatus !== "queued" && callStatus !== "transcribing") return;
+    if (startedFor.current === callId) return;
+    startedFor.current = callId;
     let cancelled = false;
     void (async () => {
       setPreparing(true);
@@ -67,10 +71,24 @@ export function TranscribeWorkspace({
       try {
         const res = await authFetch(`/api/calls/${callId}/transcribe`, {
           method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ force: false }),
         });
-        const body = await res.json().catch(() => ({}));
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          status?: CallStatus;
+          reused?: boolean;
+        };
         if (!res.ok) throw new Error(body.error || "Could not prepare call");
         if (cancelled) return;
+        if (body.reused) {
+          setCall((prev) => ({
+            ...prev,
+            status: (body.status as CallStatus) || prev.status,
+            error_message: null,
+          }));
+          return;
+        }
         setCall((prev) => ({
           ...prev,
           status: "transcribing" as CallStatus,
@@ -79,7 +97,7 @@ export function TranscribeWorkspace({
         await waitForCallStatus(callId, ["transcribed", "completed", "failed"]);
       } catch (error) {
         if (!cancelled) {
-          autoPrepareStarted.current = false;
+          startedFor.current = null;
           setActionError(error instanceof Error ? error.message : "Action failed");
         }
       } finally {
@@ -88,18 +106,33 @@ export function TranscribeWorkspace({
     })();
     return () => {
       cancelled = true;
+      setPreparing(false);
     };
-  }, [callId, callStatus, setCall]);
+  }, [callId, callStatus, hasTranscript, setCall]);
 
-  async function prepare() {
+  async function prepare(force = false) {
     setActionError(null);
     setPreparing(true);
     try {
       const res = await authFetch(`/api/calls/${call.id}/transcribe`, {
         method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ force }),
       });
-      const body = await res.json().catch(() => ({}));
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        status?: CallStatus;
+        reused?: boolean;
+      };
       if (!res.ok) throw new Error(body.error || "Could not prepare call");
+      if (body.reused && !force) {
+        setCall((prev) => ({
+          ...prev,
+          status: (body.status as CallStatus) || prev.status,
+          error_message: null,
+        }));
+        return;
+      }
       setCall((prev) => ({
         ...prev,
         status: "transcribing" as CallStatus,
@@ -119,13 +152,14 @@ export function TranscribeWorkspace({
     <div className="space-y-6 max-w-4xl pb-10">
       <div>
         <Link
-          href="/calls"
+          href="/upload/prepare"
           className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-slate-500 hover:text-blue mb-3"
         >
           {Icons.arrowLeft}
-          <span>Back to Call Inventory</span>
+            <span>Back to prepare queue</span>
         </Link>
         <PageHeader
+          kicker="Step 2 of 3 · Prepare"
           title={call.title || call.file_name || "Call"}
           description={[
             `Language: ${languageLabel(call.detected_language || call.language_mode)}`,
@@ -137,21 +171,22 @@ export function TranscribeWorkspace({
           actions={
             <>
               {bucket === "audited" ? (
-                <span className="chip chip-ok">Audited & scored</span>
+                <span className="chip chip-ok">Audited</span>
               ) : bucket === "transcribed" ? (
-                <span className="chip">Ready to audit</span>
+                <span className="chip">Ready to score</span>
               ) : bucket === "failed" ? (
                 <span className="chip chip-bad">Failed</span>
               ) : (
                 <span className="chip chip-wait">
-                  {call.status === "transcribing" ? "Preparing for audit…" : "Preparing…"}
+                  {call.status === "transcribing" ? "Transcribing…" : "Preparing…"}
                 </span>
               )}
+              <CallDownloads callId={call.id} hasTranscript={false} />
               <DeleteCallButton
                 callId={call.id}
                 title={call.title}
                 status={call.status}
-                redirectTo="/calls"
+                redirectTo="/upload/prepare"
               />
             </>
           }
@@ -164,9 +199,9 @@ export function TranscribeWorkspace({
 
       <section className="surface p-6 space-y-4">
         <div>
-          <h2 className="text-[15px] font-semibold text-ink">Recording</h2>
+          <h2 className="text-[15px] font-semibold text-ink">Listen to the recording</h2>
           <p className="text-[12px] text-muted mt-0.5">
-            Listen if you need to. The transcript stays on the server and is used only for scoring.
+            Transcripts stay internal. You score on the next step, from company files.
           </p>
         </div>
         <div className="border border-line bg-slate-50 p-3">
@@ -178,82 +213,69 @@ export function TranscribeWorkspace({
         </div>
       </section>
 
-      {!canAudit ? (
-        <section className="surface p-8 text-center space-y-4">
-          <div className="max-w-md mx-auto">
+      {!canScore ? (
+        <section className="surface p-6 space-y-4">
+          <div>
             <h2 className="text-[16px] font-semibold text-ink">
-              {preparingBusy ? "Preparing this call for audit…" : "Prepare this call for audit"}
+              {preparingBusy ? "Preparing this recording…" : "Prepare this recording"}
             </h2>
-            <p className="mt-1 text-[13px] text-muted">
+            <p className="mt-1 text-[13px] text-muted max-w-lg">
               {preparingBusy
-                ? "The server is processing the recording so scoring can run. The transcript is not shown in the product."
-                : "Start server-side processing so you can run an SOP standards audit."}
+                ? "Speakers and language are being prepared for scoring. Stay on this step until it finishes."
+                : "Start preparation. Do not open Score until this step is done."}
             </p>
-
-            {preparingBusy ? (
-              <div className="mt-6 flex items-center justify-center gap-2.5 text-ink text-[13px] font-semibold surface py-3 px-4">
-                <div className="h-4 w-4 rounded-full border-2 border-blue/30 border-t-blue animate-spin" />
-                <span>Preparing audio for scoring…</span>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => void prepare()}
-                className="btn bg-blue hover:bg-blue-2 text-white text-[13px] font-semibold px-6 py-2.5 mt-5 inline-flex"
-              >
-                Prepare for audit
-              </button>
-            )}
           </div>
+          {preparingBusy ? (
+            <div className="flex items-center gap-2.5 text-ink text-[13px] font-medium border border-line px-4 py-3">
+              <div className="h-4 w-4 rounded-full border-2 border-blue/30 border-t-blue animate-spin" />
+              <span>Working on the recording…</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void prepare(false)}
+              className="btn btn-blue text-[13px] px-5 py-2.5"
+            >
+              Start prepare
+            </button>
+          )}
         </section>
       ) : (
-        <section className="surface p-6 space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-            <div>
-              <h2 className="text-[15px] font-semibold text-ink">Audit this call</h2>
-              <p className="text-[12px] text-muted mt-0.5">
-                Scoring uses your uploaded Standards files (scorecard, compliance, and process documents).
-              </p>
-            </div>
-            {call.status === "completed" && (
-              <Link
-                href={`/calls/${call.id}/score`}
-                className="btn btn-ghost text-[12px] px-3.5 py-1.5"
-              >
-                View scorecard
-              </Link>
-            )}
+        <section className="surface p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <span className="chip chip-ok">Ready for Step 3</span>
+            <h2 className="mt-2 text-[15px] font-semibold text-ink">Go to Score</h2>
+            <p className="text-[12px] text-muted mt-0.5">
+              Listen here if you need to. Scoring reads your Standards files, not a generic rubric.
+            </p>
           </div>
-
-          <AuditActions
-            callId={call.id}
-            status={call.status}
-            onStatus={(status) =>
-              setCall((prev) => ({ ...prev, status, error_message: null }))
-            }
-          />
-
-          <div className="pt-2 flex items-center justify-between text-[12px] border-t border-slate-100">
-            <span className="text-muted">Need to reprocess audio?</span>
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               disabled={preparingBusy}
-              onClick={() => void prepare()}
-              className="inline-flex items-center gap-1 text-slate-500 hover:text-ink font-medium"
+              onClick={() => void prepare(true)}
+              className="inline-flex items-center gap-1 text-[12px] text-slate-500 hover:text-ink font-medium"
             >
               {Icons.refresh}
-              <span>{preparingBusy ? "Re-processing…" : "Re-prepare for audit"}</span>
+              <span>{preparingBusy ? "Re-processing…" : "Re-prepare"}</span>
             </button>
+            <Link
+              href={`/upload/score/${callId}`}
+              prefetch={false}
+              className="btn btn-blue text-[13px] px-4 py-2"
+            >
+              Go to Score
+            </Link>
           </div>
         </section>
       )}
 
-      {call.status === "failed" && !canAudit ? (
+      {call.status === "failed" && !canScore ? (
         <div className="flex justify-center pt-2">
           <button
             type="button"
             disabled={preparingBusy}
-            onClick={() => void prepare()}
+            onClick={() => void prepare(false)}
             className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[12px] px-4 py-2"
           >
             {preparingBusy ? "Retrying…" : "Retry preparation"}

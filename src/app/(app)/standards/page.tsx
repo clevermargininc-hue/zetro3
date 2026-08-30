@@ -6,7 +6,7 @@ export default function StandardsPage() {
     <div className="space-y-6 pb-10">
       <PageHeader
         title="Audit Standards & SOP Governance"
-        description="Define scorecard rubrics, compliance rules, and optional organization scripts (including holding procedures) for automated call evaluations."
+        description="Upload scorecard, compliance, and process files. Quality audit reads these files before it assigns any score."
       />
       <StandardsBoard />
     </div>

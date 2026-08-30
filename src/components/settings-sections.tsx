@@ -217,7 +217,7 @@ export function WorkspaceSettings() {
 }
 
 export function AuditingSettings() {
-  const { data, error, saving, patch } = useSettings();
+  const { data, error } = useSettings();
   if (!data) {
     return (
       <div className="surface p-6">
@@ -230,44 +230,25 @@ export function AuditingSettings() {
   return (
     <div className="surface p-6 space-y-6">
       <div>
-        <h2 className="text-[16px] font-bold text-ink">Automated Quality Scoring</h2>
+        <h2 className="text-[16px] font-bold text-ink">Documents audit</h2>
         <p className="text-[13px] text-muted mt-0.5">
-          Configure how uploaded customer call recordings are evaluated.
+          Scoring never starts on its own. After a transcript is prepared, someone on the team starts an SOP
+          audit against your uploaded Standards files.
           {data.workspace.languages.bilingual
-            ? " This workspace audits in Kiswahili and English."
-            : " This workspace audits in English only."}
+            ? " This workspace prepares calls in Kiswahili and English from the recording. The transcript is speech-to-text, not rewritten."
+            : " This workspace prepares and audits calls in English."}
         </p>
       </div>
 
-      <div className="flex items-center justify-between gap-6 p-4 rounded-lg border border-slate-200 bg-slate-50/70">
-        <div>
-          <p className="font-semibold text-ink text-[14px]">Automatic Post-Transcription Scoring</p>
-          <p className="text-[12px] text-muted mt-0.5">
-            Automatically score calls against your Standards files as soon as transcription and speaker diarization finish.
-          </p>
-        </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={data.auto_audit}
-          disabled={saving === "audit"}
-          onClick={() =>
-            void patch(
-              { auto_audit: !data.auto_audit },
-              "audit",
-              data.auto_audit ? "Automatic scoring is off." : "Calls will score against Standards files automatically after transcription.",
-            )
-          }
-          className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-            data.auto_audit ? "bg-blue" : "bg-slate-300"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-              data.auto_audit ? "left-5.5" : "left-0.5"
-            }`}
-          />
-        </button>
+      <div className="space-y-3 p-4 rounded-lg border border-slate-200 bg-slate-50/70">
+        <p className="font-semibold text-ink text-[14px]">Manual scoring only</p>
+        <p className="text-[12px] text-muted leading-relaxed">
+          Upload recordings, wait until the call is ready to audit, then run <strong>SOP &amp; Scorecard Audit</strong>.
+          Automatic post-transcription scoring is disabled so audits are not run on a broken transcript.
+        </p>
+        <p className="text-[12px] text-muted leading-relaxed">
+          Required files: process document, scorecard, and compliance. Opening, closing, and holding scripts are optional.
+        </p>
       </div>
     </div>
   );

@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { DeleteCallButton } from "@/components/delete-call-button";
-import { auditStatus, formatDate, formatDuration, languageLabel } from "@/lib/format";
-import type { AuditStatus } from "@/lib/format";
+import { CallDownloads } from "@/components/call-downloads";
+import { formatDate, formatDuration, isCallAudited, languageLabel, statusLabel } from "@/lib/format";
 import type { Call, CallScore, CallStatus } from "@/lib/types";
 import { KpiStrip, scoreChipClass } from "@/components/ui";
 
@@ -14,7 +14,7 @@ type CallRow = Call & {
   call_scores?: CallScore[] | CallScore | null;
 };
 
-type Filter = "all" | AuditStatus;
+type Filter = "all" | "audited" | "not_yet";
 
 function scoreOf(call: CallRow) {
   return Array.isArray(call.call_scores) ? call.call_scores[0] : call.call_scores;
@@ -75,28 +75,30 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
       window.clearInterval(poll);
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [teamScope]);
 
   const counts = useMemo(() => {
-    const next = { processing: 0, transcribed: 0, audited: 0, failed: 0 };
-    for (const call of calls) next[auditStatus(call.status)] += 1;
-    return next;
+    let audited = 0;
+    for (const call of calls) {
+      if (isCallAudited(call.status)) audited += 1;
+    }
+    return { audited, notYet: calls.length - audited };
   }, [calls]);
 
-  const visible = filter === "all" ? calls : calls.filter((call) => auditStatus(call.status) === filter);
+  const visible =
+    filter === "all"
+      ? calls
+      : calls.filter((call) =>
+          filter === "audited" ? isCallAudited(call.status) : !isCallAudited(call.status),
+        );
 
   return (
     <div className="space-y-5">
       <KpiStrip
         items={[
           { label: "Logged calls", value: String(calls.length), hint: "Workspace inventory" },
-          { label: "Audited", value: String(counts.audited), hint: "Scored evaluations" },
-          { label: "Ready to audit", value: String(counts.transcribed), hint: "Prepared on the server" },
-          {
-            label: "In pipeline",
-            value: String(counts.processing),
-            hint: counts.failed ? `${counts.failed} failed` : "Active queues",
-          },
+          { label: "Audited", value: String(counts.audited), hint: "Already scored" },
+          { label: "Not yet", value: String(counts.notYet), hint: "Still in prepare or score" },
         ]}
       />
 
@@ -104,10 +106,8 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
         {(
           [
             ["all", `All (${calls.length})`],
-            ["audited", `Scored (${counts.audited})`],
-            ["transcribed", `Ready (${counts.transcribed})`],
-            ["processing", `Processing (${counts.processing})`],
-            ["failed", `Failed (${counts.failed})`],
+            ["audited", `Audited (${counts.audited})`],
+            ["not_yet", `Not yet (${counts.notYet})`],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -134,7 +134,7 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                 <th className="px-6 py-3">Call Title / Duration</th>
                 <th className="px-6 py-3">Representative</th>
                 <th className="px-6 py-3">Language</th>
-                <th className="px-6 py-3">Pipeline Status</th>
+                <th className="px-6 py-3">Audit status</th>
                 <th className="px-6 py-3 text-right">QA Score</th>
                 <th className="px-6 py-3 text-right">Actions</th>
               </tr>
@@ -198,33 +198,57 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                     <td className="px-6 py-3.5 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">
                         {call.status === "completed" ? (
-                          <Link
-                            href={`/calls/${call.id}/score`}
-                            className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[12px] px-3 py-1.5 font-medium"
-                          >
-                            View Scorecard →
-                          </Link>
-                        ) : call.status === "transcribed" ? (
-                          <Link
-                            href={`/calls/${call.id}/transcribe`}
-                            className="btn bg-blue hover:bg-blue-2 text-white text-[12px] px-3 py-1.5 font-semibold"
-                          >
-                            Audit / Score
-                          </Link>
+                          <>
+                            <CallDownloads
+                              callId={call.id}
+                              compact
+                            />
+                            <Link
+                              href={`/upload/score/${call.id}`}
+                              className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[12px] px-3 py-1.5 font-medium"
+                            >
+                              Scorecard
+                            </Link>
+                          </>
+                        ) : call.status === "transcribed" || call.status === "analyzing" ? (
+                          <>
+                            <CallDownloads
+                              callId={call.id}
+                              compact
+                            />
+                            <Link
+                              href={`/upload/prepare/${call.id}`}
+                              className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[12px] px-3 py-1.5 font-medium"
+                            >
+                              Recording
+                            </Link>
+                            <Link
+                              href={`/upload/score/${call.id}`}
+                              className="btn bg-blue hover:bg-blue-2 text-white text-[12px] px-3 py-1.5 font-semibold"
+                            >
+                              Score
+                            </Link>
+                          </>
                         ) : call.status === "transcribing" ? (
-                          <Link
-                            href={`/calls/${call.id}/transcribe`}
-                            className="btn bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 text-[12px] px-3 py-1.5"
-                          >
-                            View Progress
-                          </Link>
+                          <>
+                            <CallDownloads callId={call.id} compact />
+                            <Link
+                              href={`/upload/prepare/${call.id}`}
+                              className="btn bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 text-[12px] px-3 py-1.5"
+                            >
+                              View Progress
+                            </Link>
+                          </>
                         ) : (
-                          <Link
-                            href={`/calls/${call.id}/transcribe`}
-                            className="btn bg-blue hover:bg-blue-2 text-white text-[12px] px-3 py-1.5 font-semibold"
-                          >
-                            Audit
-                          </Link>
+                          <>
+                            <CallDownloads callId={call.id} compact />
+                            <Link
+                              href={`/upload/prepare/${call.id}`}
+                              className="btn bg-blue hover:bg-blue-2 text-white text-[12px] px-3 py-1.5 font-semibold"
+                            >
+                              Prepare
+                            </Link>
+                          </>
                         )}
                         <DeleteCallButton
                           callId={call.id}
@@ -250,7 +274,7 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                 {calls.length ? "No recordings matching this filter" : "Call inventory is empty"}
               </h3>
               <p className="mt-1 text-[13px] text-muted max-w-sm mx-auto">
-                Upload customer recordings to begin transcription, speaker diarization, and automated quality auditing.
+                Upload customer recordings, prepare a clean transcript, then start a documents audit when you are ready.
               </p>
               <Link href="/upload" className="mt-5 btn btn-blue text-[13px] px-5 py-2 inline-flex font-semibold">
                 Upload Call Recordings
@@ -264,23 +288,14 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
 }
 
 function StatusBadge({ status }: { status: CallStatus }) {
-  const bucket = auditStatus(status);
-
-  if (bucket === "audited") {
+  if (isCallAudited(status)) {
     return <span className="chip chip-ok">Audited</span>;
   }
 
-  if (bucket === "transcribed") {
-    return <span className="chip">Ready to audit</span>;
-  }
-
-  if (bucket === "failed") {
-    return <span className="chip chip-bad">Failed</span>;
-  }
-
   return (
-    <span className="chip chip-wait">
-      {status === "transcribing" ? "Transcribing" : "Scoring"}
-    </span>
+    <div>
+      <span className="chip">Not yet</span>
+      <p className="mt-1 text-[11px] text-muted">{statusLabel(status)}</p>
+    </div>
   );
 }

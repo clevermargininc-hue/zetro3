@@ -21,6 +21,22 @@ function isSafeNext(value: string | null) {
   return value;
 }
 
+function isSafeReturnPath(value: string | null) {
+  const next = isSafeNext(value);
+  if (!next) return null;
+  const path = next.split("?")[0];
+  if (
+    path === "/login" ||
+    path === "/signup" ||
+    path === "/forgot-password" ||
+    path === "/reset-password" ||
+    path.startsWith("/auth")
+  ) {
+    return null;
+  }
+  return path;
+}
+
 function markWorkspace(response: NextResponse) {
   response.cookies.set(WORKSPACE_COOKIE, "1", {
     path: "/",
@@ -35,6 +51,14 @@ function redirectWithCookies(from: NextResponse, dest: URL) {
     redirect.cookies.set(cookie.name, cookie.value);
   });
   return redirect;
+}
+
+function nextWithPathname(request: NextRequest, path: string) {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-zetro-pathname", path);
+  return NextResponse.next({
+    request: { headers: requestHeaders },
+  });
 }
 
 async function userHasWorkspace(
@@ -73,7 +97,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
-  let response = NextResponse.next({ request });
+  let response = nextWithPathname(request, path);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -88,7 +112,7 @@ export async function updateSession(request: NextRequest) {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
+        response = nextWithPathname(request, path);
         cookiesToSet.forEach(({ name, value, options }) =>
           response.cookies.set(name, value, options),
         );
@@ -117,14 +141,18 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && (path === "/login" || path === "/signup")) {
-    const next = isSafeNext(request.nextUrl.searchParams.get("next"));
+    const next = isSafeReturnPath(request.nextUrl.searchParams.get("next"));
     if (next?.startsWith("/invite/")) {
-      return NextResponse.redirect(new URL(next.split("?")[0], request.nextUrl.origin));
+      return NextResponse.redirect(new URL(next, request.nextUrl.origin));
     }
     const ready = await userHasWorkspace(request, supabase, user.id);
     const dest = request.nextUrl.clone();
-    dest.pathname = ready === true ? "/dashboard" : "/onboarding";
     dest.search = "";
+    if (ready === true) {
+      dest.pathname = next || "/dashboard";
+    } else {
+      dest.pathname = "/onboarding";
+    }
     const redirect = redirectWithCookies(response, dest);
     if (ready === true) markWorkspace(redirect);
     return redirect;

@@ -6,9 +6,11 @@ import { useCallLive } from "@/components/use-call-live";
 import { ScoreCard } from "@/components/score-card";
 import { AuditActions } from "@/components/audit-actions";
 import { CallAuditExport } from "@/components/call-audit-export";
+import { CallDownloads } from "@/components/call-downloads";
 import { AuditPrintDocument } from "@/components/audit-print-document";
+import { StandardsFilesPanel } from "@/components/standards-files-panel";
 import { auditStatus, formatDate, formatDuration, languageLabel } from "@/lib/format";
-import type { Call, CallScore, CallStatus } from "@/lib/types";
+import type { Call, CallScore, CallStatus, Utterance } from "@/lib/types";
 import { PageHeader } from "@/components/ui";
 
 const Icons = {
@@ -27,11 +29,17 @@ function readyForAudit(status: CallStatus) {
 export function ScoreWorkspace({
   initialCall,
   initialScore,
+  initialUtterances = [],
 }: {
   initialCall: Call & { agents?: { name: string } | null };
   initialScore: CallScore | null;
+  initialUtterances?: Utterance[];
 }) {
-  const { call, setCall, score } = useCallLive(initialCall, initialScore);
+  const { call, setCall, score } = useCallLive(
+    initialCall,
+    initialScore,
+    initialUtterances,
+  );
   const busy = call.status === "analyzing";
   const canAudit = readyForAudit(call.status);
   const bucket = auditStatus(call.status);
@@ -41,15 +49,15 @@ export function ScoreWorkspace({
       <div className="no-print">
         <div className="flex items-center justify-between mb-3">
           <Link
-            href={`/calls/${call.id}/transcribe`}
+            href="/upload/score"
             className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-slate-500 hover:text-blue"
           >
             {Icons.arrowLeft}
-            <span>Back to call</span>
+            <span>Back to score queue</span>
           </Link>
-          <span className="text-[12px] text-muted font-medium">Evaluation Report</span>
         </div>
         <PageHeader
+          kicker="Step 3 of 3 · Score"
           title={call.title || call.file_name || "Call"}
           description={[
             `Language: ${languageLabel(call.detected_language || call.language_mode)}`,
@@ -61,16 +69,19 @@ export function ScoreWorkspace({
           actions={
             <>
               {bucket === "audited" ? (
-                <span className="chip chip-ok">Audited & scored</span>
+                <span className="chip chip-ok">Audited</span>
+              ) : busy ? (
+                <span className="chip chip-wait">Reading company files…</span>
               ) : (
-                <span className="chip chip-wait">Analyzing…</span>
+                <span className="chip">Ready to score</span>
               )}
+              <CallDownloads callId={call.id} hasTranscript={false} />
               {score ? <CallAuditExport callId={call.id} /> : null}
               <DeleteCallButton
                 callId={call.id}
                 title={call.title}
                 status={call.status}
-                redirectTo="/calls"
+                redirectTo="/upload/score"
               />
             </>
           }
@@ -81,58 +92,71 @@ export function ScoreWorkspace({
         <div className="alert-error no-print text-[13px]">{call.error_message}</div>
       )}
 
-      {canAudit && !score && !busy && (
-        <section className="surface no-print p-8 max-w-xl mx-auto mt-8 text-center space-y-4">
-          <h2 className="text-[16px] font-semibold text-ink">Score this interaction</h2>
-          <p className="text-[13px] text-muted max-w-md mx-auto">
-            Scoring uses your uploaded Standards files (scorecard, compliance, and process documents).
+      {!canAudit && !busy && (
+        <section className="surface no-print p-6 max-w-lg space-y-3">
+          <h2 className="text-[16px] font-semibold text-ink">Finish Prepare first</h2>
+          <p className="text-[13px] text-muted leading-relaxed">
+            This recording is not ready to score. Return to Step 2, wait until it is prepared, then come back.
           </p>
-          <div className="pt-2 text-left">
-            <AuditActions
-              callId={call.id}
-              status={call.status}
-              onStatus={(status) =>
-                setCall((prev) => ({ ...prev, status, error_message: null }))
-              }
-            />
-          </div>
+          <Link
+            href={`/upload/prepare/${call.id}`}
+            className="btn btn-blue text-[13px] px-5 py-2 inline-flex"
+          >
+            Go to Prepare
+          </Link>
         </section>
       )}
 
-      {busy && !score && (
-        <section className="surface no-print p-12 text-center space-y-4 max-w-lg mx-auto mt-8">
-          <div className="h-8 w-8 rounded-full border-3 border-blue/20 border-t-blue animate-spin mx-auto" />
-          <h2 className="text-[16px] font-semibold text-ink">Quality audit in progress…</h2>
-          <p className="text-[13px] text-muted max-w-sm mx-auto leading-relaxed">
-            The server is scoring greeting, compliance, empathy, and resolution from the private transcript.
-          </p>
-        </section>
+      {canAudit && !score && (
+        <div className="no-print grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] items-start">
+          <section className="surface p-6 space-y-4">
+            {busy ? (
+              <div className="flex items-start gap-4">
+                <div className="h-6 w-6 rounded-full border-2 border-blue/30 border-t-blue animate-spin shrink-0 mt-0.5" />
+                <div>
+                  <h2 className="text-[16px] font-semibold text-ink">Reading company files, then scoring</h2>
+                  <p className="mt-1 text-[13px] text-muted leading-relaxed">
+                    The model loads your scorecard, compliance, and process documents first, then marks the call against those files only.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <h2 className="text-[16px] font-semibold text-ink">Start the documents audit</h2>
+                  <p className="mt-1 text-[13px] text-muted leading-relaxed max-w-xl">
+                    Confirm the files on the right are readable. Scoring does not begin until you start it, and it will not invent criteria that are not in those files.
+                  </p>
+                </div>
+                <AuditActions
+                  callId={call.id}
+                  status={call.status}
+                  onStatus={(status) =>
+                    setCall((prev) => ({ ...prev, status, error_message: null }))
+                  }
+                />
+              </>
+            )}
+          </section>
+          <StandardsFilesPanel title="Files that will be read" />
+        </div>
       )}
 
       {score && (
         <>
-          <div className="no-print">
+          <div className="no-print space-y-4">
             <ScoreCard score={score} />
+            <div className="flex flex-wrap gap-2">
+              <Link href="/calls" className="btn btn-blue text-[13px]">
+                Open in Call inventory
+              </Link>
+              <Link href="/upload/score" className="btn btn-ghost text-[13px]">
+                Score next recording
+              </Link>
+            </div>
           </div>
           <AuditPrintDocument call={call} score={score} />
         </>
-      )}
-
-      {!canAudit && !busy && (
-        <section className="surface no-print p-8 text-center max-w-md mx-auto mt-8 space-y-3">
-          <h2 className="text-[16px] font-semibold text-ink">Not ready to audit yet</h2>
-          <p className="text-[13px] text-muted">
-            The server is still preparing this recording. Open the call to start or wait for processing.
-          </p>
-          <div className="pt-2">
-            <Link
-              href={`/calls/${call.id}/transcribe`}
-              className="btn bg-blue hover:bg-blue-2 text-white text-[13px] px-5 py-2 font-semibold inline-flex"
-            >
-              Open call
-            </Link>
-          </div>
-        </section>
       )}
     </div>
   );

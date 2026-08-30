@@ -230,8 +230,16 @@ create policy "calls_own" on public.calls
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
--- Transcripts stay server-side. The service role (process-call) still reads them.
+-- Transcripts are visible to the call owner in the app.
 drop policy if exists "utterances_via_call" on public.utterances;
+create policy "utterances_via_call" on public.utterances
+  for select to authenticated
+  using (
+    exists (
+      select 1 from public.calls c
+      where c.id = utterances.call_id and c.user_id = auth.uid()
+    )
+  );
 
 drop policy if exists "scores_via_call" on public.call_scores;
 create policy "scores_via_call" on public.call_scores

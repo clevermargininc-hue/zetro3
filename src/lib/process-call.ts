@@ -1,11 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { uploadToAssemblyAI, submitTranscript, waitForTranscript } from "@/lib/assemblyai";
-import { analyzeCall, repairBrokenSwahiliUtterances } from "@/lib/openai";
+import { analyzeCall, restoreSwahiliMeaning } from "@/lib/openai";
 import { collapseTurnList } from "@/lib/collapse-asr";
+import { repairSwahiliTranscript } from "@/lib/swahili-repair";
 import {
   extractKeytermsFromDocuments,
   formatCallScripts,
-  lexiconFromDocuments,
 } from "@/lib/call-scripts";
 import {
   loadQaDocuments,
@@ -14,7 +14,6 @@ import {
 import { retrieveQaContext } from "@/lib/qa-retrieve";
 import type { AuditMode, LanguageMode, SpeakerRole } from "@/lib/types";
 import { describeAiError } from "@/lib/ai-client";
-import { getAutoAudit } from "@/lib/workspace-settings";
 import { getMembership } from "@/lib/workspaces";
 import { HOLD_ASR_KEYTERMS } from "@/lib/detect-holds";
 import { resolvedLanguageMode, workspaceLanguages } from "@/lib/locale";
@@ -33,6 +32,11 @@ function inferRoleFromLabel(label: string): SpeakerRole | null {
 const transcribing = new Set<string>();
 const scoring = new Set<string>();
 
+type AdminClient = ReturnType<typeof createAdminClient>;
+type JobOptions = { force?: boolean };
+
+const PREPARED_STATUSES = new Set(["transcribed", "analyzing", "completed"]);
+
 function roleForSpeaker(
   label: string,
   speakerMap: Record<string, SpeakerRole> = {},
@@ -46,13 +50,41 @@ function roleForSpeaker(
   );
 }
 
-export async function transcribeCall(
-  callId: string,
-  options?: { autoScore?: AuditMode | false },
-) {
+async function utteranceCount(supabase: AdminClient, callId: string) {
+  const { count, error } = await supabase
+    .from("utterances")
+    .select("id", { count: "exact", head: true })
+    .eq("call_id", callId);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+async function settlePreparedCall(supabase: AdminClient, callId: string, status: string) {
+  if (status === "analyzing" || status === "completed" || status === "transcribed") {
+    return status;
+  }
+  const { data: score } = await supabase
+    .from("call_scores")
+    .select("id")
+    .eq("call_id", callId)
+    .maybeSingle();
+  const next = score ? "completed" : "transcribed";
+  await supabase
+    .from("calls")
+    .update({
+      status: next,
+      error_message: null,
+      ...(score ? { completed_at: new Date().toISOString() } : {}),
+    })
+    .eq("id", callId);
+  return next;
+}
+
+export async function transcribeCall(callId: string, options: JobOptions = {}) {
+  const force = Boolean(options.force);
   if (transcribing.has(callId)) return;
   transcribing.add(callId);
-  let supabase: ReturnType<typeof createAdminClient> | null = null;
+  let supabase: AdminClient | null = null;
 
   try {
     supabase = createAdminClient();
@@ -66,26 +98,22 @@ export async function transcribeCall(
       throw new Error(error?.message || "Call not found");
     }
 
+    const existingTurns = await utteranceCount(supabase, callId);
+    if (!force && existingTurns > 0) {
+      await settlePreparedCall(supabase, callId, call.status);
+      return;
+    }
+
+    if (!force && PREPARED_STATUSES.has(call.status)) {
+      return;
+    }
+
     await supabase
       .from("calls")
       .update({ status: "transcribing", error_message: null })
       .eq("id", callId);
 
-    const { data: file, error: downloadError } = await supabase.storage
-      .from("call-audio")
-      .download(call.audio_path);
-
-    if (downloadError || !file) {
-      const detail = downloadError?.message || "";
-      throw new Error(
-        /fetch failed|timeout|network/i.test(detail)
-          ? "Could not download the recording. Check your internet connection and try again."
-          : detail || "Could not download the recording",
-      );
-    }
-
     const membership = await getMembership(call.user_id).catch(() => null);
-    const langs = workspaceLanguages(membership?.country);
     const languageMode = resolvedLanguageMode(
       membership?.country,
       (call.language_mode || "auto") as LanguageMode,
@@ -94,30 +122,62 @@ export async function transcribeCall(
       await supabase.from("calls").update({ language_mode: languageMode }).eq("id", callId);
     }
 
-    const bytes = await file.arrayBuffer();
+    let transcript: Awaited<ReturnType<typeof waitForTranscript>> | null = null;
+    if (!force && call.assembly_id) {
+      try {
+        transcript = await waitForTranscript(call.assembly_id);
+      } catch {
+        transcript = null;
+      }
+    }
 
     const orgDocs = await loadQaDocuments(call.user_id).catch(() => []);
-    const keyterms = [...HOLD_ASR_KEYTERMS, ...extractKeytermsFromDocuments(orgDocs)];
-    const extraLexicon = lexiconFromDocuments(orgDocs);
+    const keyTerms = extractKeytermsFromDocuments(orgDocs, 60);
 
-    const audioUrl = await uploadToAssemblyAI(bytes);
-    const queued = await submitTranscript(audioUrl, languageMode, keyterms);
-    const transcript = await waitForTranscript(queued.id);
-    
+    if (!transcript) {
+      const { data: file, error: downloadError } = await supabase.storage
+        .from("call-audio")
+        .download(call.audio_path);
+
+      if (downloadError || !file) {
+        const detail = downloadError?.message || "";
+        throw new Error(
+          /fetch failed|timeout|network/i.test(detail)
+            ? "Could not download the recording. Check your internet connection and try again."
+            : detail || "Could not download the recording",
+        );
+      }
+
+      const asrTerms = [...HOLD_ASR_KEYTERMS, ...extractKeytermsFromDocuments(orgDocs)];
+      const audioUrl = await uploadToAssemblyAI(await file.arrayBuffer());
+      const queued = await submitTranscript(audioUrl, languageMode, asrTerms);
+      await supabase.from("calls").update({ assembly_id: queued.id }).eq("id", callId);
+      transcript = await waitForTranscript(queued.id);
+    }
+
+    if ((await utteranceCount(supabase, callId)) > 0 && !force) {
+      await settlePreparedCall(supabase, callId, "transcribing");
+      return;
+    }
+
     const utterances = transcript.utterances || [];
     if (!utterances.length) {
       throw new Error("No speakers were detected in this recording");
     }
 
-    let collapsed = collapseTurnList(utterances, {
-      bilingual: langs.bilingual,
-      extraLexicon,
-    });
-    if (langs.bilingual) {
-      collapsed = await repairBrokenSwahiliUtterances(
-        collapsed,
-        extractKeytermsFromDocuments(orgDocs, 40),
-      );
+    const collapsed = collapseTurnList(utterances).map((turn) => ({
+      ...turn,
+      text: repairSwahiliTranscript(turn.text, keyTerms),
+    }));
+
+    if ((await utteranceCount(supabase, callId)) > 0 && !force) {
+      await settlePreparedCall(supabase, callId, "transcribing");
+      return;
+    }
+
+    await supabase.from("utterances").delete().eq("call_id", callId);
+    if (force) {
+      await supabase.from("call_scores").delete().eq("call_id", callId);
     }
 
     const rows = collapsed.map((u, index) => ({
@@ -131,9 +191,6 @@ export async function transcribeCall(
       confidence: u.confidence,
     }));
 
-    await supabase.from("utterances").delete().eq("call_id", callId);
-    await supabase.from("call_scores").delete().eq("call_id", callId);
-
     const { error: uttError } = await supabase.from("utterances").insert(rows);
     if (uttError) throw new Error(uttError.message);
 
@@ -143,32 +200,21 @@ export async function transcribeCall(
         status: "transcribed",
         duration_seconds: transcript.audio_duration ?? null,
         detected_language: transcript.language_code ?? null,
-        detected_languages: null,
+        detected_languages: transcript.code_switching_languages ?? null,
         error_message: null,
-        completed_at: null,
+        ...(force ? { completed_at: null } : {}),
       })
       .eq("id", callId);
-
-    let autoScore: AuditMode | null = null;
-    if (options?.autoScore === false) {
-      autoScore = null;
-    } else if (options?.autoScore) {
-      autoScore = options.autoScore;
-    } else if (await getAutoAudit(call.user_id)) {
-      autoScore = "documents";
-    }
-    if (autoScore) {
-      try {
-        await scoreCall(callId, autoScore);
-      } catch (err) {
-        console.error("Auto scoring failed", err);
-      }
-    }
   } catch (err) {
     const message = err instanceof Error
         ? err.message
         : "Unknown transcription error";
     if (supabase) {
+      const saved = await utteranceCount(supabase, callId).catch(() => 0);
+      if (saved > 0) {
+        await settlePreparedCall(supabase, callId, "transcribing");
+        return;
+      }
       await supabase
         .from("calls")
         .update({ status: "failed", error_message: message })
@@ -180,10 +226,15 @@ export async function transcribeCall(
   }
 }
 
-export async function scoreCall(callId: string, mode: AuditMode = "documents") {
+export async function scoreCall(
+  callId: string,
+  mode: AuditMode = "documents",
+  options: JobOptions = {},
+) {
+  const force = Boolean(options.force);
   if (scoring.has(callId)) return;
   scoring.add(callId);
-  let supabase: ReturnType<typeof createAdminClient> | null = null;
+  let supabase: AdminClient | null = null;
 
   try {
     const db = createAdminClient();
@@ -196,6 +247,27 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
 
     if (error || !call) {
       throw new Error(error?.message || "Call not found");
+    }
+
+    if (!force) {
+      const { data: existingScore } = await db
+        .from("call_scores")
+        .select("id")
+        .eq("call_id", callId)
+        .maybeSingle();
+      if (existingScore) {
+        if (call.status !== "completed") {
+          await db
+            .from("calls")
+            .update({
+              status: "completed",
+              completed_at: call.completed_at || new Date().toISOString(),
+              error_message: null,
+            })
+            .eq("id", callId);
+        }
+        return;
+      }
     }
 
     const { data: stored, error: uttError } = await db
@@ -230,23 +302,51 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
 
     const membership = await getMembership(call.user_id).catch(() => null);
     const bilingual = workspaceLanguages(membership?.country).bilingual;
+    const keyTerms = extractKeytermsFromDocuments(orgDocs, 60);
 
-    let asAssembly = stored.map((u) => ({
+    let scoredRows = stored.map((row) => ({
+      ...row,
+      text: repairSwahiliTranscript(row.text, keyTerms),
+    }));
+    if (bilingual) {
+      const restored = await restoreSwahiliMeaning(
+        scoredRows.map((row) => ({
+          speaker: row.speaker_label,
+          text: row.text,
+          start: row.start_ms ?? 0,
+          end: row.end_ms ?? 0,
+          confidence: Number(row.confidence ?? 0),
+        })),
+        {
+          keyTerms,
+          scriptHints: scriptsText,
+        },
+      );
+      scoredRows = scoredRows.map((row, index) => ({
+        ...row,
+        text: restored[index]?.text || row.text,
+      }));
+    }
+    const textUpdates = scoredRows.filter((row, index) => row.text !== stored[index].text);
+    if (textUpdates.length) {
+      await Promise.all(
+        textUpdates.map((row) =>
+          db.from("utterances").update({ text: row.text }).eq("id", row.id),
+        ),
+      );
+    }
+
+    const asAssembly = scoredRows.map((u) => ({
       speaker: u.speaker_label,
       text: u.text,
       start: u.start_ms ?? 0,
       end: u.end_ms ?? 0,
       confidence: Number(u.confidence ?? 0),
     }));
-    if (bilingual) {
-      asAssembly = await repairBrokenSwahiliUtterances(
-        asAssembly,
-        extractKeytermsFromDocuments(orgDocs, 40),
-      );
-    }
     if (mode === "documents") {
-      standardsText = await retrieveQaContext(call.user_id, standards);
-      if (standardsText.trim().length < 40) {
+      const callText = scoredRows.map((row) => row.text).join("\n");
+      standardsText = await retrieveQaContext(call.user_id, orgDocs, callText);
+      if (standardsText.trim().length < 80) {
         throw new Error(
           "Documents scoring cannot start until the uploaded Standards files have been read. Open Standards and upload them again.",
         );
@@ -264,7 +364,7 @@ export async function scoreCall(callId: string, mode: AuditMode = "documents") {
       orgDocs,
     );
 
-    const roleUpdates = stored
+    const roleUpdates = scoredRows
       .map((row) => ({
         id: row.id,
         role: roleForSpeaker(row.speaker_label, analysis.speaker_map),

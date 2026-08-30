@@ -7,7 +7,7 @@ import { getTeamScope } from "@/lib/workspaces";
 import type { AuditMode } from "@/lib/types";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+export const maxDuration = 800;
 
 function parseMode(value: unknown): AuditMode | null {
   if (value === "documents") return value;
@@ -24,8 +24,12 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await request.json().catch(() => ({}))) as { mode?: unknown };
+  const body = (await request.json().catch(() => ({}))) as {
+    mode?: unknown;
+    force?: unknown;
+  };
   const mode = parseMode(body.mode);
+  const force = body.force === true;
   if (!mode) {
     return NextResponse.json(
       { error: "Only documents-based scoring is supported. Upload Standards files first." },
@@ -42,6 +46,10 @@ export async function POST(
   const teamScope = await getTeamScope(user.id);
   if (!call || !teamScope.includes(call.user_id)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (!force && call.status === "completed") {
+    return NextResponse.json({ ok: true, status: "completed", mode, reused: true });
   }
 
   if (mode === "documents") {
@@ -74,11 +82,7 @@ export async function POST(
     }
   }
 
-  if (call.status === "analyzing") {
-    return NextResponse.json({ ok: true, status: "analyzing", mode });
-  }
-
-  const work = scoreCall(id, mode).catch((error) => {
+  const work = scoreCall(id, mode, { force }).catch((error) => {
     console.error("Scoring failed", error);
   });
   after(async () => {

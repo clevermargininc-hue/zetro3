@@ -1,5 +1,4 @@
 import { nearDuplicate, soften } from "@/lib/text-distance";
-import { repairSwahiliTranscript } from "@/lib/swahili-repair";
 
 function normalize(text: string) {
   return soften(text);
@@ -64,17 +63,11 @@ export function collapseAsrLoops(text: string) {
   return out.join(" ").replace(/\s+/g, " ").trim();
 }
 
-export function collapseTurnList<T extends { text: string }>(
-  turns: T[],
-  options?: { bilingual?: boolean; extraLexicon?: string[] },
-): T[] {
-  const bilingual = options?.bilingual !== false;
-  const extraLexicon = options?.extraLexicon || [];
+/** Collapse ASR stutter loops only. Do not guess replacement words — that invents false Kiswahili. */
+export function collapseTurnList<T extends { text: string }>(turns: T[]): T[] {
   const out: T[] = [];
   for (const turn of turns) {
-    const text = collapseAsrLoops(
-      bilingual ? repairSwahiliTranscript(turn.text, extraLexicon) : turn.text,
-    );
+    const text = collapseAsrLoops(turn.text);
     if (!text) continue;
     const prev = out[out.length - 1];
     if (prev && (sameText(prev.text, text) || nearDuplicate(prev.text, text))) continue;

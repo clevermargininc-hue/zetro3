@@ -5,12 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { authFetch } from "@/lib/auth-fetch";
 import { createClient } from "@/lib/supabase/client";
-import type { AuditMode } from "@/lib/types";
-import { useQaReadiness } from "@/components/use-qa-readiness";
 import {
   FILE_ACCEPT,
   ZIP_ACCEPT,
-  formatFileSize,
   filesFromDataTransfer,
   expandIncomingFiles,
   mergeAudioPicks,
@@ -62,7 +59,7 @@ const Icons = {
 type DoneCall = { id: string; title: string };
 type FailedCall = { title: string; error: string };
 
-export function UploadForm({ teamScope }: { teamScope: string[] }) {
+export function UploadForm() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -74,7 +71,6 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState<DoneCall[]>([]);
   const [failed, setFailed] = useState<FailedCall[]>([]);
-  const { blocked } = useQaReadiness();
 
   useEffect(() => {
     const el = folderInputRef.current;
@@ -132,29 +128,7 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Authentication expired. Please sign in again.");
 
-      let agentId: string | null = null;
       const trimmedAgent = agentName.trim();
-      if (trimmedAgent) {
-        const { data: existing } = await supabase
-          .from("agents")
-          .select("id")
-          .in("user_id", teamScope)
-          .ilike("name", trimmedAgent)
-          .maybeSingle();
-        if (existing) {
-          agentId = existing.id;
-        } else {
-          const { data: created, error: agentError } = await supabase
-            .from("agents")
-            .insert({ user_id: user.id, name: trimmedAgent })
-            .select("id")
-            .single();
-          if (agentError) throw agentError;
-          agentId = created.id;
-        }
-      }
-
-      const scoreMode: AuditMode | null = blocked ? null : "documents";
 
       for (let i = 0; i < validPicks.length; i++) {
         const pick = validPicks[i];
@@ -171,30 +145,25 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
             });
           if (uploadError) throw uploadError;
 
-          const { data: call, error: callError } = await supabase
-            .from("calls")
-            .insert({
-              user_id: user.id,
-              agent_id: agentId,
-              title,
-              file_name: pick.relativePath || pick.label,
-              audio_path: path,
-              language_mode: "auto",
-              status: "queued",
-            })
-            .select("*")
-            .single();
-          if (callError) throw callError;
-
-          await authFetch(`/api/calls/${call.id}/transcribe`, {
+          const created = await authFetch("/api/calls", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ auto_score: scoreMode || "none" }),
-          }).catch(() => {
-            // User can retry from the call page if this fails.
+            body: JSON.stringify({
+              audio_path: path,
+              file_name: pick.relativePath || pick.label,
+              title,
+              agent_name: trimmedAgent || undefined,
+            }),
           });
+          const body = (await created.json().catch(() => ({}))) as {
+            call?: { id: string };
+            error?: string;
+          };
+          if (!created.ok || !body.call?.id) {
+            throw new Error(body.error || "Could not register this recording");
+          }
 
-          uploaded.push({ id: call.id, title });
+          uploaded.push({ id: body.call.id, title });
         } catch (err) {
           errors.push({
             title,
@@ -207,10 +176,6 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
       setFailed(errors);
       setLoading(false);
       setProgress(null);
-
-      if (uploaded.length && !errors.length) {
-        router.push(uploaded.length === 1 ? `/calls/${uploaded[0].id}/score` : "/calls");
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload process encountered an error.");
       setDone(uploaded);
@@ -228,6 +193,22 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
   return (
     <div className="space-y-6">
       <div className="surface p-6 sm:p-8 space-y-6">
+        <div className="space-y-1.5 max-w-md">
+          <label className="text-[12px] font-semibold uppercase tracking-wider text-slate-500 block">
+            Agent on this batch
+          </label>
+          <input
+            value={agentName}
+            onChange={(e) => setAgentName(e.target.value)}
+            placeholder="e.g. Amina Mwangi"
+            className="field bg-slate-50/70 border-slate-200 text-ink text-[13px]"
+            autoComplete="off"
+          />
+          <p className="text-[11px] text-muted">
+            Set this before you add files. It is applied to every recording in this batch. Leave blank to assign later.
+          </p>
+        </div>
+
         <div>
           <input
             ref={fileInputRef}
@@ -286,7 +267,7 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
             <div className="mx-auto mb-3.5 flex items-center justify-center text-slate-500">
               {Icons.uploadCloud}
             </div>
-            <p className="text-[15px] font-bold text-ink">
+            <p className="text-[15px] font-semibold text-ink">
               Drop files, a folder, or a ZIP of calls
             </p>
             <p className="mt-1 text-[12px] text-muted max-w-sm mx-auto">
@@ -327,22 +308,6 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
           </div>
         </div>
 
-        <div className="space-y-1.5 max-w-md">
-          <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500 block">
-            Representative / Agent Name
-          </label>
-          <input
-            value={agentName}
-            onChange={(e) => setAgentName(e.target.value)}
-            placeholder="e.g. Amina Mwangi"
-            className="field bg-slate-50/70 border-slate-200 text-ink text-[13px]"
-            autoComplete="off"
-          />
-          <p className="text-[11px] text-muted">
-            Applied to every file in this batch. Leave blank to assign later.
-          </p>
-        </div>
-
         {error && <div className="alert-error text-[13px]">{error}</div>}
 
         {progress && (
@@ -355,12 +320,14 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
 
       {(done.length > 0 || failed.length > 0) && (
         <div className="surface p-6 space-y-4">
-          <div className="flex items-center gap-2.5">
-            <span className="chip chip-ok">Uploaded</span>
-            <h3 className="text-[15px] font-bold text-ink">
-              {done.length} recording{done.length === 1 ? "" : "s"} uploaded
-              {!blocked ? " · auditing in the background" : " · transcription started"}
+          <div>
+            <span className="chip chip-ok">Step 1 complete</span>
+            <h3 className="mt-2 text-[15px] font-semibold text-ink">
+              {done.length} recording{done.length === 1 ? "" : "s"} in Prepare
             </h3>
+            <p className="mt-1 text-[13px] text-muted">
+              Files are stored. Open Prepare next. Scoring does not start until you reach Step 3.
+            </p>
           </div>
           {failed.length > 0 && (
             <p className="text-[13px] text-rose">
@@ -368,20 +335,27 @@ export function UploadForm({ teamScope }: { teamScope: string[] }) {
             </p>
           )}
           <div className="pt-1 flex flex-wrap gap-2">
-            <Link
-              href="/calls"
-              className="btn bg-blue hover:bg-blue-2 text-white text-[13px] px-4 py-2 font-semibold inline-flex"
+            <button
+              type="button"
+              className="btn btn-blue text-[13px] px-4 py-2"
+              onClick={() => {
+                const href =
+                  done.length === 1 ? `/upload/prepare/${done[0].id}` : "/upload/prepare";
+                router.push(href);
+                router.refresh();
+              }}
             >
-              View call audits →
-            </Link>
-            {done.length === 1 && (
+              Continue to Prepare
+            </button>
+            {done.length > 1 ? (
               <Link
-                href={`/calls/${done[0].id}/score`}
-                className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[13px] px-4 py-2 font-semibold inline-flex"
+                href={`/upload/prepare/${done[0].id}`}
+                prefetch={false}
+                className="btn btn-ghost text-[13px] px-4 py-2"
               >
-                Open this call
+                Open first recording
               </Link>
-            )}
+            ) : null}
           </div>
         </div>
       )}

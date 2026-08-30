@@ -71,28 +71,7 @@ export async function uploadToAssemblyAI(bytes: ArrayBuffer) {
   return json.upload_url;
 }
 
-function transcriptBody(
-  audioUrl: string,
-  languageMode: LanguageMode,
-  keyterms: string[] = [],
-) {
-  const body: Record<string, unknown> = {
-    audio_url: audioUrl,
-    speaker_labels: true,
-    speakers_expected: 2,
-    punctuate: true,
-    format_text: false,
-    speech_models: ["universal-2"],
-    speech_understanding: {
-      request: {
-        speaker_identification: {
-          speaker_type: "role",
-          speakers: [{ role: "Agent" }, { role: "Customer" }],
-        },
-      },
-    },
-  };
-
+function mergeKeyterms(keyterms: string[]) {
   const merged: string[] = [];
   const seen = new Set<string>();
   for (const term of keyterms) {
@@ -104,24 +83,107 @@ function transcriptBody(
     merged.push(cleaned);
     if (merged.length >= 50) break;
   }
+  return merged;
+}
+
+function withKeyterms(body: Record<string, unknown>, keyterms: string[]) {
+  if (keyterms.length) body.keyterms_prompt = keyterms;
+  return body;
+}
+
+/** Kiswahili + English in the same call. Pin both languages so ASR does not guess English-only. */
+function bilingualAsrBody(audioUrl: string, keyterms: string[]) {
+  return withKeyterms(
+    {
+      audio_url: audioUrl,
+      speaker_labels: true,
+      speakers_expected: 2,
+      punctuate: true,
+      format_text: true,
+      speech_models: ["universal-2"],
+      language_detection: true,
+      language_codes: ["en", "sw"],
+      language_detection_options: {
+        code_switching: true,
+        code_switching_confidence_threshold: 0,
+      },
+      speech_understanding: {
+        request: {
+          speaker_identification: {
+            speaker_type: "role",
+            speakers: [{ role: "Agent" }, { role: "Customer" }],
+          },
+        },
+      },
+    },
+    keyterms,
+  );
+}
+
+function transcriptBody(
+  audioUrl: string,
+  languageMode: LanguageMode,
+  keyterms: string[] = [],
+) {
+  const merged = mergeKeyterms(keyterms);
 
   if (languageMode === "en") {
-    body.speech_models = ["universal-3-5-pro", "universal-2"];
-    body.language_code = "en";
-    if (merged.length) body.keyterms_prompt = merged;
-  } else if (languageMode === "sw" || languageMode === "mixed") {
-    body.language_code = "sw";
-    if (merged.length) body.keyterms_prompt = merged;
-  } else {
-    body.language_detection = true;
-    body.language_detection_options = {
-      code_switching: true,
-      code_switching_confidence_threshold: 0,
-    };
-    if (merged.length) body.keyterms_prompt = merged;
+    return withKeyterms(
+      {
+        audio_url: audioUrl,
+        speaker_labels: true,
+        speakers_expected: 2,
+        punctuate: true,
+        format_text: true,
+        speech_models: ["universal-3-5-pro", "universal-2"],
+        language_code: "en",
+        speech_understanding: {
+          request: {
+            speaker_identification: {
+              speaker_type: "role",
+              speakers: [{ role: "Agent" }, { role: "Customer" }],
+            },
+          },
+        },
+      },
+      merged,
+    );
   }
 
-  return body;
+  if (languageMode === "sw") {
+    return withKeyterms(
+      {
+        audio_url: audioUrl,
+        speaker_labels: true,
+        speakers_expected: 2,
+        punctuate: true,
+        format_text: true,
+        speech_models: ["universal-2"],
+        language_code: "sw",
+        speech_understanding: {
+          request: {
+            speaker_identification: {
+              speaker_type: "role",
+              speakers: [{ role: "Agent" }, { role: "Customer" }],
+            },
+          },
+        },
+      },
+      merged,
+    );
+  }
+
+  return bilingualAsrBody(audioUrl, merged);
+}
+
+function stripOptionalAsrFields(payload: Record<string, unknown>) {
+  const {
+    speech_understanding: _su,
+    language_codes: _lc,
+    keyterms_prompt: _kt,
+    ...rest
+  } = payload;
+  return rest;
 }
 
 export async function submitTranscript(
@@ -136,23 +198,33 @@ export async function submitTranscript(
     body: JSON.stringify(payload),
   });
 
-  if (!res.ok) {
-    const {
-      speech_understanding: _su,
-      language_codes: _lc,
-      keyterms_prompt: _kt,
-      ...fallback
-    } = payload;
-    if (languageMode === "mixed" || languageMode === "auto") {
-      fallback.speech_models = ["universal-2"];
-      fallback.language_code = "sw";
-      delete fallback.language_detection;
-      delete fallback.language_detection_options;
-    }
+  if (!res.ok && (languageMode === "mixed" || languageMode === "auto")) {
+    const withoutCodes = stripOptionalAsrFields(payload);
+    withoutCodes.speech_models = ["universal-2"];
+    withoutCodes.language_detection = true;
+    withoutCodes.language_detection_options = {
+      code_switching: true,
+      code_switching_confidence_threshold: 0,
+    };
+    delete withoutCodes.language_code;
     res = await assemblyFetch(`${BASE}/v2/transcript`, {
       method: "POST",
       headers: { ...headers(), "content-type": "application/json" },
-      body: JSON.stringify(fallback),
+      body: JSON.stringify(withoutCodes),
+    });
+  }
+
+  if (!res.ok && (languageMode === "mixed" || languageMode === "auto" || languageMode === "sw")) {
+    const swOnly = stripOptionalAsrFields(payload);
+    swOnly.speech_models = ["universal-2"];
+    swOnly.language_code = "sw";
+    delete swOnly.language_detection;
+    delete swOnly.language_detection_options;
+    delete swOnly.language_codes;
+    res = await assemblyFetch(`${BASE}/v2/transcript`, {
+      method: "POST",
+      headers: { ...headers(), "content-type": "application/json" },
+      body: JSON.stringify(swOnly),
     });
   }
 

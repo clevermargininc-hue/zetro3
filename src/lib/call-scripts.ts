@@ -83,7 +83,7 @@ export function formatCallScripts(docs: QaDocument[]) {
     .join("\n\n");
 }
 
-/** Distinctive words/phrases from company documents (not from the call). */
+/** Company names and script spellings used to repair ASR — not a scorecard checklist. */
 export function extractKeytermsFromDocuments(docs: QaDocument[], limit = 48): string[] {
   const texts = ALL_DOCUMENT_KINDS.flatMap((kind) =>
     docs
@@ -95,15 +95,18 @@ export function extractKeytermsFromDocuments(docs: QaDocument[], limit = 48): st
 
   function push(term: string) {
     const cleaned = term.replace(/\s+/g, " ").trim();
-    if (!cleaned || cleaned.length < 3 || cleaned.length > 80) return;
+    if (cleaned.length < 3 || cleaned.length > 40) return;
+    if (/\d/.test(cleaned) && (cleaned.match(/\d/g) || []).length >= 3) return;
+    if (/^[\d.,\s]+$/.test(cleaned)) return;
+    if (cleaned.split(/\s+/).length > 6) return;
     const key = cleaned.toLowerCase();
-    if (seen.has(key)) return;
+    if (STOPWORDS.has(key) || seen.has(key)) return;
     seen.add(key);
     out.push(cleaned);
   }
 
   for (const text of texts) {
-    for (const match of text.matchAll(/"([^"]{3,80})"|'([^']{3,80})'/g)) {
+    for (const match of text.matchAll(/"([^"]{3,40})"|'([^']{3,40})'/g)) {
       push(match[1] || match[2] || "");
     }
 
@@ -115,19 +118,17 @@ export function extractKeytermsFromDocuments(docs: QaDocument[], limit = 48): st
     for (let i = 0; i < words.length; i++) {
       const word = words[i];
       const lower = word.toLowerCase();
-      if (word.length >= 4 && !STOPWORDS.has(lower)) {
-        if (/^[A-Z]/.test(word) || word.length >= 6) push(word);
-      }
+      if (STOPWORDS.has(lower)) continue;
+      const allCaps = word.length >= 3 && word.length <= 24 && /^[\p{Lu}]+$/u.test(word);
+      const proper = word.length >= 4 && /^[\p{Lu}][\p{Ll}'-]{3,}$/u.test(word);
+      if (allCaps || proper) push(word);
       if (i < words.length - 1) {
         const next = words[i + 1];
-        if (
-          word.length >= 3 &&
-          next.length >= 3 &&
-          !STOPWORDS.has(lower) &&
-          !STOPWORDS.has(next.toLowerCase())
-        ) {
-          push(`${word} ${next}`);
-        }
+        const bothNamed =
+          /^[\p{Lu}]/u.test(word) &&
+          /^[\p{Lu}]/u.test(next) &&
+          !STOPWORDS.has(next.toLowerCase());
+        if (bothNamed) push(`${word} ${next}`);
       }
     }
   }

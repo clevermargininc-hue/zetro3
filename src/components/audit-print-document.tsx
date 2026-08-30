@@ -98,6 +98,22 @@ export function AuditPrintDocument({
       <Notes title="Recommendations" items={improvements} />
       <Notes title="Compliance findings" items={findings} />
 
+      {score.metric_evidence?.document_references?.length ? (
+        <section className="mb-8">
+          <h2 className="text-[14px] font-bold uppercase tracking-widest text-muted border-b border-line/50 pb-2 mb-4">Document references</h2>
+          <ul className="mt-3 space-y-2">
+            {score.metric_evidence.document_references.map((row, index) => (
+              <li key={`${row.file_name}-${index}`} className="text-[12px] bg-surface-2/30 p-3 rounded-lg border border-line/40">
+                <span className="font-bold uppercase tracking-wider text-muted">{row.result}</span>
+                <span className="text-line/40"> &middot; </span>
+                <span className="font-medium text-ink">{row.file_name}</span>
+                <span className="text-muted"> — {row.criterion}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {standards.length ? (
         <section className="mb-8">
           <h2 className="text-[14px] font-bold uppercase tracking-widest text-muted border-b border-line/50 pb-2 mb-4">Standards Reference</h2>

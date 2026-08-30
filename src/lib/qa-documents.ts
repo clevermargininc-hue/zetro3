@@ -88,18 +88,37 @@ export function requireReadableStandards(docs: QaDocument[]) {
   return readable;
 }
 
+export function formatCompanyFileIndex(docs: QaDocument[]) {
+  const lines = docs
+    .filter((doc) => (doc.extracted_text || "").trim().length >= MIN_READABLE_CHARS)
+    .map((doc) => `- ${QA_KIND_LABELS[doc.kind] || doc.kind}: ${doc.title} (${doc.file_name})`);
+  if (!lines.length) return "";
+  return `FILE INDEX — scores, criteria, key terms, and product names may come only from these uploaded files:\n${lines.join("\n")}`;
+}
+
 export function formatQaContext(docs: QaDocument[]) {
-  return QA_KINDS.map((kind) => {
+  const limits: Record<(typeof QA_KINDS)[number], number> = {
+    scorecard: 18000,
+    compliance: 14000,
+    document: 14000,
+  };
+  const order = ["scorecard", "compliance", "document"] as const;
+  return order.map((kind) => {
     const items = docs.filter((doc) => doc.kind === kind);
     if (!items.length) return "";
     const heading =
       kind === "scorecard"
-        ? "SCORECARD — use this as the only scoring rubric"
+        ? "SCORECARD — this file is the only scoring rubric. Score every criterion in it."
         : kind === "compliance"
-          ? "COMPLIANCE — flag every breach of these rules"
-          : "PROCESS DOCUMENTS — required scripts, steps, and product facts";
+          ? "COMPLIANCE — flag every breach of these company rules"
+          : "PROCESS DOCUMENTS — required scripts, steps, product names, and key terms";
     return `## ${heading}\n\n${items
-      .map((doc) => `### ${doc.title} (${doc.file_name})\n${(doc.extracted_text || "").slice(0, 4000)}`)
+      .map((doc) => {
+        const body = (doc.extracted_text || "").trim();
+        const max = limits[kind];
+        const text = body.length > max ? `${body.slice(0, max)}\n[…remainder of ${doc.file_name}]` : body;
+        return `### ${doc.title} (${doc.file_name})\n${text}`;
+      })
       .join("\n\n")}`;
   })
     .filter(Boolean)

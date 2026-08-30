@@ -295,7 +295,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                       </td>
                       <td className="px-6 py-3.5">
                         <Link
-                          href={`/calls/${row.call_id}/score`}
+                          href={`/upload/score/${row.call_id}`}
                           className="font-semibold text-ink hover:text-blue transition-colors line-clamp-1 max-w-xs"
                         >
                           {row.title}
@@ -366,7 +366,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                       </td>
                       <td className="px-6 py-3.5">
                         <Link
-                          href={`/calls/${row.call_id}/score`}
+                          href={`/upload/score/${row.call_id}`}
                           className="font-semibold text-ink hover:text-blue transition-colors"
                         >
                           {row.title}

@@ -68,20 +68,23 @@ export function callAuditExcel(pack: AuditedCallExport): Buffer {
   detailSheet["!cols"] = [{ wch: 24 }, { wch: 80 }];
   XLSX.utils.book_append_sheet(wb, detailSheet, "Call details");
 
+  const evidenceFor = (key: "greeting" | "empathy" | "professionalism" | "resolution" | "communication" | "language_handling") =>
+    score.metric_evidence?.[key];
+
   const scoreSheet = XLSX.utils.aoa_to_sheet([
-    ["Dimension", "Score"],
-    ["Overall", score.overall_score],
-    ["Greeting", dash(score.greeting)],
-    ["Empathy", dash(score.empathy)],
-    ["Professionalism", dash(score.professionalism)],
-    ["Resolution", dash(score.resolution)],
-    ["Communication", dash(score.communication)],
-    ["Language mix", dash(score.language_handling)],
-    ["Verdict", verdictCell(score.verdict)],
-    ["Customer sentiment", dash(score.customer_sentiment)],
-    ["Audit path", auditModeLabel(score.audit_mode)],
+    ["Dimension", "Score", "Source file", "Criterion"],
+    ["Overall", score.overall_score, "", ""],
+    ["Greeting", dash(score.greeting), dash(evidenceFor("greeting")?.source_file), dash(evidenceFor("greeting")?.criterion)],
+    ["Empathy", dash(score.empathy), dash(evidenceFor("empathy")?.source_file), dash(evidenceFor("empathy")?.criterion)],
+    ["Professionalism", dash(score.professionalism), dash(evidenceFor("professionalism")?.source_file), dash(evidenceFor("professionalism")?.criterion)],
+    ["Resolution", dash(score.resolution), dash(evidenceFor("resolution")?.source_file), dash(evidenceFor("resolution")?.criterion)],
+    ["Communication", dash(score.communication), dash(evidenceFor("communication")?.source_file), dash(evidenceFor("communication")?.criterion)],
+    ["Language mix", dash(score.language_handling), dash(evidenceFor("language_handling")?.source_file), dash(evidenceFor("language_handling")?.criterion)],
+    ["Verdict", verdictCell(score.verdict), "", ""],
+    ["Customer sentiment", dash(score.customer_sentiment), "", ""],
+    ["Audit path", auditModeLabel(score.audit_mode), "", ""],
   ]);
-  scoreSheet["!cols"] = [{ wch: 22 }, { wch: 28 }];
+  scoreSheet["!cols"] = [{ wch: 22 }, { wch: 16 }, { wch: 32 }, { wch: 50 }];
   XLSX.utils.book_append_sheet(wb, scoreSheet, "Scores");
 
   const noteSheet = (title: string, items: string[]) => {
@@ -115,6 +118,16 @@ export function callAuditExcel(pack: AuditedCallExport): Buffer {
   ]);
   standardsSheet["!cols"] = [{ wch: 14 }, { wch: 32 }, { wch: 32 }];
   XLSX.utils.book_append_sheet(wb, standardsSheet, "Standards");
+
+  const references = score.metric_evidence?.document_references || [];
+  const refSheet = XLSX.utils.aoa_to_sheet([
+    ["File", "Criterion", "Result"],
+    ...(references.length
+      ? references.map((row) => [row.file_name, row.criterion, row.result])
+      : [["—", "No document references recorded", ""]]),
+  ]);
+  refSheet["!cols"] = [{ wch: 32 }, { wch: 70 }, { wch: 12 }];
+  XLSX.utils.book_append_sheet(wb, refSheet, "Document references");
 
   const out = XLSX.write(wb, { type: "array", bookType: "xlsx" }) as Uint8Array;
   return Buffer.from(out);
@@ -193,6 +206,20 @@ export function callAuditPdf(pack: AuditedCallExport): Buffer {
     "None identified.",
   );
   doc.gap(10);
+
+  if (score.metric_evidence?.document_references?.length) {
+    doc.heading("Document references");
+    doc.table(
+      ["File", "Criterion", "Result"],
+      score.metric_evidence.document_references.map((row) => [
+        row.file_name,
+        row.criterion,
+        row.result,
+      ]),
+      [140, 300, 70],
+    );
+    doc.gap(10);
+  }
 
   if (score.standards_used?.length) {
     doc.heading("Standards this audit read");

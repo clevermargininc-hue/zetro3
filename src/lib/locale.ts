@@ -18,7 +18,7 @@ export function workspaceLanguages(country: string | null | undefined) {
     return {
       bilingual: true as const,
       label: "Kiswahili and English",
-      defaultMode: "sw" as LanguageMode,
+      defaultMode: "mixed" as LanguageMode,
     };
   }
   return {
@@ -34,7 +34,8 @@ export function resolvedLanguageMode(
 ): LanguageMode {
   const langs = workspaceLanguages(country);
   if (!langs.bilingual) return "en";
-  if (requested && MODES.includes(requested)) return requested;
+  if (!requested || requested === "auto") return langs.defaultMode;
+  if (MODES.includes(requested)) return requested;
   return langs.defaultMode;
 }
 

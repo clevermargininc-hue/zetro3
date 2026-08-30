@@ -26,7 +26,7 @@ export function ScoreCard({ score }: { score: CallScore }) {
         <div className="flex-1 min-w-0 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="chip">
-              SOP standards audit
+              Scored from company files
             </span>
             {score.customer_sentiment && (
               <span className="chip capitalize">Sentiment: {score.customer_sentiment}</span>
@@ -36,10 +36,59 @@ export function ScoreCard({ score }: { score: CallScore }) {
         </div>
       </section>
 
+      {score.standards_used?.length ? (
+        <section className="surface p-5 space-y-3">
+          <div>
+            <h4 className="text-[14px] font-semibold text-ink">Company files read</h4>
+            <p className="text-[12px] text-muted mt-0.5">
+              Marks come from these uploaded files, not from a generic rubric.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {score.standards_used.map((doc) => (
+              <div key={doc.id} className="chip">
+                {QA_KIND_LABELS[doc.kind] || doc.kind}: {doc.title}
+              </div>
+            ))}
+          </div>
+          {!score.metric_evidence?.document_references?.length ? (
+            <p className="text-[12px] text-muted">
+              Run documents audit again on this call to list each criterion from these files.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {score.metric_evidence?.document_references?.length ? (
+        <section className="surface p-5 space-y-3">
+          <div>
+            <h4 className="text-[14px] font-semibold text-ink">Document references</h4>
+            <p className="text-[12px] text-muted mt-0.5">
+              Each mark is tied to a criterion in a company file.
+            </p>
+          </div>
+          <ul className="space-y-2 border-t border-line pt-3">
+            {score.metric_evidence.document_references.map((row, index) => (
+              <li key={`${row.file_name}-${index}`} className="text-[13px] text-slate-800 leading-relaxed">
+                <span
+                  className={`chip mr-2 ${
+                    row.result === "hit" ? "chip-ok" : row.result === "miss" ? "chip-bad" : "chip-wait"
+                  }`}
+                >
+                  {row.result}
+                </span>
+                <span className="font-medium">{row.file_name}</span>
+                <span className="text-muted"> — {row.criterion}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <section className="surface p-5 sm:p-6 space-y-4">
         <div>
           <h3 className="text-[14px] font-semibold text-ink">Scorecard</h3>
-          <p className="text-[12px] text-muted mt-0.5">Six quality dimensions</p>
+          <p className="text-[12px] text-muted mt-0.5">Mapped from your company scorecard and scripts</p>
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
           {DIMENSIONS.map((dim) => {
@@ -54,7 +103,7 @@ export function ScoreCard({ score }: { score: CallScore }) {
                       <div className="flex items-center gap-2">
                         <h4 className="text-[14px] font-semibold text-ink">{dim.label}</h4>
                         {evidence?.verdict && (
-                          <span className={`chip chip-${evidence.verdict === 'hit' ? 'ok' : evidence.verdict === 'miss' ? 'error' : 'wait'} text-[11px] py-0.5 uppercase`}>
+                          <span className={`chip ${evidence.verdict === "hit" ? "chip-ok" : evidence.verdict === "miss" ? "chip-bad" : "chip-wait"} text-[11px] py-0.5 uppercase`}>
                             {evidence.verdict}
                           </span>
                         )}
@@ -67,11 +116,23 @@ export function ScoreCard({ score }: { score: CallScore }) {
                   </div>
                 </div>
 
-                {evidence?.note && (
-                  <div className="pt-4 border-t border-line/70">
-                    <div className="text-[13px] text-slate-700 leading-relaxed">
-                      {evidence.note}
-                    </div>
+                {(evidence?.quote || evidence?.note || evidence?.source_file || evidence?.criterion) && (
+                  <div className="pt-4 border-t border-line/70 space-y-2">
+                    {evidence?.quote ? (
+                      <p className="text-[13px] text-ink leading-relaxed border-l-2 border-blue pl-3">
+                        “{evidence.quote}”
+                      </p>
+                    ) : null}
+                    {evidence?.note ? (
+                      <p className="text-[13px] text-slate-700 leading-relaxed">{evidence.note}</p>
+                    ) : null}
+                    {evidence?.source_file || evidence?.criterion ? (
+                      <p className="text-[12px] text-muted">
+                        {evidence.source_file ? <span>{evidence.source_file}</span> : null}
+                        {evidence.source_file && evidence.criterion ? <span> · </span> : null}
+                        {evidence.criterion ? <span>{evidence.criterion}</span> : null}
+                      </p>
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -124,20 +185,6 @@ export function ScoreCard({ score }: { score: CallScore }) {
           />
         </div>
       </section>
-
-      {/* Standards Referenced */}
-      {score.standards_used?.length ? (
-        <section className="surface p-5 space-y-3">
-          <h4 className="text-[13px] font-medium text-muted">Standards used</h4>
-          <div className="flex flex-wrap gap-2">
-            {score.standards_used.map((doc) => (
-              <div key={doc.id} className="chip">
-                {QA_KIND_LABELS[doc.kind] || doc.kind}: {doc.title}
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
     </div>
   );
 }

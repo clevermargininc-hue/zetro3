@@ -78,8 +78,8 @@ const NAV = [
     label: "Operations",
     items: [
       { href: "/dashboard", label: "Overview", icon: Icons.overview },
-      { href: "/upload", label: "Upload Calls", icon: Icons.upload },
-      { href: "/calls", label: "Call Audits", icon: Icons.audits },
+      { href: "/upload", label: "Quality audit", icon: Icons.upload },
+      { href: "/calls", label: "Call inventory", icon: Icons.audits },
     ],
   },
   {
@@ -99,8 +99,11 @@ const NAV = [
 ];
 
 function linkActive(href: string, pathname: string) {
+  if (href === "/upload") {
+    return pathname === "/upload" || pathname.startsWith("/upload/");
+  }
   if (href === "/calls") {
-    return pathname === "/calls" || pathname.startsWith("/calls/");
+    return pathname === "/calls";
   }
   if (href === "/dashboard") return pathname === "/dashboard";
   return pathname === href || pathname.startsWith(`${href}/`);

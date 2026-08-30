@@ -1,14 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { authFetch } from "@/lib/auth-fetch";
-import { createClient } from "@/lib/supabase/client";
-import { formatDate, languageLabel, statusLabel, verdictLabel, auditStatus } from "@/lib/format";
-import { AuditActions } from "@/components/audit-actions";
+import {
+  formatDate,
+  languageLabel,
+  statusLabel,
+  verdictLabel,
+  auditStatus,
+  PREPARE_QUEUE_STATUSES,
+  SCORE_QUEUE_STATUSES,
+} from "@/lib/format";
+import { CallDownloads } from "@/components/call-downloads";
 import { scoreChipClass } from "@/components/ui";
-import type { Call, CallScore, CallStatus } from "@/lib/types";
+import type { Call, CallScore } from "@/lib/types";
 
 export type CallRow = Call & {
   agents?: { name: string } | null;
@@ -28,197 +34,151 @@ export function CallJobList({
   action: "transcribe" | "score";
   teamScope: string[];
 }) {
-  const router = useRouter();
   const [calls, setCalls] = useState(initialCalls);
-  const [pendingId, setPendingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const supabase = createClient();
+    setCalls(initialCalls);
+  }, [initialCalls]);
+
+  useEffect(() => {
+    let cancelled = false;
 
     async function refresh() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
-        .from("calls")
-        .select("*, agents(name), call_scores(overall_score, verdict, audit_mode)")
-        .in("user_id", teamScope)
-        .order("created_at", { ascending: false });
-      if (!data) return;
-      const rows = data as CallRow[];
+      const res = await authFetch("/api/calls");
+      const body = (await res.json().catch(() => ({}))) as { calls?: CallRow[] };
+      if (cancelled || !res.ok || !Array.isArray(body.calls)) return;
       setCalls(
         action === "score"
-          ? rows.filter((call) =>
-              ["transcribed", "analyzing", "completed"].includes(call.status),
-            )
-          : rows,
+          ? body.calls.filter((call) => SCORE_QUEUE_STATUSES.includes(call.status))
+          : body.calls.filter((call) => PREPARE_QUEUE_STATUSES.includes(call.status)),
       );
     }
 
+    void refresh();
     const poll = window.setInterval(() => {
       void refresh();
     }, 2500);
 
-    const channel = supabase
-      .channel(`call-jobs-${action}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "calls" },
-        () => {
-          void refresh();
-        },
-      )
-      .subscribe();
-
     return () => {
+      cancelled = true;
       window.clearInterval(poll);
-      supabase.removeChannel(channel);
     };
-  }, [action]);
+  }, [action, teamScope]);
 
-  async function startTranscribe(call: CallRow) {
-    setError(null);
-    setPendingId(call.id);
-    setCalls((rows) =>
-      rows.map((row) =>
-        row.id === call.id
-          ? {
-              ...row,
-              status: "transcribing" as CallStatus,
-              error_message: null,
-            }
-          : row,
-      ),
-    );
-    try {
-      const res = await authFetch(`/api/calls/${call.id}/transcribe`, { method: "POST" });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || "Could not transcribe");
-      router.push(`/calls/${call.id}/transcribe`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Action failed");
-      setPendingId(null);
-    }
-  }
+  const isScore = action === "score";
 
   return (
     <div className="space-y-3">
-      {error ? <p className="alert-error mb-4">{error}</p> : null}
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[12px] font-medium text-muted">
+          {calls.length === 0
+            ? isScore
+              ? "No calls in the score queue"
+              : "No calls in the prepare queue"
+            : `${calls.length} in this step`}
+        </p>
+        <Link href="/calls" className="text-[12px] font-semibold text-blue hover:underline">
+          Call inventory
+        </Link>
+      </div>
       <div className="surface overflow-hidden">
         <div className="overflow-x-auto">
-        <table className="data-table w-full text-left">
-          <thead>
-            <tr>
-              <th>Call</th>
-              <th>Agent</th>
-              <th>Language</th>
-              {action === "score" ? <th>Score</th> : null}
-              <th>Status</th>
-              <th className="text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {calls.map((call) => {
-              const score = scoreOf(call);
-              const href =
-                action === "transcribe"
-                  ? `/calls/${call.id}/transcribe`
-                  : `/calls/${call.id}/score`;
-              const working =
-                pendingId === call.id ||
-                (action === "transcribe"
-                  ? call.status === "transcribing"
-                  : call.status === "analyzing");
-              const bucket = auditStatus(call.status);
-              return (
-                <tr key={call.id}>
-                  <td>
-                    <Link href={href} className="text-[14px] font-medium text-ink hover:text-blue">
-                      {call.title}
-                    </Link>
-                    <p className="mt-1 text-[12px] text-muted">{formatDate(call.created_at)}</p>
-                  </td>
-                  <td className="text-[14px] font-medium text-ink">{call.agents?.name || "—"}</td>
-                  <td className="text-[13px] text-ink">
-                    {languageLabel(call.detected_language || call.language_mode)}
-                  </td>
-                  {action === "score" ? (
+          <table className="data-table w-full text-left">
+            <thead>
+              <tr>
+                <th>Recording</th>
+                <th>Agent</th>
+                <th>Language</th>
+                {isScore ? <th>Score</th> : null}
+                <th>Status</th>
+                <th className="text-right">Next</th>
+              </tr>
+            </thead>
+            <tbody>
+              {calls.map((call) => {
+                const score = scoreOf(call);
+                const href = isScore ? `/upload/score/${call.id}` : `/upload/prepare/${call.id}`;
+                const bucket = auditStatus(call.status);
+                const actionLabel = isScore
+                  ? call.status === "analyzing"
+                    ? "Open scoring"
+                    : "Open and score"
+                  : call.status === "failed"
+                    ? "Retry prepare"
+                    : "Open and prepare";
+                return (
+                  <tr key={call.id}>
                     <td>
-                      {score ? (
-                        <span className={`${scoreChipClass(score.overall_score)} tabular-nums`}>
-                          {score.overall_score}% · {verdictLabel(score.verdict)}
-                          {score.audit_mode ? (
-                            <span className="ml-1 text-muted font-normal">
-                              Docs
-                            </span>
-                          ) : null}
-                        </span>
-                      ) : (
-                        <span className="text-muted text-[13px]">—</span>
-                      )}
+                      <Link href={href} className="text-[14px] font-medium text-ink hover:text-blue">
+                        {call.title}
+                      </Link>
+                      <p className="mt-1 text-[12px] text-muted">{formatDate(call.created_at)}</p>
                     </td>
-                  ) : null}
-                  <td>
-                    <span
-                      className={
-                        bucket === "audited"
-                          ? "chip chip-ok"
-                          : bucket === "failed"
-                            ? "chip chip-bad"
-                            : bucket === "transcribed"
-                              ? "chip"
-                              : "chip chip-wait"
-                      }
-                    >
-                      {statusLabel(call.status)}
-                    </span>
-                    {call.error_message ? (
-                      <p className="mt-2 text-[12px] text-rose max-w-[150px] leading-relaxed">{call.error_message}</p>
+                    <td className="text-[14px] font-medium text-ink">{call.agents?.name || "—"}</td>
+                    <td className="text-[13px] text-ink">
+                      {languageLabel(call.detected_language || call.language_mode)}
+                    </td>
+                    {isScore ? (
+                      <td>
+                        {score ? (
+                          <span className={`${scoreChipClass(score.overall_score)} tabular-nums`}>
+                            {score.overall_score}% · {verdictLabel(score.verdict)}
+                          </span>
+                        ) : (
+                          <span className="text-muted text-[13px]">Waiting</span>
+                        )}
+                      </td>
                     ) : null}
-                  </td>
-                  <td className="text-right">
-                    {action === "transcribe" ? (
-                      <button
-                        type="button"
-                        disabled={working}
-                        onClick={() => void startTranscribe(call)}
-                        className={`btn px-5 py-2 text-[13px] ${
-                          working
-                            ? "bg-surface-2 text-muted border border-line cursor-not-allowed"
-                            : "btn-blue"
-                        }`}
+                    <td>
+                      <span
+                        className={
+                          bucket === "audited"
+                            ? "chip chip-ok"
+                            : bucket === "failed"
+                              ? "chip chip-bad"
+                              : bucket === "transcribed"
+                                ? "chip"
+                                : "chip chip-wait"
+                        }
                       >
-                        {working ? "Preparing…" : "Prepare for audit"}
-                      </button>
-                    ) : (
-                      <div className="flex justify-end">
-                        <AuditActions callId={call.id} status={call.status} compact />
+                        {statusLabel(call.status)}
+                      </span>
+                      {call.error_message ? (
+                        <p className="mt-2 text-[12px] text-rose max-w-[180px] leading-relaxed">
+                          {call.error_message}
+                        </p>
+                      ) : null}
+                    </td>
+                    <td className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <CallDownloads callId={call.id} compact />
+                        <Link href={href} className="btn btn-blue px-4 py-2 text-[13px]">
+                          {actionLabel}
+                        </Link>
                       </div>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
         {!calls.length && (
-          <div className="px-6 py-16 text-center">
+          <div className="px-6 py-14 text-center">
             <p className="text-[15px] font-semibold text-ink">
-              {action === "score"
-                ? "No prepared calls yet"
-                : "No recordings yet"}
+              {isScore ? "Nothing is waiting to score" : "Nothing is waiting to prepare"}
             </p>
-            <p className="mt-2 text-[13px] text-muted max-w-[250px] mx-auto">
-              {action === "score"
-                ? "Prepare a call for auditing first."
-                : "Upload a recording to begin an audit."}
+            <p className="mt-2 text-[13px] text-muted max-w-sm mx-auto leading-relaxed">
+              {isScore
+                ? "Finish Prepare first. After a score is saved, the call moves to Call inventory."
+                : "New uploads appear here. Open a recording to prepare it, then continue to Score."}
             </p>
-            {action === "score" ? (
-              <Link href="/transcribe" className="btn btn-blue mt-6 text-[13px]">
-                Go to preparation
-              </Link>
-            ) : null}
+            <Link
+              href={isScore ? "/upload/prepare" : "/upload"}
+              className="btn btn-blue mt-5 text-[13px]"
+            >
+              {isScore ? "Go to Prepare" : "Go to Upload"}
+            </Link>
           </div>
         )}
       </div>

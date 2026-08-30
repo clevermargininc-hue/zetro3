@@ -1,15 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isValidUsername, nameFromAuthUser, normalizeUsername } from "@/lib/display-name";
 
-export async function getAutoAudit(userId: string) {
-  const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("auto_audit")
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) return false;
-  return Boolean(data?.auto_audit);
+export async function getAutoAudit(_userId: string) {
+  return false;
 }
 
 export async function updateProfileName(userId: string, fullName: string) {
@@ -76,21 +69,8 @@ export async function syncProfileFromAuth(user: {
   return fullName;
 }
 
-export async function setAutoAudit(userId: string, autoAudit: boolean) {
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("profiles").upsert(
-    { id: userId, auto_audit: autoAudit },
-    { onConflict: "id" },
+export async function setAutoAudit(_userId: string, _autoAudit: boolean) {
+  throw new Error(
+    "Automatic auditing is not allowed. Start a documents audit after the transcript is ready.",
   );
-  if (error) {
-    if (
-      error.message.toLowerCase().includes("auto_audit") ||
-      error.code === "PGRST204"
-    ) {
-      throw new Error(
-        "Run supabase/qa-standards.sql in the Supabase SQL Editor, then turn on automatic scoring again.",
-      );
-    }
-    throw new Error(error.message);
-  }
 }

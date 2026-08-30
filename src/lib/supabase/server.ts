@@ -1,5 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { getPublicEnv } from "@/lib/env";
@@ -32,7 +32,12 @@ export const requireUser = cache(async () => {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    redirect("/login");
+    const pathname = (await headers()).get("x-zetro-pathname") || "";
+    const next =
+      pathname.startsWith("/") && !pathname.startsWith("//") && pathname !== "/login"
+        ? pathname
+        : "";
+    redirect(next ? `/login?next=${encodeURIComponent(next)}` : "/login");
   }
   return { supabase, user };
 });
