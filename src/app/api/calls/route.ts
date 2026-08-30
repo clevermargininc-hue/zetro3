@@ -5,7 +5,6 @@ import type { LanguageMode } from "@/lib/types";
 import { getMembership, getTeamScope } from "@/lib/workspaces";
 
 export const runtime = "nodejs";
-export const maxDuration = 800;
 
 const MODES: LanguageMode[] = ["auto", "en", "sw", "mixed"];
 

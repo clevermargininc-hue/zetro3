@@ -7,7 +7,7 @@ import { getTeamScope } from "@/lib/workspaces";
 import type { AuditMode } from "@/lib/types";
 
 export const runtime = "nodejs";
-export const maxDuration = 800;
+export const maxDuration = 300;
 
 function parseMode(value: unknown): AuditMode | null {
   if (value === "documents") return value;

@@ -5,7 +5,7 @@ import { getTeamScope } from "@/lib/workspaces";
 import { transcribeCall } from "@/lib/process-call";
 
 export const runtime = "nodejs";
-export const maxDuration = 800;
+export const maxDuration = 300;
 
 const PREPARED = new Set(["transcribed", "analyzing", "completed"]);
 
