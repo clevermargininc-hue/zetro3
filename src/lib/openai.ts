@@ -111,6 +111,7 @@ const ANALYSIS_SCHEMA = {
       type: "array",
       items: { type: "string" },
     },
+    auto_zero_applied: { type: "boolean" },
     document_references: {
       type: "array",
       items: {
@@ -129,6 +130,7 @@ const ANALYSIS_SCHEMA = {
     "speaker_assignments",
     "overall_score",
     "raw_score",
+    "auto_zero_applied",
     "greeting",
     "empathy",
     "professionalism",
@@ -634,7 +636,7 @@ ${SCRIPT_PROMPT_BLOCK}
 Numeric fields (map the scorecard onto these names; use the closest match):
 - greeting, empathy, professionalism, resolution, communication, language_handling, overall_score, raw_score
 - overall_score must follow the scorecard weighting when it is defined
-- AUTO-ZERO (AUTO-FAIL): If the scorecard explicitly defines an "Auto-Zero" or "Auto-Fail" for a specific severe violation, and the agent commits it, you MUST set overall_score to 0. Use extreme wisdom: only apply this if it is a genuine, explicitly defined severe violation, to prevent unfair zeroes. If you apply an Auto-Zero, you MUST STILL return the raw calculated score (the sum of all other scores) in the \`raw_score\` field. If there is no Auto-Zero, \`raw_score\` and \`overall_score\` should be the same.
+- AUTO-ZERO (AUTO-FAIL): If the scorecard explicitly defines an "Auto-Zero" or "Auto-Fail" for a specific severe violation, and the agent commits it, you MUST set the \`auto_zero_applied\` boolean to true. Calculate the \`overall_score\` normally based on all other points earned. The system will automatically zero out the final score if \`auto_zero_applied\` is true, but you must provide the normal sum in \`overall_score\`. Use extreme wisdom: only apply this if it is a genuine, explicitly defined severe violation, to prevent unfair zeroes. If no auto-zero occurred, set \`auto_zero_applied\` to false.
 - A serious compliance breach should cap overall_score at 49 unless the scorecard says otherwise
 
 Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–49.
@@ -686,7 +688,7 @@ ${SCRIPT_PROMPT_BLOCK}
 Numeric fields (map the scorecard onto these names; use the closest match):
 - greeting, empathy, professionalism, resolution, communication, language_handling, overall_score, raw_score
 - overall_score must follow the scorecard weighting when it is defined
-- AUTO-ZERO (AUTO-FAIL): If the scorecard explicitly defines an "Auto-Zero" or "Auto-Fail" for a specific severe violation, and the agent commits it, you MUST set overall_score to 0. Use extreme wisdom: only apply this if it is a genuine, explicitly defined severe violation, to prevent unfair zeroes. If you apply an Auto-Zero, you MUST STILL return the raw calculated score (the sum of all other scores) in the \`raw_score\` field. If there is no Auto-Zero, \`raw_score\` and \`overall_score\` should be the same.
+- AUTO-ZERO (AUTO-FAIL): If the scorecard explicitly defines an "Auto-Zero" or "Auto-Fail" for a specific severe violation, and the agent commits it, you MUST set the \`auto_zero_applied\` boolean to true. Calculate the \`overall_score\` normally based on all other points earned. The system will automatically zero out the final score if \`auto_zero_applied\` is true, but you must provide the normal sum in \`overall_score\`. Use extreme wisdom: only apply this if it is a genuine, explicitly defined severe violation, to prevent unfair zeroes. If no auto-zero occurred, set \`auto_zero_applied\` to false.
 - A serious compliance breach should cap overall_score at 49 unless the scorecard says otherwise
 
 Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–49.
@@ -754,6 +756,7 @@ export async function analyzeCall(
     "reasoning",
   )) as CallAnalysis & {
     raw_score?: unknown;
+    auto_zero_applied?: boolean;
     speaker_assignments?: { speaker_label: string; role: SpeakerRole }[];
     compliance_findings?: string[];
     metric_evidence?: unknown;
@@ -829,9 +832,18 @@ export async function analyzeCall(
     metric_evidence.raw_score = clamp(parsed.raw_score);
   }
 
+  let final_overall_score = clamp(parsed.overall_score);
+  
+  if (parsed.auto_zero_applied) {
+    if (parsed.raw_score == null) {
+      metric_evidence.raw_score = final_overall_score; // Save what would have been the score
+    }
+    final_overall_score = 0;
+  }
+
   return {
     speaker_map: speakerMap,
-    overall_score: clamp(parsed.overall_score),
+    overall_score: final_overall_score,
     greeting: clamp(parsed.greeting),
     empathy: clamp(parsed.empathy),
     professionalism: clamp(parsed.professionalism),
