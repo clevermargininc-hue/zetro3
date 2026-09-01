@@ -43,9 +43,8 @@ export default async function DashboardPage() {
     supabase
       .from("calls")
       .select("*, agents(name), call_scores(*)")
-      .in("user_id", teamScope)
       .order("created_at", { ascending: false }),
-    supabase.from("agents").select("id, name").in("user_id", teamScope),
+    supabase.from("agents").select("id, name"),
   ]);
 
   const allCalls = calls || [];

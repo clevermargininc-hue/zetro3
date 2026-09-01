@@ -29,11 +29,10 @@ export default async function LeaderboardPage() {
   const { supabase, user } = await requireUser();
   const teamScope = await getTeamScope(user.id);
   const [{ data: agents }, { data: calls }] = await Promise.all([
-    supabase.from("agents").select("id, name").in("user_id", teamScope),
+    supabase.from("agents").select("id, name"),
     supabase
       .from("calls")
       .select("id, agent_id, status, call_scores(overall_score, verdict)")
-      .in("user_id", teamScope),
   ]);
 
   const ranked = (agents || [])
