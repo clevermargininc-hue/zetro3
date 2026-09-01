@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { createClient } from "@/lib/supabase/server";
+import { Outfit } from "next/font/google";
+
+const outfit = Outfit({
+  subsets: ["latin"],
+});
 
 export default async function MarketingLayout({ children }: { children: React.ReactNode }) {
   let signedIn = false;
@@ -15,7 +20,7 @@ export default async function MarketingLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="flex min-h-full flex-col bg-white">
+    <div className={`${outfit.className} flex min-h-full flex-col bg-white`}>
       <header className="sticky top-0 z-50 border-b border-line bg-white">
         <div className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
           <Logo size="sm" />
