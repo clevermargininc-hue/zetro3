@@ -607,8 +607,8 @@ Your job:
    - Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. For the Company Name and key terms, rely strictly on the provided company documents. Only use the Customer's name if clearly spoken.
 7. SPEAKER ROLES IN TEXT:
    - When writing your notes, summaries, and findings, always refer to the speakers as 'Agent' (or their name) and 'Customer' (or 'Mteja'). Do NOT use raw transcript labels like 'Speaker A' or 'Speaker 1' in your written analysis, though you must still output the exact speaker_label string in the speaker_assignments array.
-8. DEEP TONE, SARCASM & ATTITUDE DETECTION (UTAMBUZI WA DHIHAKA, KEJELI NA DHARAU YA CHINICHINI):
-   - You MUST analyze the subtle emotional, conversational, and behavioral tone of both the agent and customer beyond just volume or shouting.
+8. DEEP TONE, SARCASM & ATTITUDE DETECTION (UTAMBUZI WA DHIHAKA, KEJELI, KUFADHAIKA NA DHARAU):
+   - You MUST analyze the subtle emotional, conversational, and behavioral tone of both the agent and customer beyond just volume or shouting. Use high discretion (busara sana) to check for sarcasm, frustrations, or other negative traits.
    - LOW-TONE SARCASM & MOCKERY (Kejeli na dhihaka ya chinichini): An agent does NOT need to yell or raise their voice to be rude. If the agent speaks in a quiet, soft, flat, or normal voice but uses words, phrases, or rhetorical questions that are sarcastic, cynical, mocking, patronizing, or dismissive (mfano: "Sasa unataka nikufanyie nini?", "Hata mtoto anajua hilo", "Si nilishakwambia?", "Huwezi kusoma?", "Haya bwana wewe ndio unajua", "Ulitaka niseme nini sasa?", "Ndio hivyo huwezi kubadilisha", "Hapo sina msaada wowote", au kejeli kama "Haya asante sana kwa kutufundisha kazi"), you MUST detect and penalize this severely.
    - DISMISSIVENESS & PASSIVE-AGGRESSION (Kupuuza na dharau): Giving curt, indifferent, dismissive, or reluctant one-word answers, brushing off the customer's problem without attempting genuine resolution, sighing with irritation, or acting bored/uninterested.
    - CONDESCENSION & SUPERIORITY (Kujiona na kumdharau mteja): Belittling the customer, speaking down to them, or making them feel foolish for asking questions or not understanding technical details.
@@ -618,6 +618,11 @@ Your job:
      * Resolution: Penalize if dismissive tone led to incomplete, careless, or unhelpful support.
      * Overall Score: A call with evident mockery, sarcasm, or contempt must NEVER receive a passing/high score.
    - COACHING & FEEDBACK: If low-tone mockery or sarcasm is detected, clearly identify it in 'improvements' and 'metric_evidence.professionalism.note' / 'metric_evidence.empathy.note' (mfano: "Ingawa mhudumu hakuinua sauti, alitumia maneno yenye dhihaka, kejeli au kupuuza maelezo ya mteja aliposema...").
+9. AUDIO QUALITY, NETWORK & PRONUNCIATION ISSUES (UBORA WA SAUTI NA MATAMSHI):
+   - You MUST detect if the transcript indicates the agent is not speaking clearly, mispronouncing words, or if there is no sound/silence from the agent.
+   - Detect network challenges, low volume from either the customer or agent, and static/noise in the background (e.g., if the transcript has markers for this, or if the customer says "Sikuskii vizuri", "Mtandao unasumbua", etc).
+   - If the agent does not speak clearly or mispronounces words, explicitly note this in the scorecard and provide educational coaching in the 'improvements' section (mfano: "Agent anapaswa kutamka maneno vizuri na kwa uwazi").
+   - If there are network issues or static, note it in the 'improvements' or 'summary' so the manager is aware it affected the call quality.
 
 How to identify speakers:
 - Agent cues: company greeting, scripted opening from the process documents or opening script, offering solutions.
@@ -656,7 +661,7 @@ Your job:
 4. Keep English as spoken. Never translate. If a phrase is clean, put it on the scorecard as evidence. Never copy broken speech-to-text spellings into any scorecard field.
 5. Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. For the Company Name and key terms, rely strictly on the provided company documents. Only use the Customer's name if clearly spoken.
 7. DEEP TONE, SARCASM & ATTITUDE DETECTION:
-   - Analyze the subtle emotional and behavioral tone of both the agent and customer. Agents do NOT need to shout or raise their voice to be rude or unprofessional.
+   - Analyze the subtle emotional and behavioral tone of both the agent and customer. Agents do NOT need to shout or raise their voice to be rude or unprofessional. Use high discretion to check for sarcasm, frustrations, or other negative traits.
    - LOW-TONE SARCASM, MOCKERY & CONDESCENSION: If the agent speaks in a quiet, calm, or normal volume but uses sarcastic remarks, mockery, condescension, passive-aggressive phrasing, patronizing comments, or contempt (e.g., "What did you expect me to do?", "As I already told you multiple times", "Well, that's not my problem", "If you had bothered to read...", or sarcastic "Thanks for telling me how to do my job"), detect this and penalize severely.
    - DISMISSIVENESS & INDIFFERENCE: Giving curt, dismissive, reluctant, or unhelpful answers, brushing off customer issues, or acting bored and uncaring.
    - SCORING IMPACT:
@@ -665,6 +670,11 @@ Your job:
      * Resolution: Penalize if dismissiveness prevented genuine customer assistance.
      * Overall Score: A call with evident mockery, sarcasm, or contempt must not receive a high score.
    - FEEDBACK: Explicitly highlight the subtle tone issue in 'improvements' and 'metric_evidence' notes so managers can coach on attitude and tone.
+8. AUDIO QUALITY, NETWORK & PRONUNCIATION ISSUES:
+   - You MUST detect if the transcript indicates the agent is not speaking clearly, mispronouncing words, or if there is no sound/silence from the agent.
+   - Detect network challenges, low volume from either the customer or agent, and static/noise in the background (e.g., if the transcript has markers for this, or if the customer says "I can't hear you", "The network is bad", etc).
+   - If the agent does not speak clearly or mispronounces words, explicitly note this in the scorecard and provide educational coaching in the 'improvements' section (e.g., "The agent should pronounce words clearly and audibly").
+   - If there are network issues or static, note it in the 'improvements' or 'summary' so the manager is aware it affected the call quality.
 
 How to identify speakers:
 - Agent cues: company greeting, scripted opening from the process documents or opening script, offering solutions.
