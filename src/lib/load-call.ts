@@ -7,14 +7,16 @@ import type { Call, CallScore, Utterance } from "@/lib/types";
 export async function loadOwnedCall(id: string) {
   const { supabase, user } = await requireUser();
   const teamScope = await getTeamScope(user.id);
-  const { data: call } = await supabase
+  const { data: call, error } = await supabase
     .from("calls")
     .select("*, agents(name)")
     .eq("id", id)
-    .in("user_id", teamScope)
-    .maybeSingle();
+    .single();
 
-  if (!call) notFound();
+  if (!call) {
+    console.error("loadOwnedCall 404:", { id, user_id: user.id, teamScope, error, call });
+    notFound();
+  }
 
   const admin = createAdminClient();
   const [{ data: score }, { data: utterances }] = await Promise.all([

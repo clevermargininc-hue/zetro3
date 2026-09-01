@@ -60,6 +60,7 @@ const ANALYSIS_SCHEMA = {
       },
     },
     overall_score: { type: "integer" },
+    raw_score: { type: "integer" },
     greeting: { type: "integer" },
     empathy: { type: "integer" },
     professionalism: { type: "integer" },
@@ -127,6 +128,7 @@ const ANALYSIS_SCHEMA = {
   required: [
     "speaker_assignments",
     "overall_score",
+    "raw_score",
     "greeting",
     "empathy",
     "professionalism",
@@ -625,9 +627,9 @@ How to identify speakers:
 ${SCRIPT_PROMPT_BLOCK}
 
 Numeric fields (map the scorecard onto these names; use the closest match):
-- greeting, empathy, professionalism, resolution, communication, language_handling, overall_score
+- greeting, empathy, professionalism, resolution, communication, language_handling, overall_score, raw_score
 - overall_score must follow the scorecard weighting when it is defined
-- AUTO-ZERO (AUTO-FAIL): If the scorecard explicitly defines an "Auto-Zero" or "Auto-Fail" for a specific severe violation, and the agent commits it, you MUST set overall_score to 0. Use extreme wisdom: only apply this if it is a genuine, explicitly defined severe violation, to prevent unfair zeroes. If you apply an Auto-Zero, you MUST STILL show the raw calculated score (the sum of all other scores) in the summary field (e.g. "Auto-Zero applied due to [reason]. Raw Score would have been X%.").
+- AUTO-ZERO (AUTO-FAIL): If the scorecard explicitly defines an "Auto-Zero" or "Auto-Fail" for a specific severe violation, and the agent commits it, you MUST set overall_score to 0. Use extreme wisdom: only apply this if it is a genuine, explicitly defined severe violation, to prevent unfair zeroes. If you apply an Auto-Zero, you MUST STILL return the raw calculated score (the sum of all other scores) in the \`raw_score\` field. If there is no Auto-Zero, \`raw_score\` and \`overall_score\` should be the same.
 - A serious compliance breach should cap overall_score at 49 unless the scorecard says otherwise
 
 Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–49.
@@ -672,9 +674,9 @@ How to identify speakers:
 ${SCRIPT_PROMPT_BLOCK}
 
 Numeric fields (map the scorecard onto these names; use the closest match):
-- greeting, empathy, professionalism, resolution, communication, language_handling, overall_score
+- greeting, empathy, professionalism, resolution, communication, language_handling, overall_score, raw_score
 - overall_score must follow the scorecard weighting when it is defined
-- AUTO-ZERO (AUTO-FAIL): If the scorecard explicitly defines an "Auto-Zero" or "Auto-Fail" for a specific severe violation, and the agent commits it, you MUST set overall_score to 0. Use extreme wisdom: only apply this if it is a genuine, explicitly defined severe violation, to prevent unfair zeroes. If you apply an Auto-Zero, you MUST STILL show the raw calculated score (the sum of all other scores) in the summary field (e.g. "Auto-Zero applied due to [reason]. Raw Score would have been X%.").
+- AUTO-ZERO (AUTO-FAIL): If the scorecard explicitly defines an "Auto-Zero" or "Auto-Fail" for a specific severe violation, and the agent commits it, you MUST set overall_score to 0. Use extreme wisdom: only apply this if it is a genuine, explicitly defined severe violation, to prevent unfair zeroes. If you apply an Auto-Zero, you MUST STILL return the raw calculated score (the sum of all other scores) in the \`raw_score\` field. If there is no Auto-Zero, \`raw_score\` and \`overall_score\` should be the same.
 - A serious compliance breach should cap overall_score at 49 unless the scorecard says otherwise
 
 Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–49.
@@ -741,6 +743,7 @@ export async function analyzeCall(
     ANALYSIS_SCHEMA,
     "reasoning",
   )) as CallAnalysis & {
+    raw_score?: unknown;
     speaker_assignments?: { speaker_label: string; role: SpeakerRole }[];
     compliance_findings?: string[];
     metric_evidence?: unknown;
@@ -812,6 +815,9 @@ export async function analyzeCall(
   }
   metric_evidence.document_references = document_references;
   delete metric_evidence.key_terms;
+  if (parsed.raw_score != null) {
+    metric_evidence.raw_score = clamp(parsed.raw_score);
+  }
 
   return {
     speaker_map: speakerMap,

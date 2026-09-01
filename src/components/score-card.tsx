@@ -19,6 +19,11 @@ export function ScoreCard({ score }: { score: CallScore }) {
         <div className="shrink-0 min-w-[140px]">
           <span className="kpi-label">Overall score</span>
           <span className="kpi-value mt-1">{score.overall_score}%</span>
+          {score.overall_score === 0 && score.metric_evidence?.raw_score ? (
+            <span className="block mt-1 text-[13px] font-medium text-slate-500 line-through">
+              Raw Score: {score.metric_evidence.raw_score}%
+            </span>
+          ) : null}
           <span className={`mt-2 ${scoreChipClass(score.overall_score)}`}>
             {verdictLabel(score.verdict)}
           </span>

@@ -53,6 +53,7 @@ export type MetricEvidence = Partial<Record<ScoreDimension, MetricEvidenceItem>>
   holding?: MetricEvidenceItem;
   document_references?: DocumentReference[];
   key_terms?: KeyTermFinding[];
+  raw_score?: number;
 };
 
 export type Agent = {
