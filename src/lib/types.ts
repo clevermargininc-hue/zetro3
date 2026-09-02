@@ -71,6 +71,12 @@ export type MetricEvidence = Partial<Record<ScoreDimension, MetricEvidenceItem>>
   parameters?: ScoreParameter[];
   key_terms?: KeyTermFinding[];
   raw_score?: number;
+  /** Present when a re-audit was clamped to ±variance of the previous score. */
+  rescore_variance?: {
+    previous_overall: number;
+    max_delta: number;
+    applied: boolean;
+  };
 };
 
 export type Agent = {

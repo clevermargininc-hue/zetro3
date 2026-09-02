@@ -1,6 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { uploadToAssemblyAI, submitTranscript, waitForTranscript } from "@/lib/assemblyai";
 import { analyzeCall, restoreSwahiliMeaning } from "@/lib/openai";
+import {
+  previousScorePromptBlock,
+  stabilizeRescoreAnalysis,
+  type PreviousCallScore,
+} from "@/lib/score-variance";
 import { collapseTurnList } from "@/lib/collapse-asr";
 import { repairSwahiliTranscript } from "@/lib/swahili-repair";
 import {
@@ -270,6 +275,20 @@ export async function scoreCall(
       }
     }
 
+    let previousScore: PreviousCallScore | null = null;
+    if (force) {
+      const { data: prior } = await db
+        .from("call_scores")
+        .select(
+          "overall_score, greeting, empathy, professionalism, resolution, communication, language_handling, verdict, metric_evidence",
+        )
+        .eq("call_id", callId)
+        .maybeSingle();
+      if (prior) {
+        previousScore = prior as PreviousCallScore;
+      }
+    }
+
     const { data: stored, error: uttError } = await db
       .from("utterances")
       .select("*")
@@ -353,15 +372,19 @@ export async function scoreCall(
       }
     }
 
-    const analysis = await analyzeCall(
-      asAssembly,
-      agentName,
-      standardsText,
-      standards,
-      mode,
-      bilingual,
-      scriptsText,
-      orgDocs,
+    const analysis = stabilizeRescoreAnalysis(
+      await analyzeCall(
+        asAssembly,
+        agentName,
+        standardsText,
+        standards,
+        mode,
+        bilingual,
+        scriptsText,
+        orgDocs,
+        previousScorePromptBlock(previousScore),
+      ),
+      previousScore,
     );
 
     const roleUpdates = scoredRows

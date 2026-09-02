@@ -912,6 +912,7 @@ HUMAN-LIKE UNDERSTANDING (transcription → wise scoring):
 - If ASR was unclear (see unclear_parts), do not invent a severe miss from gibberish; be conservative and fair on that criterion.
 - Closing and resolution often appear late — the transcript includes opening AND closing turns; read both.
 - Sarcasm, cold dismissal, or empty promises still count even when volume is calm.
+- If PREVIOUS AUDIT ANCHOR is provided (re-audit of the same call), keep overall and matching parameters within ±5 of that anchor so different auditors do not see random swings. Only leave that band for a newly applied company Auto-Zero.
 - Scores must still follow the company SCORECARD / CHECKLIST exactly — wisdom sharpens judgment; it does not invent a new rubric.`;
 
 const DOCUMENTS_PROMPT = `You are a bilingual (Kiswahili + English) call-center quality assurance analyst.
@@ -1049,6 +1050,7 @@ export async function analyzeCall(
   bilingual = true,
   scriptsText = "",
   scriptDocs: QaDocument[] = [],
+  previousScoreBlock = "",
 ): Promise<CallAnalysis> {
   const transcript = packTranscriptForAudit(utterances, 16000);
   const understanding = await understandCallBrief(utterances, bilingual, agentName);
@@ -1081,6 +1083,10 @@ export async function analyzeCall(
       ? `\n\nKEY TERMS FROM COMPANY DOCUMENTS (use these spellings only; do not invent terms from the transcript):\n${documentKeyTerms.join(", ")}`
       : "";
 
+  const rescoreBlock = previousScoreBlock.trim()
+    ? `\n\n${previousScoreBlock.trim()}\n`
+    : "";
+
   const userPrompt = `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}READ THE CUSTOMER'S / WORKSPACE'S UPLOADED FILES FIRST.
 1) FILE INDEX — which files exist
 2) COMPANY RULE CHECKLIST — every rule to score (one parameters[] row each)
@@ -1089,7 +1095,7 @@ Score only from those files. Do not invent a Zetro rubric, company name, or key 
 If the checklist lists N rules, return about N parameters with matching names, a short note, and a transcript quote for each (including 100% scores).
 
 Then UNDERSTAND the call (CALL UNDERSTANDING + timed transcript) before you assign marks — like a wise human QA who listened carefully.
-
+${rescoreBlock}
 ${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${understandingBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript, meaning-repaired for clear understanding (opening + closing preserved). Audit against the company checklist, scorecard, scripts, and key terms. Put CLEAN Kiswahili/English on the scorecard. If a word is still broken, do not mention it:\n${transcript}`;
 
   const parsed = (await completeJson(
