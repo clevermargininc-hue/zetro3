@@ -2,8 +2,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getTeamScope } from "@/lib/workspaces";
 import { chunkText, cosineSimilarity, embedQuery, embedTexts } from "@/lib/embeddings";
 import { ALL_DOCUMENT_KINDS, QA_KINDS, SCRIPT_KINDS, type QaDocument, type QaKind } from "@/lib/qa-kinds";
-import { formatCompanyFileIndex, formatQaContext } from "@/lib/qa-documents";
 import { formatCallScripts } from "@/lib/call-scripts";
+import {
+  formatCompanyFileIndex,
+  formatCompanyRuleChecklist,
+  formatQaContext,
+} from "@/lib/qa-documents";
 
 type StoredChunk = {
   document_id: string;
@@ -74,12 +78,12 @@ async function extraRulesForCall(userId: string, callText: string) {
     .sort((a, b) => b.score - a.score);
 
   const limits: Record<QaKind, number> = {
-    scorecard: 6,
-    compliance: 6,
-    document: 5,
-    opening: 2,
-    closing: 2,
-    holding: 2,
+    scorecard: 12,
+    compliance: 10,
+    document: 8,
+    opening: 3,
+    closing: 3,
+    holding: 3,
   };
 
   const picked = ALL_DOCUMENT_KINDS.flatMap((kind) =>
@@ -109,13 +113,17 @@ export async function retrieveQaContext(
   docs: QaDocument[],
   callText = "",
 ) {
+  const checklist = formatCompanyRuleChecklist(docs);
   const files = formatQaContext(docs);
   const scripts = formatCallScripts(docs);
   const extra = await extraRulesForCall(userId, callText).catch(() => "");
 
   return [
-    "COMPANY FILES — READ THESE BEFORE ANY SCORE. They are the only rubric. Do not invent scores, criteria, or key terms.",
+    "COMPANY FILES — READ THESE RULES BEFORE ANY SCORE.",
+    "Audit this call ONLY against the customer's / workspace's uploaded Standards files.",
+    "Do not invent a Zetro rubric. Do not skip scorecard lines. Do not invent criteria.",
     formatCompanyFileIndex(docs),
+    checklist,
     files,
     scripts,
     extra

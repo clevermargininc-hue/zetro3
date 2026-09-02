@@ -2,6 +2,7 @@ import * as XLSX from "xlsx";
 import { formatDuration, languageLabel } from "@/lib/format";
 import { PdfDoc } from "@/lib/report-files";
 import { auditModeLabel, formatReportDate, scoreLabel, verdictCell } from "@/lib/reports";
+import { scorecardRows } from "@/lib/scorecard-rows";
 import type { Call, CallScore, Utterance } from "@/lib/types";
 
 export type AuditedCallExport = {
@@ -32,6 +33,7 @@ function callSlug(call: AuditedCallExport["call"]) {
 
 function details(pack: AuditedCallExport): Array<[string, string]> {
   const { call, score } = pack;
+  const rows = scorecardRows(score);
   return [
     ["Call", call.title || "Untitled call"],
     ["Agent", agentName(call)],
@@ -43,12 +45,7 @@ function details(pack: AuditedCallExport): Array<[string, string]> {
     ["Audited", formatReportDate(score.created_at || call.completed_at || call.created_at)],
     ["Audit path", auditModeLabel(score.audit_mode)],
     ["Overall score", String(score.overall_score)],
-    ["Greeting", scoreLabel(score.greeting)],
-    ["Empathy", scoreLabel(score.empathy)],
-    ["Professionalism", scoreLabel(score.professionalism)],
-    ["Resolution", scoreLabel(score.resolution)],
-    ["Communication", scoreLabel(score.communication)],
-    ["Language mix", scoreLabel(score.language_handling)],
+    ...rows.map((row) => [row.name, scoreLabel(row.score)] as [string, string]),
     ["Verdict", verdictCell(score.verdict)],
     ["Customer sentiment", dash(score.customer_sentiment)],
     ["Summary", dash(score.summary)],
@@ -68,23 +65,35 @@ export function callAuditExcel(pack: AuditedCallExport): Buffer {
   detailSheet["!cols"] = [{ wch: 24 }, { wch: 80 }];
   XLSX.utils.book_append_sheet(wb, detailSheet, "Call details");
 
-  const evidenceFor = (key: "greeting" | "empathy" | "professionalism" | "resolution" | "communication" | "language_handling") =>
-    score.metric_evidence?.[key];
-
+  const scoreRows = scorecardRows(score);
   const scoreSheet = XLSX.utils.aoa_to_sheet([
-    ["Dimension", "Score", "Source file", "Criterion"],
-    ["Overall", score.overall_score, "", ""],
-    ["Greeting", dash(score.greeting), dash(evidenceFor("greeting")?.source_file), dash(evidenceFor("greeting")?.criterion)],
-    ["Empathy", dash(score.empathy), dash(evidenceFor("empathy")?.source_file), dash(evidenceFor("empathy")?.criterion)],
-    ["Professionalism", dash(score.professionalism), dash(evidenceFor("professionalism")?.source_file), dash(evidenceFor("professionalism")?.criterion)],
-    ["Resolution", dash(score.resolution), dash(evidenceFor("resolution")?.source_file), dash(evidenceFor("resolution")?.criterion)],
-    ["Communication", dash(score.communication), dash(evidenceFor("communication")?.source_file), dash(evidenceFor("communication")?.criterion)],
-    ["Language mix", dash(score.language_handling), dash(evidenceFor("language_handling")?.source_file), dash(evidenceFor("language_handling")?.criterion)],
-    ["Verdict", verdictCell(score.verdict), "", ""],
-    ["Customer sentiment", dash(score.customer_sentiment), "", ""],
-    ["Audit path", auditModeLabel(score.audit_mode), "", ""],
+    ["Parameter", "Score", "Why", "Transcript evidence", "Source file", "Weight %"],
+    ["Overall", score.overall_score, "", "", "", ""],
+    ...scoreRows.map((row) => {
+      const match = score.metric_evidence?.parameters?.find(
+        (item) => item.name === row.name,
+      );
+      return [
+        row.name,
+        row.score,
+        dash(row.note || match?.note),
+        dash(row.quote || match?.quote),
+        dash(match?.source_file),
+        match?.weight_pct == null ? "" : String(match.weight_pct),
+      ];
+    }),
+    ["Verdict", verdictCell(score.verdict), "", "", "", ""],
+    ["Customer sentiment", dash(score.customer_sentiment), "", "", "", ""],
+    ["Audit path", auditModeLabel(score.audit_mode), "", "", "", ""],
   ]);
-  scoreSheet["!cols"] = [{ wch: 22 }, { wch: 16 }, { wch: 32 }, { wch: 50 }];
+  scoreSheet["!cols"] = [
+    { wch: 40 },
+    { wch: 12 },
+    { wch: 48 },
+    { wch: 48 },
+    { wch: 32 },
+    { wch: 12 },
+  ];
   XLSX.utils.book_append_sheet(wb, scoreSheet, "Scores");
 
   const noteSheet = (title: string, items: string[]) => {
@@ -156,15 +165,10 @@ export function callAuditPdf(pack: AuditedCallExport): Buffer {
 
   doc.heading("Scores");
   doc.table(
-    ["Dimension", "Score"],
+    ["Parameter", "Score"],
     [
       ["Overall", String(score.overall_score)],
-      ["Greeting", scoreLabel(score.greeting)],
-      ["Empathy", scoreLabel(score.empathy)],
-      ["Professionalism", scoreLabel(score.professionalism)],
-      ["Resolution", scoreLabel(score.resolution)],
-      ["Communication", scoreLabel(score.communication)],
-      ["Language mix", scoreLabel(score.language_handling)],
+      ...scorecardRows(score).map((row) => [row.name, scoreLabel(row.score)]),
       ["Verdict", verdictCell(score.verdict)],
       ["Customer sentiment", dash(score.customer_sentiment)],
       ["Audit path", auditModeLabel(score.audit_mode)],

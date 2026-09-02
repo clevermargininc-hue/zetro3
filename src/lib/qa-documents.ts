@@ -96,11 +96,86 @@ export function formatCompanyFileIndex(docs: QaDocument[]) {
   return `FILE INDEX — scores, criteria, key terms, and product names may come only from these uploaded files:\n${lines.join("\n")}`;
 }
 
+/**
+ * Pull scorable rule / parameter lines from the company's uploaded scorecard
+ * (and related standards) so the model audits those rules instead of a generic rubric.
+ */
+export function extractCompanyRuleLines(docs: QaDocument[], limit = 60): string[] {
+  const preferred = docs.filter(
+    (doc) =>
+      (doc.kind === "scorecard" || doc.kind === "compliance" || doc.kind === "document") &&
+      (doc.extracted_text || "").trim().length >= MIN_READABLE_CHARS,
+  );
+  const scorecards = preferred.filter((doc) => doc.kind === "scorecard");
+  const sources = scorecards.length ? scorecards : preferred;
+
+  const out: string[] = [];
+  const seen = new Set<string>();
+
+  function push(raw: string, fileName: string) {
+    const line = raw.replace(/\s+/g, " ").trim();
+    if (line.length < 4 || line.length > 220) return;
+    if (/^(sheet|page|total|overall|grand total|sum|weight|score|parameter|criterion)\b/i.test(line)) {
+      return;
+    }
+    const key = line.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(`${line} [${fileName}]`);
+  }
+
+  for (const doc of sources) {
+    const text = (doc.extracted_text || "").replace(/\r/g, "\n");
+    const fileName = doc.file_name || doc.title;
+
+    for (const block of text.split(/\n+/)) {
+      const line = block.replace(/\s+/g, " ").trim();
+      if (!line) continue;
+
+      const looksLikeRule =
+        /\d+\s*%/.test(line) ||
+        /\?/.test(line) ||
+        /\b(auto\s*-?\s*zero|auto\s*-?\s*fail|if applicable)\b/i.test(line) ||
+        /^\d+[\).:-]\s+\S+/.test(line) ||
+        /^[-*•]\s+\S+/.test(line) ||
+        /\b(opening|closing|greeting|empathy|hold|tone|professional|resolution|knowledge|escalation|disposition|wrap\s*up|personalization|troubleshooting|listening|apology|education|upsell|ftr|first time)\b/i.test(
+          line,
+        );
+
+      if (looksLikeRule) push(line.replace(/^[-*•]\s+/, "").replace(/^\d+[\).:-]\s+/, ""), fileName);
+      if (out.length >= limit) return out;
+    }
+
+    // Spreadsheet-style cells often land as short phrases without newlines between weights.
+    if (doc.kind === "scorecard") {
+      for (const match of text.matchAll(
+        /([A-Za-z][A-Za-z0-9/()'’&., +\-]{8,120}?\??)\s*[-–:]?\s*(\d{1,2}(?:\.\d+)?)\s*%/g,
+      )) {
+        push(`${match[1].trim()} — ${match[2]}%`, fileName);
+        if (out.length >= limit) return out;
+      }
+    }
+  }
+
+  return out;
+}
+
+export function formatCompanyRuleChecklist(docs: QaDocument[]) {
+  const rules = extractCompanyRuleLines(docs);
+  if (!rules.length) return "";
+  return [
+    "COMPANY RULE CHECKLIST — AUDIT ONLY THESE RULES FROM THE USER'S UPLOADED FILES.",
+    "Read every line. Give a parameter score for each. Do not invent extra Zetro categories.",
+    ...rules.map((rule, index) => `${index + 1}. ${rule}`),
+  ].join("\n");
+}
+
 export function formatQaContext(docs: QaDocument[]) {
   const limits: Record<(typeof QA_KINDS)[number], number> = {
-    scorecard: 18000,
-    compliance: 14000,
-    document: 14000,
+    // Scorecard must stay nearly complete — it drives the company parameter list.
+    scorecard: 32000,
+    compliance: 18000,
+    document: 16000,
   };
   const order = ["scorecard", "compliance", "document"] as const;
   return order.map((kind) => {
@@ -108,16 +183,19 @@ export function formatQaContext(docs: QaDocument[]) {
     if (!items.length) return "";
     const heading =
       kind === "scorecard"
-        ? "SCORECARD — this file is the only scoring rubric. Score every criterion in it."
+        ? "SCORECARD — READ EVERY RULE. This file is the only scoring rubric. Score every criterion / weight / Auto-Zero line in it."
         : kind === "compliance"
-          ? "COMPLIANCE — flag every breach of these company rules"
-          : "PROCESS DOCUMENTS — required scripts, steps, product names, and key terms";
+          ? "COMPLIANCE — READ EVERY RULE. Flag every breach of these company rules."
+          : "PROCESS DOCUMENTS — READ THESE RULES. Required scripts, steps, product names, and key terms.";
     return `## ${heading}\n\n${items
       .map((doc) => {
         const body = (doc.extracted_text || "").trim();
         const max = limits[kind];
-        const text = body.length > max ? `${body.slice(0, max)}\n[…remainder of ${doc.file_name}]` : body;
-        return `### ${doc.title} (${doc.file_name})\n${text}`;
+        const text =
+          body.length > max
+            ? `${body.slice(0, max)}\n[…remainder of ${doc.file_name} truncated; use the COMPANY RULE CHECKLIST above for the scored lines…]`
+            : body;
+        return `### FILE: ${doc.file_name}\nTitle: ${doc.title}\nKind: ${QA_KIND_LABELS[doc.kind]}\n\n${text}`;
       })
       .join("\n\n")}`;
   })

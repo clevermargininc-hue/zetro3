@@ -43,6 +43,21 @@ export type DocumentReference = {
   result: MetricEvidenceVerdict;
 };
 
+/** One scored line from the company's own scorecard / standards files. */
+export type ScoreParameter = {
+  name: string;
+  score: number;
+  weight_pct?: number | null;
+  result?: MetricEvidenceVerdict;
+  source_file?: string;
+  /** Short reason this parameter scored as it did. */
+  note?: string;
+  /** Clean transcript snippet that backs the score (even for 100%). */
+  quote?: string;
+  utterance_index?: number | null;
+  start_s?: number | null;
+};
+
 export type KeyTermFinding = {
   term: string;
   status: "said" | "missed";
@@ -52,6 +67,8 @@ export type KeyTermFinding = {
 export type MetricEvidence = Partial<Record<ScoreDimension, MetricEvidenceItem>> & {
   holding?: MetricEvidenceItem;
   document_references?: DocumentReference[];
+  /** Company-specific scorecard lines (any count). Preferred for the UI scorecard. */
+  parameters?: ScoreParameter[];
   key_terms?: KeyTermFinding[];
   raw_score?: number;
 };

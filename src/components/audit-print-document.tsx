@@ -1,6 +1,7 @@
 import { formatDuration, languageLabel, verdictLabel } from "@/lib/format";
 import { QA_KIND_LABELS } from "@/lib/qa-kinds";
 import { auditModeLabel, formatReportDate, scoreLabel } from "@/lib/reports";
+import { scorecardRows } from "@/lib/scorecard-rows";
 import type { Call, CallScore } from "@/lib/types";
 
 function asList(value: string[] | null | undefined) {
@@ -20,6 +21,7 @@ export function AuditPrintDocument({
   const improvements = asList(score.improvements);
   const findings = asList(score.compliance_findings);
   const standards = score.standards_used || [];
+  const parameterRows = scorecardRows(score);
 
   return (
     <article className="audit-print hidden print:block bg-white text-ink text-[12px] font-sans">
@@ -67,18 +69,28 @@ export function AuditPrintDocument({
             </tr>
           </thead>
           <tbody className="divide-y divide-line/30">
-            {[
-              ["Overall", score.overall_score],
-              ["Greeting", score.greeting],
-              ["Empathy", score.empathy],
-              ["Professionalism", score.professionalism],
-              ["Resolution", score.resolution],
-              ["Communication", score.communication],
-              ["Language mix", score.language_handling],
-            ].map(([label, value]) => (
-              <tr key={String(label)}>
-                <td className="py-2.5 font-medium">{label}</td>
-                <td className="py-2.5 tabular-nums text-right font-bold">{scoreLabel(value as number | null)}</td>
+            <tr>
+              <td className="py-2.5 font-medium">Overall</td>
+              <td className="py-2.5 tabular-nums text-right font-bold">
+                {scoreLabel(score.overall_score)}
+              </td>
+            </tr>
+            {parameterRows.map((row) => (
+              <tr key={row.name}>
+                <td className="py-2.5 font-medium">
+                  <div>{row.name}</div>
+                  {row.note ? (
+                    <p className="mt-1 text-[11px] font-normal text-muted leading-relaxed">{row.note}</p>
+                  ) : null}
+                  {row.quote ? (
+                    <p className="mt-1 text-[11px] font-normal italic text-ink/80 leading-relaxed">
+                      “{row.quote}”
+                    </p>
+                  ) : null}
+                </td>
+                <td className="py-2.5 tabular-nums text-right font-bold align-top">
+                  {scoreLabel(row.score)}
+                </td>
               </tr>
             ))}
             <tr className="bg-surface-2/50">
@@ -97,22 +109,6 @@ export function AuditPrintDocument({
       <Notes title="Strengths" items={strengths} />
       <Notes title="Recommendations" items={improvements} />
       <Notes title="Compliance findings" items={findings} />
-
-      {score.metric_evidence?.document_references?.length ? (
-        <section className="mb-8">
-          <h2 className="text-[14px] font-bold uppercase tracking-widest text-muted border-b border-line/50 pb-2 mb-4">Document references</h2>
-          <ul className="mt-3 space-y-2">
-            {score.metric_evidence.document_references.map((row, index) => (
-              <li key={`${row.file_name}-${index}`} className="text-[12px] bg-surface-2/30 p-3 rounded-lg border border-line/40">
-                <span className="font-bold uppercase tracking-wider text-muted">{row.result}</span>
-                <span className="text-line/40"> &middot; </span>
-                <span className="font-medium text-ink">{row.file_name}</span>
-                <span className="text-muted"> — {row.criterion}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
 
       {standards.length ? (
         <section className="mb-8">

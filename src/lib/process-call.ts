@@ -308,25 +308,25 @@ export async function scoreCall(
       ...row,
       text: repairSwahiliTranscript(row.text, keyTerms),
     }));
-    if (bilingual) {
-      const restored = await restoreSwahiliMeaning(
-        scoredRows.map((row) => ({
-          speaker: row.speaker_label,
-          text: row.text,
-          start: row.start_ms ?? 0,
-          end: row.end_ms ?? 0,
-          confidence: Number(row.confidence ?? 0),
-        })),
-        {
-          keyTerms,
-          scriptHints: scriptsText,
-        },
-      );
-      scoredRows = scoredRows.map((row, index) => ({
-        ...row,
-        text: restored[index]?.text || row.text,
-      }));
-    }
+    // Always meaning-repair before scoring so AI understands the call clearly
+    // (Kiswahili + English ASR), then audit with human-like judgment.
+    const restored = await restoreSwahiliMeaning(
+      scoredRows.map((row) => ({
+        speaker: row.speaker_label,
+        text: row.text,
+        start: row.start_ms ?? 0,
+        end: row.end_ms ?? 0,
+        confidence: Number(row.confidence ?? 0),
+      })),
+      {
+        keyTerms,
+        scriptHints: scriptsText,
+      },
+    );
+    scoredRows = scoredRows.map((row, index) => ({
+      ...row,
+      text: restored[index]?.text || row.text,
+    }));
     const textUpdates = scoredRows.filter((row, index) => row.text !== stored[index].text);
     if (textUpdates.length) {
       await Promise.all(
