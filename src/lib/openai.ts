@@ -118,6 +118,7 @@ const ANALYSIS_SCHEMA = {
           result: { type: "string", enum: ["hit", "miss", "partial"] },
           source_file: { type: "string" },
           note: { type: "string" },
+          gap_note: { type: "string" },
           quote: { type: "string" },
           utterance_index: { type: "integer" },
         },
@@ -127,6 +128,7 @@ const ANALYSIS_SCHEMA = {
           "result",
           "source_file",
           "note",
+          "gap_note",
           "quote",
           "utterance_index",
         ],
@@ -239,21 +241,27 @@ function normalizeMetricEvidence(
 
 const DOCUMENTS_EVIDENCE_BLOCK = `
 parameters (REQUIRED — this is the company scorecard):
-- First read COMPANY RULE CHECKLIST and the SCORECARD file(s). Those lines are the audit.
+- First read COMPANY RULE CHECKLIST and the SCORECARD file(s) carefully. Those lines are the ONLY audit.
 - Output ONE entry for EVERY scored criterion / parameter / weight / Auto-Zero line found in the uploaded company SCORECARD (and related standards scripts when they are scored).
 - If COMPANY RULE CHECKLIST lists N rules, parameters MUST have about N entries (same names). Missing a listed rule is not allowed.
 - Do NOT stop at 6 items. If the company file has 8, 12, 20, or more lines, score all of them.
 - Do NOT invent Zetro's generic categories (Greeting & Identity, Empathy & Active Listening, etc.) unless that exact line appears in the company files.
 - name: the criterion name exactly as written in the company file (include weight text if it is part of the line).
-- score: 0–100 for how well the agent met THAT company rule on this call. Apply the file's own scoring / Auto-Zero rules.
-- weight_pct: the percentage weight from the company scorecard when present (e.g. 5 for "5%"), otherwise null.
-- result: hit, miss, or partial according to the company rule.
+- score: 0–100 for how well the agent met THAT ONE company rule on this call — nothing else. Apply only that line's own scoring / Auto-Zero / "if applicable" rules from the company file.
+- weight_pct: copy the EXACT weight printed on that scorecard line (e.g. 3, 7.5, 12, 15). Do NOT invent 5/10/20/25% defaults. If the file has no weight for that line, set null.
+- result: hit, miss, or partial according to THAT company rule only.
 - source_file: exact uploaded file name from FILE INDEX.
-- note: one short sentence explaining WHY this score was given on this call (what the agent did or missed vs that company rule). Clean language only. Required for every score including 100%.
-- quote: a SHORT clean transcript snippet that proves the score (what was said). Required for every parameter — including 100% hits and partial scores. Use readable Kiswahili/English only; never paste garbled ASR. If truly no speech applies (e.g. "If applicable" and not needed), set quote to "" and explain in note.
+- note: one short sentence explaining WHY this score was EARNED for THIS parameter only (what the agent did vs that company rule). Do not mention other parameters. Clean language. Required even for 100%.
+- gap_note: one short sentence explaining WHY points were CUT on THIS parameter only (what was missing vs that same company rule). FORBIDDEN: blaming holding, opening, product knowledge, tone, or any OTHER parameter for this cut. Example bad: cutting "Provide further assistance" because hold procedure failed. Example good: cutting it only if further assistance itself was incomplete. If score is 100, use "" or "Full marks — nothing deducted." If score is 0, explain the full miss of THIS rule. Required for every parameter.
+- quote: a SHORT clean transcript snippet that proves THIS parameter's score. Never paste garbled ASR. If "If applicable" and not needed, quote "" and say so in note.
 - utterance_index: the timed turn index [i] that best supports the quote, or -1 if no turn applies.
 
-You MUST also output document_references (same criteria list is fine). Inventing a score or a criterion that is not in the company files is forbidden.
+PARAMETER INDEPENDENCE (critical — never violate):
+- Each parameter is judged alone. A miss on Hold procedure must NOT reduce Opening, Product knowledge, Provide further assistance, Empathy, Closing, or any other line.
+- Put hold issues only on the Hold / Holding parameter (and hold_findings). Put opening issues only on Opening. Put product knowledge only on Product/Services knowledge. And so on.
+- gap_note for parameter A may only cite failures of parameter A's own company rule.
+
+You MUST also output document_references (same criteria list is fine). Inventing a score, a weight, or a criterion that is not in the company files is forbidden.
 
 document_references: one row per criterion you actually scored from the uploaded files.
 - file_name: exact uploaded file name from FILE INDEX.
@@ -263,9 +271,12 @@ document_references: one row per criterion you actually scored from the uploaded
 metric_evidence (optional roll-up into 6 buckets for analytics only — not the scorecard UI):
 - If helpful, also map evidence into greeting / empathy / professionalism / resolution / communication / language_handling.
 - source_file, criterion, quote, note, verdict, utterance_index as before.
+- Do not use these roll-ups to justify cutting an unrelated company parameter.
 
 hold_detected: true if the timed transcript/audio shows a hold or wait.
-hold_findings: if hold_detected and a HOLDING PROCEDURE file exists, list each company hold rule that was followed or missed. If no hold, return [].`;
+hold_findings: if hold_detected and a HOLDING PROCEDURE file exists, list each company hold rule that was followed or missed. If no hold, return [].
+Hold findings must NOT be copied into gap_note of non-hold parameters.
+`;
 
 const FALLBACK_REASONING = ["gpt-4o-mini", "gpt-4o", "gpt-5-mini"];
 const FALLBACK_FAST = ["gpt-4o-mini", "gpt-4o", "gpt-5-mini"];
@@ -452,6 +463,7 @@ export async function understandCallBrief(
   utterances: GenericUtterance[],
   bilingual = true,
   agentName?: string | null,
+  scoringSeed?: number,
 ): Promise<CallUnderstanding | null> {
   if (!utterances.length) return null;
   const transcript = packTranscriptForAudit(utterances, 14000);
@@ -459,11 +471,13 @@ export async function understandCallBrief(
     ? `You are an experienced bilingual (Kiswahili + English) contact-center QA coach.
 Your only job is to UNDERSTAND this call clearly — like a human who listened carefully — before any scorecard is filled.
 Do not invent facts. If ASR is unclear, say so in unclear_parts. Prefer the language of the call in short notes.
-Identify Agent vs Customer from what they say (greeting/script vs problem/complaint), not from who spoke first.`
+Identify Agent vs Customer from what they say (greeting/script vs problem/complaint), not from who spoke first.
+Be consistent: the same recording should yield the same understanding every time.`
     : `You are an experienced contact-center QA coach.
 Your only job is to UNDERSTAND this call clearly — like a human who listened carefully — before any scorecard is filled.
 Do not invent facts. If ASR is unclear, say so in unclear_parts.
-Identify Agent vs Customer from what they say (greeting/script vs problem/complaint), not from who spoke first.`;
+Identify Agent vs Customer from what they say (greeting/script vs problem/complaint), not from who spoke first.
+Be consistent: the same recording should yield the same understanding every time.`;
 
   try {
     const parsed = (await completeJson(
@@ -478,6 +492,7 @@ Identify Agent vs Customer from what they say (greeting/script vs problem/compla
       "call_understanding",
       CALL_UNDERSTANDING_SCHEMA,
       "fast",
+      { stable: true, seed: scoringSeed },
     )) as Partial<CallUnderstanding>;
 
     return {
@@ -599,6 +614,7 @@ function normalizeScoreParameters(
       files[0]?.file_name ||
       "";
     const note = cleanScoreLine(String(item.note || "")).slice(0, 280);
+    const gap_note = cleanScoreLine(String(item.gap_note || "")).slice(0, 280);
     const index = Number(item.utterance_index);
     const fromUtterance =
       Number.isFinite(index) && index >= 0 && index < utterances.length
@@ -611,15 +627,21 @@ function normalizeScoreParameters(
     const start_s = fromUtterance
       ? Math.floor(fromUtterance.start / 1000)
       : null;
+    const scoreValue = clamp(item.score);
     push({
       name,
-      score: clamp(item.score),
+      score: scoreValue,
       weight_pct: weight,
       result: normalizeEvidenceVerdict(item.result),
       utterance_index: fromUtterance ? index : null,
       start_s,
       ...(source_file ? { source_file } : {}),
       ...(note ? { note } : {}),
+      ...(gap_note
+        ? { gap_note }
+        : scoreValue >= 100
+          ? { gap_note: "Full marks — nothing deducted." }
+          : {}),
       ...(quote ? { quote } : {}),
     });
     if (out.length >= 60) break;
@@ -684,6 +706,10 @@ async function createCompletion(
       const { reasoning_effort: _r, ...withoutEffort } = body;
       return getOpenAI().chat.completions.create(withoutEffort);
     }
+    if (/\bseed\b/i.test(message) && "seed" in body) {
+      const { seed: _s, ...withoutSeed } = body as typeof body & { seed?: number };
+      return getOpenAI().chat.completions.create(withoutSeed);
+    }
     if (/max_tokens|max_completion_tokens/i.test(message)) {
       const { max_tokens: _a, max_completion_tokens: _b, ...withoutLimit } = body;
       return getOpenAI().chat.completions.create(withoutLimit);
@@ -698,10 +724,12 @@ async function completeJson(
   schemaName: string,
   schema: object,
   mode: ModelMode,
+  options: { stable?: boolean; seed?: number } = {},
 ) {
   const { aiTemperature } = getServerEnv();
   const models = modelsFor(mode);
   let lastError: unknown;
+  const temperature = options.stable ? 0 : aiTemperature;
 
   for (const model of models) {
     try {
@@ -723,10 +751,14 @@ async function completeJson(
           ],
         };
         if (supportsTemperature(model)) {
-          body.temperature = aiTemperature;
+          body.temperature = temperature;
+        }
+        if (options.stable && typeof options.seed === "number") {
+          (body as { seed?: number }).seed = options.seed;
         }
         if (isReasoningModel(model) && !noReasoningEffort.has(model)) {
-          body.reasoning_effort = "low";
+          // Medium effort for careful standards reading on stable audits.
+          body.reasoning_effort = options.stable ? "medium" : "low";
         }
 
         let completion = await createCompletion(body);
@@ -746,6 +778,16 @@ async function completeJson(
       return parsed;
     } catch (error) {
       lastError = error;
+      // Drop seed if the model rejects it, then retry without seed once.
+      if (
+        options.stable &&
+        options.seed != null &&
+        error instanceof Error &&
+        /seed/i.test(error.message)
+      ) {
+        options = { ...options, seed: undefined };
+        continue;
+      }
       if (!isModelAccessError(error) && !isEmptyCompletionError(error)) throw error;
     }
   }
@@ -899,21 +941,34 @@ When an OPENING SCRIPT or CLOSING SCRIPT is provided, score greeting and closing
 
 HOLDING PROCEDURE — listen to the call first, then apply that company's rules only when a hold actually happened:
 - You are given a CALL LISTENING block built from audio timestamps (silence gaps ≥ 8s) and hold/wait phrases in English and Kiswahili. Treat that as having heard the recording. hold_detected must match that listening result unless the timed transcript clearly shows a hold the listener missed.
-- If a HOLDING PROCEDURE file is provided AND hold/wait was heard, you MUST walk through THAT company's rules only (permission to hold, hold language/key terms, check-back interval, what to say when returning). Do not use a generic hold policy. Missed rules go in hold_findings and should lower professionalism.
+- If a HOLDING PROCEDURE file is provided AND hold/wait was heard, walk through THAT company's hold rules only. Missed hold rules go in hold_findings and ONLY on the Holding / Hold procedure scorecard parameter (if the company has one). Do NOT deduct Opening, Product knowledge, Further assistance, Empathy, Closing, or other unrelated parameters for a hold miss.
 - If no hold/wait was heard, ignore the holding file even if it is uploaded. hold_detected=false, hold_findings=[]. Do not penalize holding.
 - If no holding procedure file is provided, do not invent hold rules.`;
 
 const HUMAN_JUDGMENT_BLOCK = `
-HUMAN-LIKE UNDERSTANDING (transcription → wise scoring):
+HUMAN-LIKE UNDERSTANDING + CONSISTENT COMPANY AUDIT:
 - The timed transcript was meaning-repaired from speech recognition so you can understand the call clearly. Treat CALL UNDERSTANDING as your listening notes from a careful human coach.
-- First understand the full arc: opening → customer issue → agent actions → outcome / closing. Then score each company rule against that reality.
-- Be wise like an experienced QA human: weigh intent, context, and fairness — not isolated keywords.
-- If the customer never needed a behaviour (and the scorecard says "if applicable"), do not force a miss.
+- First READ the company Standards carefully (scorecard, compliance, process docs, scripts). Those files are the only scoring law for this company.
+- Then understand the full call arc: opening → customer issue → agent actions → outcome / closing.
+- Score EACH company parameter independently against its own line in the scorecard — like a human QA who marks one box at a time without mixing boxes.
+- Be wise and fair: weigh intent and context for THAT parameter only — not isolated keywords, and not other parameters' failures.
+- CONSISTENCY: The same recording audited against the same company documents must yield nearly the same marks (±5) no matter which account audits it or how many times it is audited. If CONSISTENCY ANCHOR is present, stay inside that band.
+- If the customer never needed a behaviour (and the scorecard says "if applicable"), do not force a miss on that line.
 - If ASR was unclear (see unclear_parts), do not invent a severe miss from gibberish; be conservative and fair on that criterion.
 - Closing and resolution often appear late — the transcript includes opening AND closing turns; read both.
-- Sarcasm, cold dismissal, or empty promises still count even when volume is calm.
-- If PREVIOUS AUDIT ANCHOR is provided (re-audit of the same call), keep overall and matching parameters within ±5 of that anchor so different auditors do not see random swings. Only leave that band for a newly applied company Auto-Zero.
-- Scores must still follow the company SCORECARD / CHECKLIST exactly — wisdom sharpens judgment; it does not invent a new rubric.`;
+- Sarcasm, cold dismissal, or empty promises still count on the parameters that actually measure tone / professionalism / empathy in the company file — not on unrelated lines.
+- Only leave the consistency band for a newly applied company Auto-Zero.
+- Scores must follow the company SCORECARD / CHECKLIST exactly — including each line's real weight. Do not invent a new rubric or default weight set.`;
+
+const STANDARDS_READING_BLOCK = `
+CAREFUL STANDARDS READING (required before any mark):
+- Read FILE INDEX, COMPANY RULE CHECKLIST, then the full SCORECARD text, then COMPLIANCE, then PROCESS DOCUMENTS and scripts.
+- Extract every criterion EXACTLY as written, with its EXACT weight % from the file (companies differ — some use 3%, 7%, 12%, 15%, etc.; never assume 5/10/20/25).
+- Extract Auto-Zero and "if applicable" lines only as the company wrote them.
+- Apply the company's own definitions and examples from their files; do not substitute a generic Zetro rubric.
+- Key terms, product names, and required phrases come only from those uploaded files.
+- When a rule is ambiguous, prefer the company's wording and stay consistent with prior audits of this recording.
+- Never transfer a deduction from one scorecard line to another.`;
 
 const DOCUMENTS_PROMPT = `You are a bilingual (Kiswahili + English) call-center quality assurance analyst.
 
@@ -927,23 +982,24 @@ If a behaviour is not in the scorecard or process documents, do not penalize it 
 Cite the exact file name and criterion in document_references and in metric_evidence.source_file / criterion.
 
 Your job:
-1. READ the company files carefully (scorecard first, then compliance, process docs, scripts).
+1. READ the company Standards carefully (scorecard first, then compliance, process docs, scripts) — every criterion and weight.
 2. READ CALL UNDERSTANDING and the timed transcript so you clearly understand what happened on this call (like a human who listened).
 3. Decide which speaker label is the CALL CENTER AGENT and which is the CUSTOMER.
 4. AUDIT the agent against EVERY rule / criterion / weight line in the uploaded company SCORECARD (and COMPANY RULE CHECKLIST). Not a fixed 6-box Zetro rubric.
 5. Check every compliance rule from the uploaded files and list breaches.
-6. CLEAN LANGUAGE ON THE SCORECARD:
+6. Stay consistent with CONSISTENCY ANCHOR when present (±5) so repeated / multi-account audits of this recording agree.
+7. CLEAN LANGUAGE ON THE SCORECARD:
    - Evidence comes from the company SCORECARD and the CLEAN SCRIPT, checked against the meaning-repaired conversation.
    - If a Kiswahili or English phrase is clean and readable, put that short phrase in metric_evidence.quote so it appears on the scorecard.
    - NEVER put broken, fused, misspelled, or garbled speech-to-text words on the scorecard (quote, note, summary, strengths, improvements, compliance). If a word is not clean, omit it and write the point in correct Kiswahili or English.
    - Never translate Kiswahili into English. Write analysis in the primary language spoken on the call (Kiswahili or English).
-7. PRIVACY:
+8. PRIVACY:
    - The full transcript stays internal. The scorecard may show only short clean evidence quotes, not whole turns.
-8. AGENT & COMPANY NAMES:
+9. AGENT & COMPANY NAMES:
    - Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. For the Company Name and key terms, rely strictly on the provided company documents. Only use the Customer's name if clearly spoken.
-9. SPEAKER ROLES IN TEXT:
+10. SPEAKER ROLES IN TEXT:
    - When writing your notes, summaries, and findings, always refer to the speakers as 'Agent' (or their name) and 'Customer' (or 'Mteja'). Do NOT use raw transcript labels like 'Speaker A' or 'Speaker 1' in your written analysis, though you must still output the exact speaker_label string in the speaker_assignments array.
-10. DEEP TONE, SARCASM & ATTITUDE DETECTION (UTAMBUZI WA DHIHAKA, KEJELI, KUFADHAIKA NA DHARAU):
+11. DEEP TONE, SARCASM & ATTITUDE DETECTION (UTAMBUZI WA DHIHAKA, KEJELI, KUFADHAIKA NA DHARAU):
    - You MUST analyze the subtle emotional, conversational, and behavioral tone of both the agent and customer beyond just volume or shouting. Use high discretion (busara sana) to check for sarcasm, frustrations, or other negative traits.
    - LOW-TONE SARCASM & MOCKERY (Kejeli na dhihaka ya chinichini): An agent does NOT need to yell or raise their voice to be rude. If the agent speaks in a quiet, soft, flat, or normal voice but uses words, phrases, or rhetorical questions that are sarcastic, cynical, mocking, patronizing, or dismissive (mfano: "Sasa unataka nikufanyie nini?", "Hata mtoto anajua hilo", "Si nilishakwambia?", "Huwezi kusoma?", "Haya bwana wewe ndio unajua", "Ulitaka niseme nini sasa?", "Ndio hivyo huwezi kubadilisha", "Hapo sina msaada wowote", au kejeli kama "Haya asante sana kwa kutufundisha kazi"), you MUST detect and penalize this severely.
    - DISMISSIVENESS & PASSIVE-AGGRESSION (Kupuuza na dharau): Giving curt, indifferent, dismissive, or reluctant one-word answers, brushing off the customer's problem without attempting genuine resolution, sighing with irritation, or acting bored/uninterested.
@@ -954,7 +1010,7 @@ Your job:
      * Resolution: Penalize if dismissive tone led to incomplete, careless, or unhelpful support.
      * Overall Score: A call with evident mockery, sarcasm, or contempt must NEVER receive a passing/high score.
    - COACHING & FEEDBACK: If low-tone mockery or sarcasm is detected, clearly identify it in 'improvements' and 'metric_evidence.professionalism.note' / 'metric_evidence.empathy.note' (mfano: "Ingawa mhudumu hakuinua sauti, alitumia maneno yenye dhihaka, kejeli au kupuuza maelezo ya mteja aliposema...").
-11. AUDIO QUALITY, NETWORK & PRONUNCIATION ISSUES (UBORA WA SAUTI NA MATAMSHI):
+12. AUDIO QUALITY, NETWORK & PRONUNCIATION ISSUES (UBORA WA SAUTI NA MATAMSHI):
    - You MUST detect if the transcript indicates the agent is not speaking clearly, mispronouncing words, or if there is no sound/silence from the agent.
    - Detect network challenges, low volume from either the customer or agent, and static/noise in the background (e.g., if the transcript has markers for this, or if the customer says "Sikuskii vizuri", "Mtandao unasumbua", etc).
    - If the agent does not speak clearly or mispronounces words, explicitly note this in the scorecard and provide educational coaching in the 'improvements' section (mfano: "Agent anapaswa kutamka maneno vizuri na kwa uwazi").
@@ -965,6 +1021,8 @@ How to identify speakers:
 - Customer cues: stating a problem, complaining, giving personal details.
 - Always assume the submitted agent name belongs to the Agent speaker. Do not invent names.
 - Do NOT assume the first speaker is the agent — use CALL UNDERSTANDING speaker_guess and the cues above.
+
+${STANDARDS_READING_BLOCK}
 
 ${HUMAN_JUDGMENT_BLOCK}
 
@@ -995,14 +1053,15 @@ If a behaviour is not in the scorecard or process documents, do not penalize it 
 Cite the exact file name and criterion in document_references and in metric_evidence.source_file / criterion.
 
 Your job:
-1. READ the company files carefully (scorecard first, then compliance, process docs, scripts).
+1. READ the company Standards carefully (scorecard first, then compliance, process docs, scripts) — every criterion and weight.
 2. READ CALL UNDERSTANDING and the timed transcript so you clearly understand what happened on this call (like a human who listened).
 3. Decide which speaker label is the CALL CENTER AGENT and which is the CUSTOMER.
 4. AUDIT the agent against EVERY rule / criterion / weight line in the uploaded company SCORECARD (and COMPANY RULE CHECKLIST). Not a fixed 6-box Zetro rubric.
 5. Check every compliance rule from the uploaded files and list breaches.
-6. Keep English as spoken. Never translate. If a phrase is clean, put it on the scorecard as evidence. Never copy broken speech-to-text spellings into any scorecard field.
-7. Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. For the Company Name and key terms, rely strictly on the provided company documents. Only use the Customer's name if clearly spoken.
-8. DEEP TONE, SARCASM & ATTITUDE DETECTION:
+6. Stay consistent with CONSISTENCY ANCHOR when present (±5) so repeated / multi-account audits of this recording agree.
+7. Keep English as spoken. Never translate. If a phrase is clean, put it on the scorecard as evidence. Never copy broken speech-to-text spellings into any scorecard field.
+8. Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. For the Company Name and key terms, rely strictly on the provided company documents. Only use the Customer's name if clearly spoken.
+9. DEEP TONE, SARCASM & ATTITUDE DETECTION:
    - Analyze the subtle emotional and behavioral tone of both the agent and customer. Agents do NOT need to shout or raise their voice to be rude or unprofessional. Use high discretion to check for sarcasm, frustrations, or other negative traits.
    - LOW-TONE SARCASM, MOCKERY & CONDESCENSION: If the agent speaks in a quiet, calm, or normal volume but uses sarcastic remarks, mockery, condescension, passive-aggressive phrasing, patronizing comments, or contempt (e.g., "What did you expect me to do?", "As I already told you multiple times", "Well, that's not my problem", "If you had bothered to read...", or sarcastic "Thanks for telling me how to do my job"), detect this and penalize severely.
    - DISMISSIVENESS & INDIFFERENCE: Giving curt, dismissive, reluctant, or unhelpful answers, brushing off customer issues, or acting bored and uncaring.
@@ -1012,7 +1071,7 @@ Your job:
      * Resolution: Penalize if dismissiveness prevented genuine customer assistance.
      * Overall Score: A call with evident mockery, sarcasm, or contempt must not receive a high score.
    - FEEDBACK: Explicitly highlight the subtle tone issue in 'improvements' and 'metric_evidence' notes so managers can coach on attitude and tone.
-9. AUDIO QUALITY, NETWORK & PRONUNCIATION ISSUES:
+10. AUDIO QUALITY, NETWORK & PRONUNCIATION ISSUES:
    - You MUST detect if the transcript indicates the agent is not speaking clearly, mispronouncing words, or if there is no sound/silence from the agent.
    - Detect network challenges, low volume from either the customer or agent, and static/noise in the background (e.g., if the transcript has markers for this, or if the customer says "I can't hear you", "The network is bad", etc).
    - If the agent does not speak clearly or mispronounces words, explicitly note this in the scorecard and provide educational coaching in the 'improvements' section (e.g., "The agent should pronounce words clearly and audibly").
@@ -1023,6 +1082,8 @@ How to identify speakers:
 - Customer cues: stating a problem, complaining, giving personal details.
 - Always assume the submitted agent name belongs to the Agent speaker. Do not invent names.
 - Do NOT assume the first speaker is the agent — use CALL UNDERSTANDING speaker_guess and the cues above.
+
+${STANDARDS_READING_BLOCK}
 
 ${HUMAN_JUDGMENT_BLOCK}
 
@@ -1051,9 +1112,15 @@ export async function analyzeCall(
   scriptsText = "",
   scriptDocs: QaDocument[] = [],
   previousScoreBlock = "",
+  scoringSeed?: number,
 ): Promise<CallAnalysis> {
   const transcript = packTranscriptForAudit(utterances, 16000);
-  const understanding = await understandCallBrief(utterances, bilingual, agentName);
+  const understanding = await understandCallBrief(
+    utterances,
+    bilingual,
+    agentName,
+    scoringSeed,
+  );
   const understandingBlock = formatCallUnderstandingBlock(understanding);
 
   const holdListen = detectHoldEvents(utterances);
@@ -1092,9 +1159,10 @@ export async function analyzeCall(
 2) COMPANY RULE CHECKLIST — every rule to score (one parameters[] row each)
 3) SCORECARD / COMPLIANCE / PROCESS DOCUMENTS — full text behind those rules
 Score only from those files. Do not invent a Zetro rubric, company name, or key term.
-If the checklist lists N rules, return about N parameters with matching names, a short note, and a transcript quote for each (including 100% scores).
+If the checklist lists N rules, return about N parameters with matching names, exact weight_pct from the company file, a short note (why THIS parameter earned its score), a gap_note (why THIS parameter alone lost points — never blame another parameter), and a transcript quote for each (including 100% scores).
 
 Then UNDERSTAND the call (CALL UNDERSTANDING + timed transcript) before you assign marks — like a wise human QA who listened carefully.
+Read the company Standards carefully. Score each parameter independently. Stay consistent with any CONSISTENCY ANCHOR (±5).
 ${rescoreBlock}
 ${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${understandingBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript, meaning-repaired for clear understanding (opening + closing preserved). Audit against the company checklist, scorecard, scripts, and key terms. Put CLEAN Kiswahili/English on the scorecard. If a word is still broken, do not mention it:\n${transcript}`;
 
@@ -1106,6 +1174,7 @@ ${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${under
     "call_analysis",
     ANALYSIS_SCHEMA,
     "reasoning",
+    { stable: true, seed: scoringSeed },
   )) as CallAnalysis & {
     raw_score?: unknown;
     auto_zero_applied?: boolean;

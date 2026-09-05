@@ -1,22 +1,11 @@
-"use client";
-
-import { useState } from "react";
 import { verdictLabel } from "@/lib/format";
 import { QA_KIND_LABELS } from "@/lib/qa-kinds";
-import { scorecardRows, type ScorecardRow } from "@/lib/scorecard-rows";
+import { scorecardRows } from "@/lib/scorecard-rows";
 import type { CallScore } from "@/lib/types";
 import { scoreChipClass } from "@/components/ui";
 
-function formatClock(seconds: number | null | undefined) {
-  if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return null;
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
 export function ScoreCard({ score }: { score: CallScore }) {
   const rows = scorecardRows(score);
-  const [openName, setOpenName] = useState<string | null>(null);
 
   return (
     <div className="space-y-5">
@@ -63,24 +52,82 @@ export function ScoreCard({ score }: { score: CallScore }) {
       ) : null}
 
       <section className="surface p-5 sm:p-6 space-y-4">
-        <div>
-          <h3 className="text-[14px] font-semibold text-ink">Scorecard</h3>
-          <p className="text-[12px] text-muted mt-0.5">
-            Tap a parameter to see why it scored that way and the transcript evidence.
-          </p>
-        </div>
+        <h3 className="text-[14px] font-semibold text-ink">Scorecard</h3>
         <div className="grid gap-3 sm:grid-cols-2">
           {rows.map((row) => (
-            <ParameterEvidenceCard
+            <div
               key={row.name}
-              row={row}
-              open={openName === row.name}
-              onToggle={() =>
-                setOpenName((current) => (current === row.name ? null : row.name))
-              }
-            />
+              className="flex items-center justify-between gap-4 border border-line px-4 py-3"
+            >
+              <h4 className="text-[14px] font-semibold text-ink">{row.name}</h4>
+              <span className="font-bold text-[14px] tabular-nums text-ink shrink-0">
+                {row.score}%
+              </span>
+            </div>
           ))}
         </div>
+      </section>
+
+      <section className="surface p-5 sm:p-6 space-y-4">
+        <div>
+          <h3 className="text-[14px] font-semibold text-ink">Audit analysis</h3>
+          <p className="text-[12px] text-muted mt-0.5">
+            Why each parameter earned its score, and why any remaining points were cut
+          </p>
+        </div>
+        {rows.some((row) => row.note || row.gap_note) ? (
+          <ul className="space-y-3 border-t border-line pt-4">
+            {rows.map((row) => {
+              const cut = Math.max(0, 100 - row.score);
+              return (
+                <li key={row.name} className="border border-line px-4 py-3 space-y-2">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <h4 className="text-[14px] font-semibold text-ink">{row.name}</h4>
+                    <span className="text-[13px] font-bold tabular-nums text-ink">
+                      {row.score}%
+                      {row.weight_pct != null ? (
+                        <span className="ml-2 font-medium text-muted">
+                          · weight {row.weight_pct}%
+                        </span>
+                      ) : null}
+                      {cut > 0 ? (
+                        <span className="ml-2 font-medium text-muted">({cut}% cut)</span>
+                      ) : null}
+                    </span>
+                  </div>
+                  {row.note ? (
+                    <p className="text-[13px] leading-relaxed text-slate-700">
+                      <span className="font-medium text-ink">Why {row.score}%: </span>
+                      {row.note}
+                    </p>
+                  ) : null}
+                  {cut > 0 ? (
+                    <p className="text-[13px] leading-relaxed text-slate-700">
+                      <span className="font-medium text-ink">Why {cut}% was cut: </span>
+                      {row.gap_note ||
+                        "Re-run the documents audit to explain the points held back."}
+                    </p>
+                  ) : row.gap_note ? (
+                    <p className="text-[13px] leading-relaxed text-slate-700">
+                      <span className="font-medium text-ink">Deductions: </span>
+                      {row.gap_note}
+                    </p>
+                  ) : null}
+                  {!row.note && !row.gap_note ? (
+                    <p className="text-[13px] text-muted">
+                      Re-run the documents audit for a full breakdown of this parameter.
+                    </p>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-[13px] text-muted border-t border-line pt-4">
+            Re-run the documents audit to see why each parameter scored as it did and why
+            any points were cut.
+          </p>
+        )}
       </section>
 
       {(score.metric_evidence?.holding ||
@@ -114,77 +161,6 @@ export function ScoreCard({ score }: { score: CallScore }) {
           />
         </section>
       )}
-    </div>
-  );
-}
-
-function ParameterEvidenceCard({
-  row,
-  open,
-  onToggle,
-}: {
-  row: ScorecardRow;
-  open: boolean;
-  onToggle: () => void;
-}) {
-  const clock = formatClock(row.start_s);
-  const hasEvidence = Boolean(row.note?.trim() || row.quote?.trim());
-
-  return (
-    <div
-      className={`border border-line transition-colors ${
-        open ? "bg-slate-50/80 border-slate-300" : "bg-white"
-      }`}
-    >
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        className="w-full flex items-center justify-between gap-4 px-4 py-3 text-left"
-      >
-        <h4 className="text-[14px] font-semibold text-ink pr-2">{row.name}</h4>
-        <span className="flex items-center gap-2 shrink-0">
-          <span className="font-bold text-[14px] tabular-nums text-ink">{row.score}%</span>
-          <span
-            className={`text-muted text-[12px] transition-transform ${open ? "rotate-180" : ""}`}
-            aria-hidden
-          >
-            ▾
-          </span>
-        </span>
-      </button>
-
-      {open ? (
-        <div className="border-t border-line px-4 py-3 space-y-3">
-          {row.note?.trim() ? (
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
-                Why this score
-              </p>
-              <p className="mt-1 text-[13px] leading-relaxed text-slate-700">{row.note}</p>
-            </div>
-          ) : null}
-
-          {row.quote?.trim() ? (
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
-                Transcript evidence
-                {clock ? ` · ${clock}` : ""}
-              </p>
-              <blockquote className="mt-1 border-l-2 border-line pl-3 text-[13px] leading-relaxed text-slate-800 italic">
-                “{row.quote}”
-              </blockquote>
-            </div>
-          ) : null}
-
-          {!hasEvidence ? (
-            <p className="text-[13px] text-muted">
-              Re-run the documents audit to attach transcript evidence for this company
-              parameter.
-            </p>
-          ) : null}
-        </div>
-      ) : null}
     </div>
   );
 }

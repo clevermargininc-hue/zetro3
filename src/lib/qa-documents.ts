@@ -165,7 +165,10 @@ export function formatCompanyRuleChecklist(docs: QaDocument[]) {
   if (!rules.length) return "";
   return [
     "COMPANY RULE CHECKLIST — AUDIT ONLY THESE RULES FROM THE USER'S UPLOADED FILES.",
-    "Read every line. Give a parameter score for each. Do not invent extra Zetro categories.",
+    "Read every line carefully. Give a parameter score for each. Do not invent extra Zetro categories.",
+    "Each line is INDEPENDENT — score and deduct only against that line. Do not move a hold miss into opening, product knowledge, further assistance, etc.",
+    "Use the EXACT weight % written on each line in the company scorecard (do not invent 5/10/20/25 defaults).",
+    "The same recording + these same rules must produce consistent scores (±5) across accounts and re-audits.",
     ...rules.map((rule, index) => `${index + 1}. ${rule}`),
   ].join("\n");
 }
@@ -173,9 +176,9 @@ export function formatCompanyRuleChecklist(docs: QaDocument[]) {
 export function formatQaContext(docs: QaDocument[]) {
   const limits: Record<(typeof QA_KINDS)[number], number> = {
     // Scorecard must stay nearly complete — it drives the company parameter list.
-    scorecard: 32000,
-    compliance: 18000,
-    document: 16000,
+    scorecard: 36000,
+    compliance: 20000,
+    document: 18000,
   };
   const order = ["scorecard", "compliance", "document"] as const;
   return order.map((kind) => {
@@ -183,10 +186,10 @@ export function formatQaContext(docs: QaDocument[]) {
     if (!items.length) return "";
     const heading =
       kind === "scorecard"
-        ? "SCORECARD — READ EVERY RULE. This file is the only scoring rubric. Score every criterion / weight / Auto-Zero line in it."
+        ? "SCORECARD — READ EVERY RULE CAREFULLY. This file is the only scoring rubric. Score every criterion / weight / Auto-Zero line in it. Be consistent every time."
         : kind === "compliance"
-          ? "COMPLIANCE — READ EVERY RULE. Flag every breach of these company rules."
-          : "PROCESS DOCUMENTS — READ THESE RULES. Required scripts, steps, product names, and key terms.";
+          ? "COMPLIANCE — READ EVERY RULE CAREFULLY. Flag every breach of these company rules."
+          : "PROCESS DOCUMENTS — READ THESE RULES CAREFULLY. Required scripts, steps, product names, and key terms.";
     return `## ${heading}\n\n${items
       .map((doc) => {
         const body = (doc.extracted_text || "").trim();

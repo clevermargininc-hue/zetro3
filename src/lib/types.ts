@@ -52,6 +52,8 @@ export type ScoreParameter = {
   source_file?: string;
   /** Short reason this parameter scored as it did. */
   note?: string;
+  /** Why the remaining points (100 − score) were held back. */
+  gap_note?: string;
   /** Clean transcript snippet that backs the score (even for 100%). */
   quote?: string;
   utterance_index?: number | null;
@@ -76,6 +78,7 @@ export type MetricEvidence = Partial<Record<ScoreDimension, MetricEvidenceItem>>
     previous_overall: number;
     max_delta: number;
     applied: boolean;
+    source?: "same_call" | "team_same_recording";
   };
 };
 

@@ -4,7 +4,9 @@ import { analyzeCall, restoreSwahiliMeaning } from "@/lib/openai";
 import {
   previousScorePromptBlock,
   stabilizeRescoreAnalysis,
-  type PreviousCallScore,
+  loadConsistencyAnchor,
+  consistencySeed,
+  standardsFingerprint,
 } from "@/lib/score-variance";
 import { collapseTurnList } from "@/lib/collapse-asr";
 import { repairSwahiliTranscript } from "@/lib/swahili-repair";
@@ -87,7 +89,11 @@ async function settlePreparedCall(supabase: AdminClient, callId: string, status:
 
 export async function transcribeCall(callId: string, options: JobOptions = {}) {
   const force = Boolean(options.force);
-  if (transcribing.has(callId)) return;
+  if (transcribing.has(callId)) {
+    // A stuck lock blocks Re-prepare; force clears it so the job can run again.
+    if (!force) return;
+    transcribing.delete(callId);
+  }
   transcribing.add(callId);
   let supabase: AdminClient | null = null;
 
@@ -115,7 +121,11 @@ export async function transcribeCall(callId: string, options: JobOptions = {}) {
 
     await supabase
       .from("calls")
-      .update({ status: "transcribing", error_message: null })
+      .update({
+        status: "transcribing",
+        error_message: null,
+        ...(force ? { completed_at: null } : {}),
+      })
       .eq("id", callId);
 
     const membership = await getMembership(call.user_id).catch(() => null);
@@ -128,6 +138,7 @@ export async function transcribeCall(callId: string, options: JobOptions = {}) {
     }
 
     let transcript: Awaited<ReturnType<typeof waitForTranscript>> | null = null;
+    // On force re-prepare, always re-submit audio so AssemblyAI is not stuck on an old job.
     if (!force && call.assembly_id) {
       try {
         transcript = await waitForTranscript(call.assembly_id);
@@ -275,19 +286,7 @@ export async function scoreCall(
       }
     }
 
-    let previousScore: PreviousCallScore | null = null;
-    if (force) {
-      const { data: prior } = await db
-        .from("call_scores")
-        .select(
-          "overall_score, greeting, empathy, professionalism, resolution, communication, language_handling, verdict, metric_evidence",
-        )
-        .eq("call_id", callId)
-        .maybeSingle();
-      if (prior) {
-        previousScore = prior as PreviousCallScore;
-      }
-    }
+    const consistencyAnchor = await loadConsistencyAnchor(call).catch(() => null);
 
     const { data: stored, error: uttError } = await db
       .from("utterances")
@@ -372,6 +371,13 @@ export async function scoreCall(
       }
     }
 
+    const seed = consistencySeed({
+      fileName: call.file_name,
+      durationSeconds: call.duration_seconds,
+      assemblyId: call.assembly_id,
+      standardsFingerprint: standardsFingerprint(orgDocs),
+    });
+
     const analysis = stabilizeRescoreAnalysis(
       await analyzeCall(
         asAssembly,
@@ -382,9 +388,11 @@ export async function scoreCall(
         bilingual,
         scriptsText,
         orgDocs,
-        previousScorePromptBlock(previousScore),
+        previousScorePromptBlock(consistencyAnchor),
+        seed,
       ),
-      previousScore,
+      consistencyAnchor?.score,
+      consistencyAnchor?.source,
     );
 
     const roleUpdates = scoredRows

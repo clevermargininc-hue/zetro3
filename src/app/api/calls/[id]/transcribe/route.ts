@@ -13,55 +13,78 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await context.params;
-  const { user, supabase } = await getRequestUser(request);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  try {
+    const { id } = await context.params;
+    const { user, supabase } = await getRequestUser(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: "Please sign in again, then retry prepare." },
+        { status: 401 },
+      );
+    }
 
-  const body = (await request.json().catch(() => ({}))) as { force?: unknown };
-  const force = body.force === true;
+    const body = (await request.json().catch(() => ({}))) as { force?: unknown };
+    const force = body.force === true;
 
-  const { data: call } = await supabase
-    .from("calls")
-    .select("id, user_id, status")
-    .eq("id", id)
-    .single();
+    const { data: call, error: callError } = await supabase
+      .from("calls")
+      .select("id, user_id, status")
+      .eq("id", id)
+      .single();
 
-  const teamScope = await getTeamScope(user.id);
-  if (!call || !teamScope.includes(call.user_id)) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+    if (callError) {
+      return NextResponse.json(
+        { error: callError.message || "Could not load this call." },
+        { status: 400 },
+      );
+    }
 
-  if (!force) {
-    const admin = createAdminClient();
-    const { count } = await admin
-      .from("utterances")
-      .select("id", { count: "exact", head: true })
-      .eq("call_id", id);
-    if ((count ?? 0) > 0) {
-      after(async () => {
-        await transcribeCall(id).catch((error) => {
-          console.error("Transcription failed", error);
+    const teamScope = await getTeamScope(user.id);
+    if (!call || !teamScope.includes(call.user_id)) {
+      return NextResponse.json({ error: "Call not found." }, { status: 404 });
+    }
+
+    if (!force) {
+      const admin = createAdminClient();
+      const { count } = await admin
+        .from("utterances")
+        .select("id", { count: "exact", head: true })
+        .eq("call_id", id);
+      if ((count ?? 0) > 0) {
+        after(async () => {
+          await transcribeCall(id).catch((error) => {
+            console.error("Transcription failed", error);
+          });
         });
-      });
-      const status = PREPARED.has(call.status) ? call.status : "transcribed";
-      return NextResponse.json({ ok: true, status, reused: true });
+        const status = PREPARED.has(call.status) ? call.status : "transcribed";
+        return NextResponse.json({ ok: true, status, reused: true });
+      }
+      if (PREPARED.has(call.status)) {
+        return NextResponse.json({ ok: true, status: call.status, reused: true });
+      }
     }
-    if (PREPARED.has(call.status)) {
-      return NextResponse.json({ ok: true, status: call.status, reused: true });
-    }
+
+    const work = transcribeCall(id, { force }).catch((error) => {
+      console.error("Transcription failed", error);
+    });
+    after(async () => {
+      await work;
+    });
+
+    return NextResponse.json({
+      ok: true,
+      status: force || call.status === "transcribing" ? "transcribing" : "started",
+    });
+  } catch (error) {
+    console.error("Prepare route failed", error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Could not prepare call. Try again.",
+      },
+      { status: 500 },
+    );
   }
-
-  const work = transcribeCall(id, { force }).catch((error) => {
-    console.error("Transcription failed", error);
-  });
-  after(async () => {
-    await work;
-  });
-
-  return NextResponse.json({
-    ok: true,
-    status: call.status === "transcribing" ? "transcribing" : "started",
-  });
 }

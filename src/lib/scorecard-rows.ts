@@ -4,8 +4,10 @@ export type ScorecardRow = {
   name: string;
   score: number;
   note?: string;
+  gap_note?: string;
   quote?: string;
   start_s?: number | null;
+  weight_pct?: number | null;
 };
 
 const FALLBACK_ROWS: ScorecardRow[] = [
@@ -26,8 +28,10 @@ export function scorecardRows(score: CallScore): ScorecardRow[] {
         name: row.name,
         score: Math.max(0, Math.min(100, Math.round(Number(row.score) || 0))),
         note: row.note?.trim() || undefined,
+        gap_note: row.gap_note?.trim() || undefined,
         quote: row.quote?.trim() || undefined,
         start_s: row.start_s ?? null,
+        weight_pct: row.weight_pct ?? null,
       }))
       .filter((row) => row.name.trim().length > 0);
   }

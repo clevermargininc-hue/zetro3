@@ -54,8 +54,7 @@ export function TranscribeWorkspace({
   const hasTranscript = utterances.length > 0;
   const canScore = readyForAudit(callStatus) || hasTranscript;
   const preparingBusy =
-    (preparing || callStatus === "transcribing" || callStatus === "queued") &&
-    !hasTranscript;
+    preparing || callStatus === "transcribing" || callStatus === "queued";
 
   useEffect(() => {
     if (hasTranscript || readyForAudit(callStatus) || callStatus === "failed") {
@@ -76,10 +75,21 @@ export function TranscribeWorkspace({
         });
         const body = (await res.json().catch(() => ({}))) as {
           error?: string;
+          message?: string;
           status?: CallStatus;
           reused?: boolean;
         };
-        if (!res.ok) throw new Error(body.error || "Could not prepare call");
+        if (!res.ok) {
+          throw new Error(
+            body.error ||
+              body.message ||
+              (res.status === 401
+                ? "Please sign in again, then retry."
+                : res.status === 431
+                  ? "Sign out, sign back in, then retry prepare. Session data was too large to send."
+                  : `Could not prepare call (${res.status})`),
+          );
+        }
         if (cancelled) return;
         if (body.reused) {
           setCall((prev) => ({
@@ -121,10 +131,21 @@ export function TranscribeWorkspace({
       });
       const body = (await res.json().catch(() => ({}))) as {
         error?: string;
+        message?: string;
         status?: CallStatus;
         reused?: boolean;
       };
-      if (!res.ok) throw new Error(body.error || "Could not prepare call");
+      if (!res.ok) {
+        throw new Error(
+          body.error ||
+            body.message ||
+            (res.status === 401
+              ? "Please sign in again, then retry."
+              : res.status === 431
+                ? "Sign out, sign back in, then retry prepare. Session data was too large to send."
+                : `Could not prepare call (${res.status})`),
+        );
+      }
       if (body.reused && !force) {
         setCall((prev) => ({
           ...prev,
@@ -270,12 +291,12 @@ export function TranscribeWorkspace({
         </section>
       )}
 
-      {call.status === "failed" && !canScore ? (
+      {call.status === "failed" ? (
         <div className="flex justify-center pt-2">
           <button
             type="button"
             disabled={preparingBusy}
-            onClick={() => void prepare(false)}
+            onClick={() => void prepare(true)}
             className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[12px] px-4 py-2"
           >
             {preparingBusy ? "Retrying…" : "Retry preparation"}
