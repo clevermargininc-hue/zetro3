@@ -252,7 +252,7 @@ parameters (REQUIRED — this is the company scorecard):
 - weight_pct: copy the EXACT weight printed on that scorecard line (e.g. 3, 7.5, 12, 15). Do NOT invent 5/10/20/25% defaults. If the file has no weight for that line, set null.
 - result: hit, miss, or partial according to THAT company rule only.
 - source_file: exact uploaded file name from FILE INDEX.
-- note: one short sentence explaining WHY this score was EARNED for THIS parameter only (what the agent did vs that company rule). Do not mention other parameters. Clean language. Required even for 100%.
+- note: one short English sentence explaining WHY this score was EARNED for THIS parameter only (what the agent did vs that company rule). Do not mention other parameters. Required even for 100%.
 - gap_note: one short sentence explaining WHY points were CUT on THIS parameter only (what was missing vs that same company rule). FORBIDDEN: blaming holding, opening, product knowledge, tone, or any OTHER parameter for this cut. Example bad: cutting "Provide further assistance" because hold procedure failed. Example good: cutting it only if further assistance itself was incomplete. If score is 100, use "" or "Full marks — nothing deducted." If score is 0, explain the full miss of THIS rule. Required for every parameter.
 - quote: a SHORT clean transcript snippet that proves THIS parameter's score. Never paste garbled ASR. If "If applicable" and not needed, quote "" and say so in note.
 - utterance_index: the timed turn index [i] that best supports the quote, or -1 if no turn applies.
@@ -471,12 +471,13 @@ export async function understandCallBrief(
   const system = bilingual
     ? `You are an experienced bilingual (Kiswahili + English) contact-center QA coach.
 Your only job is to UNDERSTAND this call clearly — like a human who listened carefully — before any scorecard is filled.
-Do not invent facts. If ASR is unclear, say so in unclear_parts. Prefer the language of the call in short notes.
+Do not invent facts. If ASR is unclear, say so in unclear_parts.
+Write every note in English, even when the call is Kiswahili or mixed. You may quote a short original phrase, then gloss it in English.
 Identify Agent vs Customer from what they say (greeting/script vs problem/complaint), not from who spoke first.
 Be consistent: the same recording should yield the same understanding every time.`
     : `You are an experienced contact-center QA coach.
 Your only job is to UNDERSTAND this call clearly — like a human who listened carefully — before any scorecard is filled.
-Do not invent facts. If ASR is unclear, say so in unclear_parts.
+Do not invent facts. If ASR is unclear, say so in unclear_parts. Write every note in English.
 Identify Agent vs Customer from what they say (greeting/script vs problem/complaint), not from who spoke first.
 Be consistent: the same recording should yield the same understanding every time.`;
 
@@ -989,33 +990,34 @@ Your job:
 4. AUDIT the agent against EVERY rule / criterion / weight line in the uploaded company SCORECARD (and COMPANY RULE CHECKLIST). Not a fixed 6-box Zetro rubric.
 5. Check every compliance rule from the uploaded files and list breaches.
 6. Stay consistent with CONSISTENCY ANCHOR when present (±5) so repeated / multi-account audits of this recording agree.
-7. CLEAN LANGUAGE ON THE SCORECARD:
+7. WRITE THE WHOLE AUDIT IN ENGLISH:
+   - The call may be Kiswahili, English, or mixed. Understand it in its own language, then report on it in professional English. QA analysts read English only.
+   - EVERY written field is English: summary, strengths, improvements, compliance_findings, hold_findings, each parameter note and gap_note, and every metric_evidence note. Never write these in Kiswahili.
+   - metric_evidence.quote is EVIDENCE, not analysis: keep it verbatim in the language the speaker used. Do not translate or rewrite a quote. When a Kiswahili quote needs explaining, add a short English gloss in square brackets after it, e.g. "Samahani kwa usumbufu" [Sorry for the trouble].
    - Evidence comes from the company SCORECARD and the CLEAN SCRIPT, checked against the meaning-repaired conversation.
-   - If a Kiswahili or English phrase is clean and readable, put that short phrase in metric_evidence.quote so it appears on the scorecard.
-   - NEVER put broken, fused, misspelled, or garbled speech-to-text words on the scorecard (quote, note, summary, strengths, improvements, compliance). If a word is not clean, omit it and write the point in correct Kiswahili or English.
-   - Never translate Kiswahili into English. Write analysis in the primary language spoken on the call (Kiswahili or English).
+   - NEVER put broken, fused, misspelled, or garbled speech-to-text words on the scorecard (quote, note, summary, strengths, improvements, compliance). If a word is not clean, omit it and make the point in clear English.
 8. PRIVACY:
    - The full transcript stays internal. The scorecard may show only short clean evidence quotes, not whole turns.
 9. AGENT & COMPANY NAMES:
    - Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. For the Company Name and key terms, rely strictly on the provided company documents. Only use the Customer's name if clearly spoken.
 10. SPEAKER ROLES IN TEXT:
-   - When writing your notes, summaries, and findings, always refer to the speakers as 'Agent' (or their name) and 'Customer' (or 'Mteja'). Do NOT use raw transcript labels like 'Speaker A' or 'Speaker 1' in your written analysis, though you must still output the exact speaker_label string in the speaker_assignments array.
-11. DEEP TONE, SARCASM & ATTITUDE DETECTION (UTAMBUZI WA DHIHAKA, KEJELI, KUFADHAIKA NA DHARAU):
-   - You MUST analyze the subtle emotional, conversational, and behavioral tone of both the agent and customer beyond just volume or shouting. Use high discretion (busara sana) to check for sarcasm, frustrations, or other negative traits.
-   - LOW-TONE SARCASM & MOCKERY (Kejeli na dhihaka ya chinichini): An agent does NOT need to yell or raise their voice to be rude. If the agent speaks in a quiet, soft, flat, or normal voice but uses words, phrases, or rhetorical questions that are sarcastic, cynical, mocking, patronizing, or dismissive (mfano: "Sasa unataka nikufanyie nini?", "Hata mtoto anajua hilo", "Si nilishakwambia?", "Huwezi kusoma?", "Haya bwana wewe ndio unajua", "Ulitaka niseme nini sasa?", "Ndio hivyo huwezi kubadilisha", "Hapo sina msaada wowote", au kejeli kama "Haya asante sana kwa kutufundisha kazi"), you MUST detect and penalize this severely.
-   - DISMISSIVENESS & PASSIVE-AGGRESSION (Kupuuza na dharau): Giving curt, indifferent, dismissive, or reluctant one-word answers, brushing off the customer's problem without attempting genuine resolution, sighing with irritation, or acting bored/uninterested.
-   - CONDESCENSION & SUPERIORITY (Kujiona na kumdharau mteja): Belittling the customer, speaking down to them, or making them feel foolish for asking questions or not understanding technical details.
+   - When writing your notes, summaries, and findings, always refer to the speakers as 'Agent' (or their name) and 'Customer'. Do NOT use raw transcript labels like 'Speaker A' or 'Speaker 1' in your written analysis, though you must still output the exact speaker_label string in the speaker_assignments array.
+11. DEEP TONE, SARCASM & ATTITUDE DETECTION:
+   - You MUST analyze the subtle emotional, conversational, and behavioral tone of both the agent and customer beyond just volume or shouting. Detect sarcasm, frustration, mockery, and dismissiveness even when spoken in Kiswahili.
+   - LOW-TONE SARCASM & MOCKERY: An agent does NOT need to yell to be rude. Quiet sarcasm, cynical rhetorical questions, or dismissive phrasing still count — including Kiswahili examples such as "Sasa unataka nikufanyie nini?", "Hata mtoto anajua hilo", "Si nilishakwambia?", "Huwezi kusoma?". Describe the issue in English in the scorecard.
+   - DISMISSIVENESS & PASSIVE-AGGRESSION: Giving curt, indifferent, dismissive, or reluctant one-word answers, brushing off the customer's problem, sighing with irritation, or acting bored.
+   - CONDESCENSION & SUPERIORITY: Belittling the customer, speaking down to them, or making them feel foolish for asking questions.
    - SCORING IMPACT OF NEGATIVE TONES:
      * Professionalism: Severe penalty (drop to 20-50/100). Sarcasm, mockery, or subtle insults completely violate professional contact center standards.
      * Empathy: Severe penalty (drop to 10-40/100). Cold, dismissive, or mocking responses to customer distress represent zero active empathy.
      * Resolution: Penalize if dismissive tone led to incomplete, careless, or unhelpful support.
      * Overall Score: A call with evident mockery, sarcasm, or contempt must NEVER receive a passing/high score.
-   - COACHING & FEEDBACK: If low-tone mockery or sarcasm is detected, clearly identify it in 'improvements' and 'metric_evidence.professionalism.note' / 'metric_evidence.empathy.note' (mfano: "Ingawa mhudumu hakuinua sauti, alitumia maneno yenye dhihaka, kejeli au kupuuza maelezo ya mteja aliposema...").
-12. AUDIO QUALITY, NETWORK & PRONUNCIATION ISSUES (UBORA WA SAUTI NA MATAMSHI):
+   - COACHING & FEEDBACK: If low-tone mockery or sarcasm is detected, identify it in English in 'improvements' and the relevant metric_evidence notes (example: "Although the agent did not raise their voice, they used sarcastic or dismissive language when they said…").
+12. AUDIO QUALITY, NETWORK & PRONUNCIATION ISSUES:
    - You MUST detect if the transcript indicates the agent is not speaking clearly, mispronouncing words, or if there is no sound/silence from the agent.
-   - Detect network challenges, low volume from either the customer or agent, and static/noise in the background (e.g., if the transcript has markers for this, or if the customer says "Sikuskii vizuri", "Mtandao unasumbua", etc).
-   - If the agent does not speak clearly or mispronounces words, explicitly note this in the scorecard and provide educational coaching in the 'improvements' section (mfano: "Agent anapaswa kutamka maneno vizuri na kwa uwazi").
-   - If there are network issues or static, note it in the 'improvements' or 'summary' so the manager is aware it affected the call quality.
+   - Detect network challenges, low volume, and static (including when the customer says they cannot hear, e.g. "Sikuskii vizuri" / "the network is poor"). Write the finding in English.
+   - If the agent does not speak clearly or mispronounces words, note it on the scorecard and coach in English in 'improvements' (example: "The agent should pronounce words clearly and distinctly.").
+   - If there are network issues or static, note it in English in 'improvements' or 'summary' so the manager is aware it affected call quality.
 
 How to identify speakers:
 - Agent cues: company greeting, scripted opening from the process documents or opening script, offering solutions.
@@ -1060,7 +1062,7 @@ Your job:
 4. AUDIT the agent against EVERY rule / criterion / weight line in the uploaded company SCORECARD (and COMPANY RULE CHECKLIST). Not a fixed 6-box Zetro rubric.
 5. Check every compliance rule from the uploaded files and list breaches.
 6. Stay consistent with CONSISTENCY ANCHOR when present (±5) so repeated / multi-account audits of this recording agree.
-7. Keep English as spoken. Never translate. If a phrase is clean, put it on the scorecard as evidence. Never copy broken speech-to-text spellings into any scorecard field.
+7. WRITE THE WHOLE AUDIT IN ENGLISH. Quotes may stay in the speaker's language with a short English gloss in square brackets. Never copy broken speech-to-text spellings into any scorecard field.
 8. Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. For the Company Name and key terms, rely strictly on the provided company documents. Only use the Customer's name if clearly spoken.
 9. DEEP TONE, SARCASM & ATTITUDE DETECTION:
    - Analyze the subtle emotional and behavioral tone of both the agent and customer. Agents do NOT need to shout or raise their voice to be rude or unprofessional. Use high discretion to check for sarcasm, frustrations, or other negative traits.
@@ -1165,7 +1167,7 @@ If the checklist lists N rules, return about N parameters with matching names, e
 Then UNDERSTAND the call (CALL UNDERSTANDING + timed transcript) before you assign marks — like a wise human QA who listened carefully.
 Read the company Standards carefully. Score each parameter independently. Stay consistent with any CONSISTENCY ANCHOR (±5).
 ${rescoreBlock}
-${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${understandingBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript, meaning-repaired for clear understanding (opening + closing preserved). Audit against the company checklist, scorecard, scripts, and key terms. Put CLEAN Kiswahili/English on the scorecard. If a word is still broken, do not mention it:\n${transcript}`;
+${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${understandingBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript, meaning-repaired for clear understanding (opening + closing preserved). Audit against the company checklist, scorecard, scripts, and key terms. Write the scorecard in English. Quotes may stay in the speaker's language with an English gloss. If a word is still broken, do not mention it:\n${transcript}`;
 
   const parsed = (await completeJson(
     bilingual
