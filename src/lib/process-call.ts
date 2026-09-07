@@ -9,7 +9,6 @@ import {
   standardsFingerprint,
 } from "@/lib/score-variance";
 import { collapseTurnList } from "@/lib/collapse-asr";
-import { repairSwahiliTranscript } from "@/lib/swahili-repair";
 import {
   extractKeytermsFromDocuments,
   formatCallScripts,
@@ -20,7 +19,7 @@ import {
 } from "@/lib/qa-documents";
 import { retrieveQaContext } from "@/lib/qa-retrieve";
 import type { AuditMode, LanguageMode, SpeakerRole } from "@/lib/types";
-import { describeAiError } from "@/lib/ai-client";
+import { describeAiError, describePrepareError } from "@/lib/ai-client";
 import { getMembership } from "@/lib/workspaces";
 import { HOLD_ASR_KEYTERMS } from "@/lib/detect-holds";
 import { resolvedLanguageMode, workspaceLanguages } from "@/lib/locale";
@@ -36,13 +35,8 @@ function inferRoleFromLabel(label: string): SpeakerRole | null {
   return null;
 }
 
-const transcribing = new Set<string>();
-const scoring = new Set<string>();
-
 type AdminClient = ReturnType<typeof createAdminClient>;
 type JobOptions = { force?: boolean };
-
-const PREPARED_STATUSES = new Set(["transcribed", "analyzing", "completed"]);
 
 function roleForSpeaker(
   label: string,
@@ -55,6 +49,31 @@ function roleForSpeaker(
     inferRoleFromLabel(label) ||
     "unknown"
   );
+}
+
+function isAsrTimeout(err: unknown) {
+  return err instanceof Error && /timed out/i.test(err.message);
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function downloadCallAudio(supabase: AdminClient, audioPath: string) {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const { data: file, error: downloadError } = await supabase.storage
+        .from("call-audio")
+        .download(audioPath);
+      if (file && !downloadError) return file;
+      lastError = downloadError || new Error("Could not download the recording");
+    } catch (error) {
+      lastError = error;
+    }
+    if (attempt < 3) await sleep(800 * 2 ** attempt);
+  }
+  throw new Error(describePrepareError(lastError));
 }
 
 async function utteranceCount(supabase: AdminClient, callId: string) {
@@ -70,53 +89,44 @@ async function settlePreparedCall(supabase: AdminClient, callId: string, status:
   if (status === "analyzing" || status === "completed" || status === "transcribed") {
     return status;
   }
-  const { data: score } = await supabase
-    .from("call_scores")
-    .select("id")
-    .eq("call_id", callId)
-    .maybeSingle();
-  const next = score ? "completed" : "transcribed";
   await supabase
     .from("calls")
     .update({
-      status: next,
+      status: "transcribed",
       error_message: null,
-      ...(score ? { completed_at: new Date().toISOString() } : {}),
     })
     .eq("id", callId);
-  return next;
+  return "transcribed";
 }
 
 export async function transcribeCall(callId: string, options: JobOptions = {}) {
   const force = Boolean(options.force);
-  if (transcribing.has(callId)) {
-    // A stuck lock blocks Re-prepare; force clears it so the job can run again.
-    if (!force) return;
-    transcribing.delete(callId);
+  const supabase = createAdminClient();
+
+  const { data: call, error } = await supabase
+    .from("calls")
+    .select("*")
+    .eq("id", callId)
+    .single();
+
+  if (error || !call) {
+    throw new Error(error?.message || "Call not found");
   }
-  transcribing.add(callId);
-  let supabase: AdminClient | null = null;
+
+  const existingTurns = await utteranceCount(supabase, callId);
+  if (!force && existingTurns > 0) {
+    await settlePreparedCall(supabase, callId, call.status);
+    return;
+  }
 
   try {
-    supabase = createAdminClient();
-    const { data: call, error } = await supabase
-      .from("calls")
-      .select("*")
-      .eq("id", callId)
-      .single();
-
-    if (error || !call) {
-      throw new Error(error?.message || "Call not found");
-    }
-
-    const existingTurns = await utteranceCount(supabase, callId);
-    if (!force && existingTurns > 0) {
-      await settlePreparedCall(supabase, callId, call.status);
-      return;
-    }
-
-    if (!force && PREPARED_STATUSES.has(call.status)) {
-      return;
+    const membership = await getMembership(call.user_id).catch(() => null);
+    const languageMode = resolvedLanguageMode(
+      membership?.country,
+      (call.language_mode || "auto") as LanguageMode,
+    );
+    if (languageMode !== call.language_mode) {
+      await supabase.from("calls").update({ language_mode: languageMode }).eq("id", callId);
     }
 
     await supabase
@@ -128,21 +138,12 @@ export async function transcribeCall(callId: string, options: JobOptions = {}) {
       })
       .eq("id", callId);
 
-    const membership = await getMembership(call.user_id).catch(() => null);
-    const languageMode = resolvedLanguageMode(
-      membership?.country,
-      (call.language_mode || "auto") as LanguageMode,
-    );
-    if (languageMode !== call.language_mode) {
-      await supabase.from("calls").update({ language_mode: languageMode }).eq("id", callId);
-    }
-
     let transcript: Awaited<ReturnType<typeof waitForTranscript>> | null = null;
-    // On force re-prepare, always re-submit audio so AssemblyAI is not stuck on an old job.
     if (!force && call.assembly_id) {
       try {
         transcript = await waitForTranscript(call.assembly_id);
-      } catch {
+      } catch (err) {
+        if (isAsrTimeout(err)) return;
         transcript = null;
       }
     }
@@ -151,24 +152,24 @@ export async function transcribeCall(callId: string, options: JobOptions = {}) {
     const keyTerms = extractKeytermsFromDocuments(orgDocs, 60);
 
     if (!transcript) {
-      const { data: file, error: downloadError } = await supabase.storage
-        .from("call-audio")
-        .download(call.audio_path);
-
-      if (downloadError || !file) {
-        const detail = downloadError?.message || "";
-        throw new Error(
-          /fetch failed|timeout|network/i.test(detail)
-            ? "Could not download the recording. Check your internet connection and try again."
-            : detail || "Could not download the recording",
-        );
-      }
+      const file = await downloadCallAudio(supabase, call.audio_path);
 
       const asrTerms = [...HOLD_ASR_KEYTERMS, ...extractKeytermsFromDocuments(orgDocs)];
       const audioUrl = await uploadToAssemblyAI(await file.arrayBuffer());
       const queued = await submitTranscript(audioUrl, languageMode, asrTerms);
-      await supabase.from("calls").update({ assembly_id: queued.id }).eq("id", callId);
-      transcript = await waitForTranscript(queued.id);
+      const { error: persistError } = await supabase
+        .from("calls")
+        .update({ assembly_id: queued.id })
+        .eq("id", callId);
+      if (persistError) {
+        throw new Error(persistError.message || "Could not save the transcription job.");
+      }
+      try {
+        transcript = await waitForTranscript(queued.id);
+      } catch (err) {
+        if (isAsrTimeout(err)) return;
+        throw err;
+      }
     }
 
     if ((await utteranceCount(supabase, callId)) > 0 && !force) {
@@ -181,10 +182,18 @@ export async function transcribeCall(callId: string, options: JobOptions = {}) {
       throw new Error("No speakers were detected in this recording");
     }
 
-    const collapsed = collapseTurnList(utterances).map((turn) => ({
-      ...turn,
-      text: repairSwahiliTranscript(turn.text, keyTerms),
+    const collapsed = collapseTurnList(utterances);
+    let restored = collapsed.map((turn) => ({
+      speaker: turn.speaker,
+      text: turn.text,
+      start: turn.start,
+      end: turn.end,
+      confidence: turn.confidence,
     }));
+    restored = await restoreSwahiliMeaning(restored, {
+      keyTerms,
+      scriptHints: formatCallScripts(orgDocs),
+    });
 
     if ((await utteranceCount(supabase, callId)) > 0 && !force) {
       await settlePreparedCall(supabase, callId, "transcribing");
@@ -192,11 +201,8 @@ export async function transcribeCall(callId: string, options: JobOptions = {}) {
     }
 
     await supabase.from("utterances").delete().eq("call_id", callId);
-    if (force) {
-      await supabase.from("call_scores").delete().eq("call_id", callId);
-    }
 
-    const rows = collapsed.map((u, index) => ({
+    const rows = restored.map((u, index) => ({
       call_id: callId,
       sequence: index,
       speaker_label: u.speaker,
@@ -222,23 +228,18 @@ export async function transcribeCall(callId: string, options: JobOptions = {}) {
       })
       .eq("id", callId);
   } catch (err) {
-    const message = err instanceof Error
-        ? err.message
-        : "Unknown transcription error";
-    if (supabase) {
-      const saved = await utteranceCount(supabase, callId).catch(() => 0);
-      if (saved > 0) {
-        await settlePreparedCall(supabase, callId, "transcribing");
-        return;
-      }
-      await supabase
-        .from("calls")
-        .update({ status: "failed", error_message: message })
-        .eq("id", callId);
+    const message = describePrepareError(err);
+    const saved = await utteranceCount(supabase, callId).catch(() => 0);
+    if (saved > 0) {
+      await settlePreparedCall(supabase, callId, "transcribing");
+      return;
     }
-    throw err;
-  } finally {
-    transcribing.delete(callId);
+    if (isAsrTimeout(err)) return;
+    await supabase
+      .from("calls")
+      .update({ status: "failed", error_message: message })
+      .eq("id", callId);
+    throw new Error(message);
   }
 }
 
@@ -248,71 +249,74 @@ export async function scoreCall(
   options: JobOptions = {},
 ) {
   const force = Boolean(options.force);
-  if (scoring.has(callId)) return;
-  scoring.add(callId);
-  let supabase: AdminClient | null = null;
+  const db = createAdminClient();
 
-  try {
-    const db = createAdminClient();
-    supabase = db;
-    const { data: call, error } = await db
-      .from("calls")
-      .select("*, agents(name)")
-      .eq("id", callId)
-      .single();
+  const { data: call, error } = await db
+    .from("calls")
+    .select("*, agents(name)")
+    .eq("id", callId)
+    .single();
 
-    if (error || !call) {
-      throw new Error(error?.message || "Call not found");
-    }
+  if (error || !call) {
+    throw new Error(error?.message || "Call not found");
+  }
 
-    if (!force) {
-      const { data: existingScore } = await db
-        .from("call_scores")
-        .select("id")
-        .eq("call_id", callId)
-        .maybeSingle();
-      if (existingScore) {
-        if (call.status !== "completed") {
-          await db
-            .from("calls")
-            .update({
-              status: "completed",
-              completed_at: call.completed_at || new Date().toISOString(),
-              error_message: null,
-            })
-            .eq("id", callId);
-        }
-        return;
-      }
-    }
+  const { data: existingScore } = await db
+    .from("call_scores")
+    .select("id")
+    .eq("call_id", callId)
+    .maybeSingle();
 
-    const consistencyAnchor = await loadConsistencyAnchor(call).catch(() => null);
+  if (!force && existingScore && call.status === "completed") {
+    return;
+  }
 
-    const { data: stored, error: uttError } = await db
-      .from("utterances")
-      .select("*")
-      .eq("call_id", callId)
-      .order("sequence");
+  if (!force && call.status === "analyzing" && !existingScore) {
+    return;
+  }
 
-    if (uttError) throw new Error(uttError.message);
-    if (!stored?.length) {
-      throw new Error("Prepare this call for audit first.");
-    }
+  const consistencyAnchor = await loadConsistencyAnchor(call).catch(() => null);
 
-    let standardsText = "";
-    let standards: Awaited<ReturnType<typeof loadQaDocuments>> = [];
-    const orgDocs = await loadQaDocuments(call.user_id).catch(() => []);
-    const scriptsText = formatCallScripts(orgDocs);
+  const { data: stored, error: uttError } = await db
+    .from("utterances")
+    .select("*")
+    .eq("call_id", callId)
+    .order("sequence");
 
-    if (mode === "documents") {
-      standards = requireReadableStandards(orgDocs);
-    }
+  if (uttError) throw new Error(uttError.message);
+  if (!stored?.length) {
+    throw new Error("Prepare this call for audit first.");
+  }
 
+  let standardsText = "";
+  let standards: Awaited<ReturnType<typeof loadQaDocuments>> = [];
+  const orgDocs = await loadQaDocuments(call.user_id).catch(() => []);
+  const scriptsText = formatCallScripts(orgDocs);
+
+  if (mode === "documents") {
+    standards = requireReadableStandards(orgDocs);
+  }
+
+  if (force) {
     await db
       .from("calls")
       .update({ status: "analyzing", error_message: null })
       .eq("id", callId);
+  } else {
+    const { data: claimed } = await db
+      .from("calls")
+      .update({ status: "analyzing", error_message: null })
+      .eq("id", callId)
+      .in("status", ["transcribed", "completed", "queued", "failed"])
+      .select("id")
+      .maybeSingle();
+    if (!claimed) {
+      if (existingScore && call.status === "completed") return;
+      return;
+    }
+  }
 
+  try {
     const agentName =
       call.agents && !Array.isArray(call.agents)
         ? (call.agents as { name?: string }).name
@@ -320,41 +324,8 @@ export async function scoreCall(
 
     const membership = await getMembership(call.user_id).catch(() => null);
     const bilingual = workspaceLanguages(membership?.country).bilingual;
-    const keyTerms = extractKeytermsFromDocuments(orgDocs, 60);
 
-    let scoredRows = stored.map((row) => ({
-      ...row,
-      text: repairSwahiliTranscript(row.text, keyTerms),
-    }));
-    // Always meaning-repair before scoring so AI understands the call clearly
-    // (Kiswahili + English ASR), then audit with human-like judgment.
-    const restored = await restoreSwahiliMeaning(
-      scoredRows.map((row) => ({
-        speaker: row.speaker_label,
-        text: row.text,
-        start: row.start_ms ?? 0,
-        end: row.end_ms ?? 0,
-        confidence: Number(row.confidence ?? 0),
-      })),
-      {
-        keyTerms,
-        scriptHints: scriptsText,
-      },
-    );
-    scoredRows = scoredRows.map((row, index) => ({
-      ...row,
-      text: restored[index]?.text || row.text,
-    }));
-    const textUpdates = scoredRows.filter((row, index) => row.text !== stored[index].text);
-    if (textUpdates.length) {
-      await Promise.all(
-        textUpdates.map((row) =>
-          db.from("utterances").update({ text: row.text }).eq("id", row.id),
-        ),
-      );
-    }
-
-    const asAssembly = scoredRows.map((u) => ({
+    const asAssembly = stored.map((u) => ({
       speaker: u.speaker_label,
       text: u.text,
       start: u.start_ms ?? 0,
@@ -362,7 +333,7 @@ export async function scoreCall(
       confidence: Number(u.confidence ?? 0),
     }));
     if (mode === "documents") {
-      const callText = scoredRows.map((row) => row.text).join("\n");
+      const callText = stored.map((row) => row.text).join("\n");
       standardsText = await retrieveQaContext(call.user_id, orgDocs, callText);
       if (standardsText.trim().length < 80) {
         throw new Error(
@@ -395,7 +366,7 @@ export async function scoreCall(
       consistencyAnchor?.source,
     );
 
-    const roleUpdates = scoredRows
+    const roleUpdates = stored
       .map((row) => ({
         id: row.id,
         role: roleForSpeaker(row.speaker_label, analysis.speaker_map),
@@ -466,14 +437,10 @@ export async function scoreCall(
       .eq("id", callId);
   } catch (err) {
     const message = describeAiError(err);
-    if (supabase) {
-      await supabase
-        .from("calls")
-        .update({ status: "transcribed", error_message: message })
-        .eq("id", callId);
-    }
+    await db
+      .from("calls")
+      .update({ status: "transcribed", error_message: message })
+      .eq("id", callId);
     throw err;
-  } finally {
-    scoring.delete(callId);
   }
 }

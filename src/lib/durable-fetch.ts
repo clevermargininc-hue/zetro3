@@ -1,5 +1,7 @@
 import dns from "node:dns";
 import { Agent, fetch as undiciFetch } from "undici";
+import type { RequestInfo as UndiciRequestInfo, RequestInit as UndiciRequestInit } from "undici";
+import { isNetworkFailure } from "@/lib/network-error";
 
 dns.setDefaultResultOrder("ipv4first");
 
@@ -7,11 +9,10 @@ function createAgent() {
   return new Agent({
     allowH2: false,
     pipelining: 0,
-    connections: 4,
+    connections: 8,
     keepAliveTimeout: 10_000,
     keepAliveMaxTimeout: 15_000,
     connect: {
-      allowH2: false,
       timeout: 20_000,
     },
   });
@@ -25,27 +26,30 @@ export function resetDurableFetch() {
   void previous.close().catch(() => undefined);
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function durableFetch(
   input: RequestInfo | URL,
   init?: RequestInit,
 ): Promise<Response> {
-  const url =
-    typeof input === "string"
-      ? input
-      : input instanceof URL
-        ? input
-        : input.url;
-  try {
-    const response = await undiciFetch(url, {
-      method: init?.method,
-      headers: init?.headers as Record<string, string> | undefined,
-      body: init?.body as string | Buffer | Uint8Array | undefined,
-      signal: init?.signal as AbortSignal | undefined,
-      dispatcher: agent,
-    });
-    return response as unknown as Response;
-  } catch (error) {
-    resetDurableFetch();
-    throw error;
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const response = await undiciFetch(input as UndiciRequestInfo, {
+        ...(init as UndiciRequestInit | undefined),
+        dispatcher: agent,
+      });
+      return response as unknown as Response;
+    } catch (error) {
+      lastError = error;
+      resetDurableFetch();
+      if (!isNetworkFailure(error) || attempt === 3) {
+        throw error;
+      }
+      await sleep(400 * 2 ** attempt);
+    }
   }
+  throw lastError instanceof Error ? lastError : new Error("fetch failed");
 }

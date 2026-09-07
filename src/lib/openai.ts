@@ -18,6 +18,7 @@ import { SCRIPT_KINDS } from "@/lib/qa-kinds";
 import { extractKeytermsFromDocuments, scriptsOf } from "@/lib/call-scripts";
 import { detectHoldEvents, formatHoldListenBlock } from "@/lib/detect-holds";
 import { cleanScoreLine, cleanScoreLines, cleanScoreQuote } from "@/lib/clean-score-text";
+import { overallFromParameters, verdictFromOverall } from "@/lib/score-variance";
 
 const SCORE_DIMENSIONS: ScoreDimension[] = [
   "greeting",
@@ -1274,37 +1275,18 @@ ${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${under
     metric_evidence.parameters = parameters;
   }
   delete metric_evidence.key_terms;
-  if (parsed.raw_score != null) {
-    metric_evidence.raw_score = clamp(parsed.raw_score);
-  }
 
   let final_overall_score = clamp(parsed.overall_score);
-  if (parameters.length) {
-    const weighted = parameters.filter(
-      (row) => row.weight_pct != null && Number(row.weight_pct) > 0,
-    );
-    if (weighted.length) {
-      const totalWeight = weighted.reduce((sum, row) => sum + Number(row.weight_pct), 0);
-      if (totalWeight > 0) {
-        final_overall_score = clamp(
-          weighted.reduce(
-            (sum, row) => sum + (row.score * Number(row.weight_pct)) / totalWeight,
-            0,
-          ),
-        );
-      }
-    } else {
-      final_overall_score = clamp(
-        parameters.reduce((sum, row) => sum + row.score, 0) / parameters.length,
-      );
-    }
-  }
-  
+  const fromParams = overallFromParameters(parameters);
+  if (fromParams != null) final_overall_score = fromParams;
+
   if (parsed.auto_zero_applied) {
-    if (parsed.raw_score == null) {
-      metric_evidence.raw_score = final_overall_score; // Save what would have been the score
-    }
+    metric_evidence.auto_zero_applied = true;
+    metric_evidence.raw_score = final_overall_score;
     final_overall_score = 0;
+  } else {
+    metric_evidence.auto_zero_applied = false;
+    delete metric_evidence.raw_score;
   }
 
   const greeting = rollupDimensionFromParameters(
@@ -1347,7 +1329,7 @@ ${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${under
     resolution,
     communication,
     language_handling,
-    verdict: parsed.verdict || "needs_improvement",
+    verdict: verdictFromOverall(final_overall_score),
     customer_sentiment: parsed.customer_sentiment || "unknown",
     summary: cleanScoreLine(parsed.summary || ""),
     strengths: cleanScoreLines(parsed.strengths),

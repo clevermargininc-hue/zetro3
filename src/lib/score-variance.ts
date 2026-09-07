@@ -37,25 +37,44 @@ function clampScore(n: number) {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
-function withinVariance(value: number, anchor: number, maxDelta = RESCORE_VARIANCE) {
-  return clampScore(Math.max(anchor - maxDelta, Math.min(anchor + maxDelta, value)));
-}
-
-function verdictFromOverall(score: number): Verdict {
+export function verdictFromOverall(score: number): Verdict {
   if (score >= 85) return "excellent";
   if (score >= 70) return "good";
   if (score >= 50) return "needs_improvement";
   return "poor";
 }
 
+/** Company weights are percent-of-100. Do not renormalize to the weights the model happened to return. */
+export function overallFromParameters(
+  parameters: { score: number; weight_pct?: number | null }[] | undefined,
+): number | null {
+  if (!parameters?.length) return null;
+  const weighted = parameters.filter(
+    (row) => row.weight_pct != null && Number.isFinite(Number(row.weight_pct)),
+  );
+  if (!weighted.length) {
+    return clampScore(
+      parameters.reduce((sum, row) => sum + (Number(row.score) || 0), 0) /
+        parameters.length,
+    );
+  }
+  const earned = weighted.reduce(
+    (sum, row) => sum + (Number(row.score) || 0) * Math.max(0, Number(row.weight_pct)) / 100,
+    0,
+  );
+  return clampScore(earned);
+}
+
+function withinVariance(value: number, anchor: number, maxDelta = RESCORE_VARIANCE) {
+  return clampScore(Math.max(anchor - maxDelta, Math.min(anchor + maxDelta, value)));
+}
+
 function hadAutoZero(score: PreviousCallScore | CallAnalysis | null | undefined) {
   if (!score) return false;
   const evidence = score.metric_evidence as MetricEvidence | null | undefined;
-  return (
-    Number(score.overall_score) === 0 &&
-    evidence?.raw_score != null &&
-    Number(evidence.raw_score) > 0
-  );
+  if (evidence?.auto_zero_applied === true) return true;
+  if (evidence?.auto_zero_applied === false) return false;
+  return false;
 }
 
 function formatAnchorBlock(previous: PreviousCallScore, source: ConsistencyAnchor["source"]) {
@@ -150,7 +169,7 @@ function sameRecording(
   if (!nameA || !nameB || nameA !== nameB) return false;
   const durA = Number(a.duration_seconds ?? 0);
   const durB = Number(b.duration_seconds ?? 0);
-  if (!durA || !durB) return true;
+  if (!durA || !durB) return false;
   return Math.abs(durA - durB) <= 5;
 }
 
@@ -260,46 +279,27 @@ export function stabilizeRescoreAnalysis(
     ]),
   ) as Pick<CallAnalysis, (typeof dimensions)[number]>;
 
+  const prevRaw = Number(previous.metric_evidence?.raw_score);
+  const prevOverall = prevAutoZero && Number.isFinite(prevRaw)
+    ? prevRaw
+    : Number(previous.overall_score) || 0;
+
   let overall = Number(analysis.overall_score) || 0;
-  const prevOverall = Number(previous.overall_score) || 0;
 
   if (nextAutoZero && prevAutoZero) {
-    const prevRaw = Number(previous.metric_evidence?.raw_score);
     const nextRaw = Number(evidence.raw_score);
     if (Number.isFinite(prevRaw) && Number.isFinite(nextRaw)) {
       evidence.raw_score = withinVariance(nextRaw, prevRaw);
     }
     overall = 0;
   } else {
-    if (stabilizedParams?.length) {
-      const weighted = stabilizedParams.filter(
-        (row) => row.weight_pct != null && Number(row.weight_pct) > 0,
-      );
-      if (weighted.length) {
-        const totalWeight = weighted.reduce((sum, row) => sum + Number(row.weight_pct), 0);
-        if (totalWeight > 0) {
-          overall = clampScore(
-            weighted.reduce(
-              (sum, row) => sum + (row.score * Number(row.weight_pct)) / totalWeight,
-              0,
-            ),
-          );
-        } else {
-          overall = clampScore(
-            stabilizedParams.reduce((sum, row) => sum + row.score, 0) /
-              stabilizedParams.length,
-          );
-        }
-      } else {
-        overall = clampScore(
-          stabilizedParams.reduce((sum, row) => sum + row.score, 0) /
-            stabilizedParams.length,
-        );
-      }
-    }
+    const fromParams = overallFromParameters(stabilizedParams);
+    if (fromParams != null) overall = fromParams;
     overall = withinVariance(overall, prevOverall);
-    if (evidence.raw_score != null) {
-      evidence.raw_score = withinVariance(Number(evidence.raw_score), prevOverall);
+    if (evidence.auto_zero_applied) {
+      evidence.raw_score = overall;
+    } else if (evidence.raw_score != null) {
+      delete evidence.raw_score;
     }
   }
 

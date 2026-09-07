@@ -276,7 +276,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                     <th className="px-6 py-3">Timestamp</th>
-                    <th className="px-6 py-3">Call Title / Recording</th>
+                    <th className="px-6 py-3">Agent ID</th>
                     <th className="px-6 py-3 text-right">AHT</th>
                     <th className="px-6 py-3 text-right">Score</th>
                     <th className="px-6 py-3">Verdict</th>
@@ -296,7 +296,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                       <td className="px-6 py-3.5">
                         <Link
                           href={`/upload/score/${row.call_id}`}
-                          className="font-semibold text-ink hover:text-blue transition-colors line-clamp-1 max-w-xs"
+                          className="font-semibold text-ink hover:text-blue transition-colors tabular-nums"
                         >
                           {row.title}
                         </Link>
@@ -350,7 +350,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                     <th className="px-6 py-3">Timestamp</th>
-                    <th className="px-6 py-3">Call Title</th>
+                    <th className="px-6 py-3">Agent ID</th>
 
                     <th className="px-6 py-3">Compliance Finding / Breach Description</th>
                   </tr>

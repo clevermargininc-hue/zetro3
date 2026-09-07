@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { authFetch } from "@/lib/auth-fetch";
 import { createClient } from "@/lib/supabase/client";
 import { statusLabel } from "@/lib/format";
-import type { Call, CallScore, CallStatus, Utterance } from "@/lib/types";
+import type { Call, CallScore, CallStatus } from "@/lib/types";
 
 type LiveCall = Call & { agents?: { name: string } | null };
 
@@ -13,20 +13,20 @@ const IN_PROGRESS = new Set<CallStatus>(["queued", "transcribing", "analyzing"])
 export function useCallLive(
   initialCall: LiveCall,
   initialScore: CallScore | null,
-  initialUtterances: Utterance[] = [],
+  initialHasTranscript = false,
 ) {
   const [call, setCall] = useState(initialCall);
-  const [utterances, setUtterances] = useState<Utterance[]>(initialUtterances);
+  const [hasTranscript, setHasTranscript] = useState(initialHasTranscript);
   const [score, setScore] = useState(initialScore);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const utteranceCount = useRef(initialUtterances.length);
-  utteranceCount.current = utterances.length;
+  const hasTranscriptRef = useRef(initialHasTranscript);
+  hasTranscriptRef.current = hasTranscript;
 
   useEffect(() => {
     setCall(initialCall);
     setScore(initialScore);
-    setUtterances(initialUtterances);
-    utteranceCount.current = initialUtterances.length;
+    setHasTranscript(initialHasTranscript);
+    hasTranscriptRef.current = initialHasTranscript;
   }, [initialCall.id]);
 
   useEffect(() => {
@@ -34,37 +34,53 @@ export function useCallLive(
     supabase.storage
       .from("call-audio")
       .createSignedUrl(initialCall.audio_path, 3600)
-      .then(({ data }) => setAudioUrl(data?.signedUrl || null));
+      .then(({ data }) => setAudioUrl(data?.signedUrl || null))
+      .catch(() => setAudioUrl(null));
 
-    async function refreshUtterances() {
-      const res = await authFetch(`/api/calls/${initialCall.id}`);
-      const body = (await res.json().catch(() => ({}))) as { utterances?: Utterance[] };
-      if (res.ok && Array.isArray(body.utterances)) {
-        utteranceCount.current = body.utterances.length;
-        setUtterances(body.utterances);
+    async function refreshTranscriptFlag() {
+      try {
+        const res = await authFetch(`/api/calls/${initialCall.id}`);
+        const body = (await res.json().catch(() => ({}))) as {
+          has_transcript?: boolean;
+          utterance_count?: number;
+        };
+        if (res.ok) {
+          const next =
+            typeof body.has_transcript === "boolean"
+              ? body.has_transcript
+              : (body.utterance_count ?? 0) > 0;
+          hasTranscriptRef.current = next;
+          setHasTranscript(next);
+        }
+      } catch {
+        // Network blips while polling must not surface as TypeError: fetch failed.
       }
     }
 
     async function refresh() {
-      const [{ data: sc }, { data: latest }] = await Promise.all([
-        supabase
-          .from("call_scores")
-          .select("*")
-          .eq("call_id", initialCall.id)
-          .maybeSingle(),
-        supabase
-          .from("calls")
-          .select("*, agents(name)")
-          .eq("id", initialCall.id)
-          .single(),
-      ]);
-      setScore((sc as CallScore | null) || null);
-      if (latest) setCall(latest as LiveCall);
-      const status = latest?.status as CallStatus | undefined;
-      if (!status || IN_PROGRESS.has(status) || utteranceCount.current === 0) {
-        await refreshUtterances();
+      try {
+        const [{ data: sc }, { data: latest }] = await Promise.all([
+          supabase
+            .from("call_scores")
+            .select("*")
+            .eq("call_id", initialCall.id)
+            .maybeSingle(),
+          supabase
+            .from("calls")
+            .select("*, agents(name)")
+            .eq("id", initialCall.id)
+            .single(),
+        ]);
+        setScore((sc as CallScore | null) || null);
+        if (latest) setCall(latest as LiveCall);
+        const status = latest?.status as CallStatus | undefined;
+        if (!status || IN_PROGRESS.has(status) || !hasTranscriptRef.current) {
+          await refreshTranscriptFlag();
+        }
+        return status;
+      } catch {
+        return undefined;
       }
-      return status;
     }
 
     const channel = supabase
@@ -92,7 +108,7 @@ export function useCallLive(
           table: "utterances",
           filter: `call_id=eq.${initialCall.id}`,
         },
-        () => void refreshUtterances(),
+        () => void refreshTranscriptFlag(),
       )
       .subscribe();
 
@@ -107,25 +123,36 @@ export function useCallLive(
     let cancelled = false;
 
     async function tick() {
-      const [{ data: sc }, { data: latest }] = await Promise.all([
-        supabase
-          .from("call_scores")
-          .select("*")
-          .eq("call_id", call.id)
-          .maybeSingle(),
-        supabase.from("calls").select("*, agents(name)").eq("id", call.id).single(),
-      ]);
-      if (cancelled) return;
-      setScore((sc as CallScore | null) || null);
-      if (latest) setCall(latest as LiveCall);
-      const status = latest?.status as CallStatus | undefined;
-      if (!status || IN_PROGRESS.has(status) || utteranceCount.current === 0) {
-        const res = await authFetch(`/api/calls/${call.id}`);
-        const body = (await res.json().catch(() => ({}))) as { utterances?: Utterance[] };
-        if (!cancelled && res.ok && Array.isArray(body.utterances)) {
-          utteranceCount.current = body.utterances.length;
-          setUtterances(body.utterances);
+      try {
+        const [{ data: sc }, { data: latest }] = await Promise.all([
+          supabase
+            .from("call_scores")
+            .select("*")
+            .eq("call_id", call.id)
+            .maybeSingle(),
+          supabase.from("calls").select("*, agents(name)").eq("id", call.id).single(),
+        ]);
+        if (cancelled) return;
+        setScore((sc as CallScore | null) || null);
+        if (latest) setCall(latest as LiveCall);
+        const status = latest?.status as CallStatus | undefined;
+        if (!status || IN_PROGRESS.has(status) || !hasTranscriptRef.current) {
+          const res = await authFetch(`/api/calls/${call.id}`);
+          const body = (await res.json().catch(() => ({}))) as {
+            has_transcript?: boolean;
+            utterance_count?: number;
+          };
+          if (!cancelled && res.ok) {
+            const next =
+              typeof body.has_transcript === "boolean"
+                ? body.has_transcript
+                : (body.utterance_count ?? 0) > 0;
+            hasTranscriptRef.current = next;
+            setHasTranscript(next);
+          }
         }
+      } catch {
+        // Ignore transient poll failures.
       }
     }
 
@@ -139,7 +166,7 @@ export function useCallLive(
     };
   }, [call.id, call.status]);
 
-  return { call, setCall, score, audioUrl, utterances };
+  return { call, setCall, score, audioUrl, hasTranscript };
 }
 
 export function StatusPill({

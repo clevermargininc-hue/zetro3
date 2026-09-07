@@ -130,7 +130,7 @@ Events:
 ${lines.join("\n")}
 ${
   hasCompanyProcedure
-    ? `A company HOLDING PROCEDURE file is provided. For EACH rule in that file, check whether the agent followed it on these hold events (permission to hold, hold language/key terms, check-back interval, what to say when returning). Quote the call at the timestamp. If a rule was missed, list it in hold_findings and lower professionalism (and overall if the scorecard says hold is scored).`
-    : `No company holding procedure file is uploaded. Do not invent a hold policy. You may only note an extremely long or rude wait under professionalism.`
+    ? `A company HOLDING PROCEDURE file is provided. For EACH rule in that file, check whether the agent followed it on these hold events (permission to hold, hold language/key terms, check-back interval, what to say when returning). Quote the call at the timestamp. If a rule was missed, list it in hold_findings and cut ONLY the company Hold / Holding procedure parameter. Do not deduct Professionalism, Opening, Empathy, or any other parameter for a hold miss.`
+    : `No company holding procedure file is uploaded. Do not invent a hold policy.`
 }`;
 }

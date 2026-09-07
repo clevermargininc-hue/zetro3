@@ -13,47 +13,45 @@ export async function loadOwnedCall(id: string) {
     .eq("id", id)
     .single();
 
-  if (!call) {
-    console.error("loadOwnedCall 404:", { id, user_id: user.id, teamScope, error, call });
+  if (!call || !teamScope.includes(call.user_id)) {
+    console.error("loadOwnedCall 404:", { id, user_id: user.id, teamScope, error });
     notFound();
   }
 
   const admin = createAdminClient();
-  const [{ data: score }, { data: utterances }] = await Promise.all([
+  const [{ data: score }, countRes] = await Promise.all([
     supabase.from("call_scores").select("*").eq("call_id", id).maybeSingle(),
-    admin.from("utterances").select("*").eq("call_id", id).order("sequence"),
+    admin.from("utterances").select("id", { count: "exact", head: true }).eq("call_id", id),
   ]);
 
-  const turns = (utterances as Utterance[] | null) || [];
+  const turnCount = countRes.count ?? 0;
   const owned = call as Call & { agents?: { name: string } | null };
-  if (turns.length && (owned.status === "queued" || owned.status === "transcribing" || owned.status === "failed")) {
-    const next = score ? "completed" : "transcribed";
+
+  if (owned.status === "analyzing" && !score) {
+    await admin
+      .from("calls")
+      .update({ status: "transcribed" })
+      .eq("id", id);
+    owned.status = "transcribed";
+  } else if (
+    turnCount > 0 &&
+    (owned.status === "queued" || owned.status === "transcribing" || owned.status === "failed")
+  ) {
     await admin
       .from("calls")
       .update({
-        status: next,
+        status: "transcribed",
         error_message: null,
-        ...(score ? { completed_at: owned.completed_at || new Date().toISOString() } : {}),
       })
       .eq("id", id);
-    owned.status = next;
-    owned.error_message = null;
-  } else if (score && owned.status !== "completed" && owned.status !== "analyzing") {
-    await admin
-      .from("calls")
-      .update({
-        status: "completed",
-        error_message: null,
-        completed_at: owned.completed_at || new Date().toISOString(),
-      })
-      .eq("id", id);
-    owned.status = "completed";
+    owned.status = "transcribed";
     owned.error_message = null;
   }
 
   return {
     call: owned,
     score: (score as CallScore | null) || null,
-    utterances: turns,
+    utterances: [] as Utterance[],
+    hasTranscript: turnCount > 0,
   };
 }

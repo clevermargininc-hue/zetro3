@@ -3,6 +3,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { getPublicEnv } from "@/lib/env";
+import { durableFetch } from "@/lib/durable-fetch";
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -22,6 +23,9 @@ export async function createClient() {
           // Called from a Server Component. Middleware refreshes the session.
         }
       },
+    },
+    global: {
+      fetch: durableFetch as typeof fetch,
     },
   });
 }

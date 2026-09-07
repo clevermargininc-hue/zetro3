@@ -7,7 +7,6 @@ import { isTanzania } from "@/lib/locale";
 
 export type SettingsData = {
   profile: { email: string; fullName: string; username: string };
-  auto_audit: boolean;
   workspace: {
     id: string;
     name: string;

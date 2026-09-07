@@ -2,55 +2,54 @@
 
 import { createClient } from "@/lib/supabase/client";
 import type { CallStatus } from "@/lib/types";
+import { friendlyPrepareError, isFetchFailure } from "@/lib/prepare-error";
 
 export async function waitForCallStatus(
   callId: string,
   done: CallStatus[],
   options?: { timeoutMs?: number; intervalMs?: number },
 ) {
-    const timeoutMs = options?.timeoutMs ?? 12 * 60 * 1000;
+  const timeoutMs = options?.timeoutMs ?? 6 * 60 * 1000;
   const intervalMs = options?.intervalMs ?? 1000;
   const supabase = createClient();
   const started = Date.now();
-  let transcribedGraceUsed = false;
-  let sawAnalyzing = false;
 
   while (Date.now() - started < timeoutMs) {
-    const { data } = await supabase
-      .from("calls")
-      .select("status, error_message")
-      .eq("id", callId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("calls")
+        .select("status, error_message")
+        .eq("id", callId)
+        .single();
 
-    if (data?.status === "failed") {
-      throw new Error(data.error_message || "Processing failed");
-    }
+      if (error) {
+        if (isFetchFailure(error.message)) {
+          await new Promise((resolve) => window.setTimeout(resolve, intervalMs));
+          continue;
+        }
+      } else {
+        if (data?.status === "failed") {
+          throw new Error(friendlyPrepareError(data.error_message));
+        }
 
-    const status = data?.status as CallStatus | undefined;
-    if (status === "analyzing") {
-      sawAnalyzing = true;
-      transcribedGraceUsed = true;
-    } else if (
-      status === "transcribed" &&
-      done.includes("completed") &&
-      !transcribedGraceUsed
-    ) {
-      transcribedGraceUsed = true;
-      await new Promise((resolve) => window.setTimeout(resolve, intervalMs));
-      continue;
-    }
+        const status = data?.status as CallStatus | undefined;
 
-    if (
-      sawAnalyzing &&
-      status === "transcribed" &&
-      data?.error_message &&
-      done.includes("completed")
-    ) {
-      throw new Error(data.error_message);
-    }
+        if (
+          status === "transcribed" &&
+          done.includes("completed") &&
+          data?.error_message
+        ) {
+          throw new Error(friendlyPrepareError(data.error_message));
+        }
 
-    if (status && done.includes(status)) {
-      return status;
+        if (status && done.includes(status)) {
+          return status;
+        }
+      }
+    } catch (error) {
+      if (error instanceof Error && !isFetchFailure(error)) {
+        throw error;
+      }
     }
     await new Promise((resolve) => window.setTimeout(resolve, intervalMs));
   }

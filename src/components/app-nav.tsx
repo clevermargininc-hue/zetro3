@@ -85,7 +85,7 @@ const NAV = [
   {
     label: "Quality Intelligence",
     items: [
-      { href: "/leaderboard", label: "Agent Rankings", icon: Icons.ranking },
+      { href: "/leaderboard", label: "Leaderboard", icon: Icons.ranking },
       { href: "/reports", label: "Reports", icon: Icons.reports },
     ],
   },

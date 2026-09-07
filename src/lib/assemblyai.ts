@@ -1,6 +1,9 @@
 import { Agent, fetch as undiciFetch } from "undici";
+import dns from "node:dns";
 import type { AssemblyUtterance, LanguageMode } from "@/lib/types";
 import { getServerEnv } from "@/lib/env";
+
+dns.setDefaultResultOrder("ipv4first");
 
 const BASE = "https://api.assemblyai.com";
 
@@ -259,8 +262,8 @@ export async function getTranscript(id: string) {
   return (await res.json()) as AssemblyTranscript;
 }
 
-export async function waitForTranscript(id: string) {
-  for (let i = 0; i < 180; i++) {
+export async function waitForTranscript(id: string, maxPolls = 70) {
+  for (let i = 0; i < maxPolls; i++) {
     const transcript = await getTranscript(id);
     if (transcript.status === "completed") return transcript;
     if (transcript.status === "error") {

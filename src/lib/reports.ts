@@ -1,6 +1,5 @@
-import { verdictLabel } from "@/lib/format";
+import { agentIdFromFile, verdictLabel } from "@/lib/format";
 import type { AuditMode, Verdict } from "@/lib/types";
-import { getTeamScope } from "@/lib/workspaces";
 
 export const REPORT_PERIODS = ["daily", "weekly", "monthly", "annually"] as const;
 export type ReportPeriod = (typeof REPORT_PERIODS)[number];
@@ -209,9 +208,10 @@ function ahtFromDurations(values: Array<number | null | undefined>) {
   };
 }
 
-type CallRecord = {
+export type CallRecord = {
   id: string;
   title: string | null;
+  file_name?: string | null;
   agent_id: string | null;
   created_at: string;
   completed_at: string | null;
@@ -260,7 +260,7 @@ export function buildQaReport(
         Number.isFinite(durationRaw) && durationRaw > 0 ? Math.round(durationRaw) : null;
       return {
         call_id: call.id,
-        title: call.title || "Untitled call",
+        title: agentIdFromFile(call.file_name || call.title),
         agent_id: call.agent_id,
         agent_name: agentNameOf(call),
         audited_at: auditedAt,
@@ -371,46 +371,5 @@ export function scoreLabel(score: number | null | undefined) {
 
 export function verdictCell(verdict: string) {
   return verdictLabel(verdict as Verdict);
-}
-
-export async function loadQaReport(
-  supabase: { from: (table: string) => any },
-  userId: string,
-  period: ReportPeriod,
-  date: string,
-  agentId: string | null,
-): Promise<QaReport> {
-  const teamScope = await getTeamScope(userId);
-  const callsQuery = supabase
-    .from("calls")
-    .select("id, title, agent_id, created_at, completed_at, duration_seconds, status, agents(name), call_scores(*)")
-    .in("user_id", teamScope)
-    .eq("status", "completed");
-
-  const agentsQuery = supabase.from("agents").select("id, name").in("user_id", teamScope);
-
-  const [{ data: calls, error: callError }, { data: agents, error: agentError }] = await Promise.all([
-    callsQuery,
-    agentsQuery,
-  ]);
-
-  if (callError) throw new Error(callError.message);
-  if (agentError) throw new Error(agentError.message);
-
-  const agentRows = (agents || []) as { id: string; name: string }[];
-  const agentLabel = agentId
-    ? agentRows.find((row) => row.id === agentId)?.name || "Selected agent"
-    : "All agents";
-
-  if (agentId && !agentRows.some((row) => row.id === agentId)) {
-    throw new Error("Agent not found.");
-  }
-
-  return buildQaReport((calls || []) as CallRecord[], {
-    period,
-    date,
-    agentId,
-    agentLabel,
-  });
 }
 

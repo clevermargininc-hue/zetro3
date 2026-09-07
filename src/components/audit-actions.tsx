@@ -21,11 +21,13 @@ export function AuditActions({
   callId,
   status,
   compact = false,
+  force = false,
   onStatus,
 }: {
   callId: string;
   status: CallStatus;
   compact?: boolean;
+  force?: boolean;
   onStatus?: (status: CallStatus) => void;
 }) {
   const router = useRouter();
@@ -33,7 +35,7 @@ export function AuditActions({
   const [error, setError] = useState<string | null>(null);
   const [showStandardsGate, setShowStandardsGate] = useState(false);
   const { blocked, blockedMessage } = useQaReadiness();
-  const busy = pending !== null || status === "analyzing";
+  const busy = pending !== null;
 
   async function start(mode: AuditMode) {
     if (mode === "documents" && blocked) {
@@ -50,7 +52,7 @@ export function AuditActions({
       const res = await authFetch(`/api/calls/${callId}/score`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ mode }),
+        body: JSON.stringify({ mode, force }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -78,7 +80,7 @@ export function AuditActions({
           onClick={() => void start("documents")}
           className="btn bg-blue hover:bg-blue-2 text-white text-[12px] px-3 py-1.5 font-medium"
         >
-          {pending === "documents" ? "Reading files…" : "Score from company files"}
+          {pending === "documents" || status === "analyzing" ? "Reading files…" : force ? "Retry documents audit" : "Score from company files"}
         </button>
       </div>
     );
@@ -113,7 +115,7 @@ export function AuditActions({
               onClick={() => void start("documents")}
               className="btn btn-blue text-[13px] font-semibold w-full justify-center py-2.5"
             >
-              <span>Start documents audit</span>
+              <span>{force ? "Retry documents audit" : "Start documents audit"}</span>
               {Icons.arrowRight}
             </button>
           </div>

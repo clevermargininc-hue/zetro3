@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { authFetch } from "@/lib/auth-fetch";
 import { waitForCallStatus } from "@/lib/wait-call-status";
+import { friendlyPrepareError } from "@/lib/prepare-error";
 import { DeleteCallButton } from "@/components/delete-call-button";
 import { CallDownloads } from "@/components/call-downloads";
-import { auditStatus, formatDate, formatDuration, languageLabel } from "@/lib/format";
-import type { Call, CallScore, CallStatus, Utterance } from "@/lib/types";
+import { agentIdFromFile, auditStatus, formatDate, formatDuration, languageLabel } from "@/lib/format";
+import type { Call, CallScore, CallStatus } from "@/lib/types";
 import { useCallLive } from "@/components/use-call-live";
 import { PageHeader } from "@/components/ui";
 
@@ -27,23 +28,19 @@ const Icons = {
   ),
 };
 
-function readyForAudit(status: CallStatus | undefined | null) {
-  return status === "transcribed" || status === "analyzing" || status === "completed";
-}
-
 export function TranscribeWorkspace({
   initialCall,
   initialScore,
-  initialUtterances = [],
+  initialHasTranscript = false,
 }: {
   initialCall: Call & { agents?: { name: string } | null };
   initialScore: CallScore | null;
-  initialUtterances?: Utterance[];
+  initialHasTranscript?: boolean;
 }) {
-  const { call, setCall, audioUrl, utterances } = useCallLive(
+  const { call, setCall, audioUrl, hasTranscript } = useCallLive(
     initialCall,
     initialScore,
-    initialUtterances,
+    initialHasTranscript,
   );
   const [preparing, setPreparing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -51,13 +48,12 @@ export function TranscribeWorkspace({
 
   const callId = call?.id ?? initialCall.id;
   const callStatus = call?.status ?? initialCall.status;
-  const hasTranscript = utterances.length > 0;
-  const canScore = readyForAudit(callStatus) || hasTranscript;
+  const canScore = hasTranscript;
   const preparingBusy =
     preparing || callStatus === "transcribing" || callStatus === "queued";
 
   useEffect(() => {
-    if (hasTranscript || readyForAudit(callStatus) || callStatus === "failed") {
+    if (hasTranscript || callStatus === "failed" || callStatus === "completed" || callStatus === "analyzing") {
       return;
     }
     if (callStatus !== "queued" && callStatus !== "transcribing") return;
@@ -108,7 +104,7 @@ export function TranscribeWorkspace({
       } catch (error) {
         if (!cancelled) {
           startedFor.current = null;
-          setActionError(error instanceof Error ? error.message : "Action failed");
+          setActionError(friendlyPrepareError(error));
         }
       } finally {
         if (!cancelled) setPreparing(false);
@@ -123,6 +119,7 @@ export function TranscribeWorkspace({
   async function prepare(force = false) {
     setActionError(null);
     setPreparing(true);
+    startedFor.current = call.id;
     try {
       const res = await authFetch(`/api/calls/${call.id}/transcribe`, {
         method: "POST",
@@ -161,13 +158,16 @@ export function TranscribeWorkspace({
       }));
       await waitForCallStatus(call.id, ["transcribed", "completed", "failed"]);
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Action failed");
+      startedFor.current = null;
+      setActionError(friendlyPrepareError(error));
     } finally {
       setPreparing(false);
     }
   }
 
   const bucket = auditStatus(call.status);
+  const showRetry =
+    Boolean(actionError) || call.status === "failed" || (Boolean(actionError) && preparingBusy);
 
   return (
     <div className="space-y-6 max-w-4xl pb-10">
@@ -181,7 +181,7 @@ export function TranscribeWorkspace({
         </Link>
         <PageHeader
           kicker="Step 2 of 3 · Prepare"
-          title={call.title || call.file_name || "Call"}
+          title={`Agent ${agentIdFromFile(call.file_name || call.title)}`}
           description={[
             `Language: ${languageLabel(call.detected_language || call.language_mode)}`,
             call.duration_seconds ? formatDuration(call.duration_seconds) : null,
@@ -215,7 +215,9 @@ export function TranscribeWorkspace({
       </div>
 
       {(actionError || call.error_message) && (
-        <div className="alert-error text-[13px]">{actionError || call.error_message}</div>
+        <div className="alert-error text-[13px]">
+          {friendlyPrepareError(actionError || call.error_message)}
+        </div>
       )}
 
       <section className="surface p-6 space-y-4">
@@ -238,15 +240,15 @@ export function TranscribeWorkspace({
         <section className="surface p-6 space-y-4">
           <div>
             <h2 className="text-[16px] font-semibold text-ink">
-              {preparingBusy ? "Preparing this recording…" : "Prepare this recording"}
+              {preparingBusy && !actionError ? "Preparing this recording…" : "Prepare this recording"}
             </h2>
             <p className="mt-1 text-[13px] text-muted max-w-lg">
-              {preparingBusy
+              {preparingBusy && !actionError
                 ? "Speakers and language are being prepared for scoring. Stay on this step until it finishes."
                 : "Start preparation. Do not open Score until this step is done."}
             </p>
           </div>
-          {preparingBusy ? (
+          {preparingBusy && !actionError ? (
             <div className="flex items-center gap-2.5 text-ink text-[13px] font-medium border border-line px-4 py-3">
               <div className="h-4 w-4 rounded-full border-2 border-blue/30 border-t-blue animate-spin" />
               <span>Working on the recording…</span>
@@ -254,10 +256,10 @@ export function TranscribeWorkspace({
           ) : (
             <button
               type="button"
-              onClick={() => void prepare(false)}
+              onClick={() => void prepare(call.status === "transcribing" || call.status === "failed")}
               className="btn btn-blue text-[13px] px-5 py-2.5"
             >
-              Start prepare
+              {call.status === "failed" || actionError ? "Retry preparation" : "Start prepare"}
             </button>
           )}
         </section>
@@ -273,12 +275,12 @@ export function TranscribeWorkspace({
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              disabled={preparingBusy}
+              disabled={preparingBusy && !actionError}
               onClick={() => void prepare(true)}
               className="inline-flex items-center gap-1 text-[12px] text-slate-500 hover:text-ink font-medium"
             >
               {Icons.refresh}
-              <span>{preparingBusy ? "Re-processing…" : "Re-prepare"}</span>
+              <span>{preparingBusy && !actionError ? "Re-processing…" : "Re-prepare"}</span>
             </button>
             <Link
               href={`/upload/score/${callId}`}
@@ -291,15 +293,15 @@ export function TranscribeWorkspace({
         </section>
       )}
 
-      {call.status === "failed" ? (
+      {showRetry && canScore ? (
         <div className="flex justify-center pt-2">
           <button
             type="button"
-            disabled={preparingBusy}
+            disabled={preparingBusy && !actionError}
             onClick={() => void prepare(true)}
             className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[12px] px-4 py-2"
           >
-            {preparingBusy ? "Retrying…" : "Retry preparation"}
+            {preparingBusy && !actionError ? "Retrying…" : "Retry preparation"}
           </button>
         </div>
       ) : null}

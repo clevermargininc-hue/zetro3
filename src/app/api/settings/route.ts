@@ -72,7 +72,6 @@ export async function GET(request: Request) {
           "",
         username: (profile?.username as string) || "",
       },
-      auto_audit: false,
       workspace: {
         id: membership.workspaceId,
         name: membership.name,
@@ -99,7 +98,6 @@ export async function PATCH(request: Request) {
   }
 
   const body = (await request.json().catch(() => ({}))) as {
-    auto_audit?: unknown;
     full_name?: unknown;
     username?: unknown;
     workspace_name?: unknown;
@@ -111,16 +109,6 @@ export async function PATCH(request: Request) {
     const membership = await getMembership(user.id);
     if (!membership) {
       return NextResponse.json({ error: "No workspace yet." }, { status: 404 });
-    }
-
-    if (body.auto_audit === true) {
-      return NextResponse.json(
-        {
-          error:
-            "Automatic auditing is not allowed. After the transcript is ready, start a documents audit from the call page.",
-        },
-        { status: 400 },
-      );
     }
 
     if (typeof body.full_name === "string") {
@@ -160,7 +148,6 @@ export async function PATCH(request: Request) {
     }
 
     if (
-      body.auto_audit !== false &&
       typeof body.full_name !== "string" &&
       typeof body.username !== "string" &&
       typeof body.workspace_name !== "string" &&
