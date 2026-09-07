@@ -19,7 +19,6 @@ export function AuditPrintDocument({
   const agent = call.agents?.name || "Unassigned";
   const strengths = asList(score.strengths);
   const improvements = asList(score.improvements);
-  const findings = asList(score.compliance_findings);
   const standards = score.standards_used || [];
   const parameterRows = scorecardRows(score);
 
@@ -108,7 +107,6 @@ export function AuditPrintDocument({
 
       <Notes title="Strengths" items={strengths} />
       <Notes title="Recommendations" items={improvements} />
-      <Notes title="Compliance findings" items={findings} />
 
       {standards.length ? (
         <section className="mb-8">

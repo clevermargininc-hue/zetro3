@@ -66,6 +66,7 @@ export async function POST(request: Request) {
       .select("id")
       .in("user_id", teamScope)
       .ilike("name", agentName)
+      .limit(1)
       .maybeSingle();
 
     if (existing) {

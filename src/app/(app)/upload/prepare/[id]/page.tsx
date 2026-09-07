@@ -7,13 +7,13 @@ export default async function UploadPrepareCallPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { call, score, utterances } = await loadOwnedCall(id);
+  const { call, score, hasTranscript } = await loadOwnedCall(id);
 
   return (
     <TranscribeWorkspace
       initialCall={call}
       initialScore={score}
-      initialUtterances={utterances}
+      initialHasTranscript={hasTranscript}
     />
   );
 }

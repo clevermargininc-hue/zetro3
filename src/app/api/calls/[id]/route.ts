@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTeamScope } from "@/lib/workspaces";
-import type { Utterance } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -30,17 +29,20 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const { data: utterances, error } = await supabase
+  const { count, error } = await supabase
     .from("utterances")
-    .select("*")
-    .eq("call_id", id)
-    .order("sequence");
+    .select("id", { count: "exact", head: true })
+    .eq("call_id", id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ utterances: (utterances as Utterance[] | null) || [] });
+  const utteranceCount = count ?? 0;
+  return NextResponse.json({
+    utterance_count: utteranceCount,
+    has_transcript: utteranceCount > 0,
+  });
 }
 
 export async function DELETE(

@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { getServerEnv } from "@/lib/env";
 import { durableFetch, resetDurableFetch } from "@/lib/durable-fetch";
+import { friendlyPrepareError, isFetchFailure, PREPARE_NETWORK_MESSAGE } from "@/lib/prepare-error";
 
 let client: OpenAI | null = null;
 
@@ -104,6 +105,13 @@ export function describeAiError(error: unknown) {
     return "OpenAI returned an empty score. Try the audit again.";
   }
   return message || "AI request failed";
+}
+
+export function describePrepareError(error: unknown) {
+  if (isConnectionError(error) || isFetchFailure(error) || error instanceof TypeError) {
+    return PREPARE_NETWORK_MESSAGE;
+  }
+  return friendlyPrepareError(error) || "Could not prepare this recording. Try again.";
 }
 
 export async function withRetries<T>(run: () => Promise<T>) {

@@ -1,6 +1,7 @@
 import { NextResponse, after } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
 import { scoreCall } from "@/lib/process-call";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { loadQaDocuments, summarizeDocuments } from "@/lib/qa-documents";
 import { readinessErrorMessage } from "@/lib/qa-kinds";
 import { getTeamScope } from "@/lib/workspaces";
@@ -48,7 +49,14 @@ export async function POST(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (!force && call.status === "completed") {
+  const admin = createAdminClient();
+  const { data: existingScore } = await admin
+    .from("call_scores")
+    .select("id")
+    .eq("call_id", id)
+    .maybeSingle();
+
+  if (!force && call.status === "completed" && existingScore) {
     return NextResponse.json({ ok: true, status: "completed", mode, reused: true });
   }
 

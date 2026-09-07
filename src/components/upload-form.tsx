@@ -65,7 +65,6 @@ export function UploadForm() {
   const folderInputRef = useRef<HTMLInputElement>(null);
   const zipInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
-  const [agentName, setAgentName] = useState("");
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -128,8 +127,6 @@ export function UploadForm() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Authentication expired. Please sign in again.");
 
-      const trimmedAgent = agentName.trim();
-
       for (let i = 0; i < validPicks.length; i++) {
         const pick = validPicks[i];
         const title = pick.label.replace(/\.[^.]+$/, "") || "Untitled call";
@@ -152,7 +149,6 @@ export function UploadForm() {
               audio_path: path,
               file_name: pick.relativePath || pick.label,
               title,
-              agent_name: trimmedAgent || undefined,
             }),
           });
           const body = (await created.json().catch(() => ({}))) as {
@@ -193,22 +189,6 @@ export function UploadForm() {
   return (
     <div className="space-y-6">
       <div className="surface p-6 sm:p-8 space-y-6">
-        <div className="space-y-1.5 max-w-md">
-          <label className="text-[12px] font-semibold uppercase tracking-wider text-slate-500 block">
-            Agent on this batch
-          </label>
-          <input
-            value={agentName}
-            onChange={(e) => setAgentName(e.target.value)}
-            placeholder="e.g. Amina Mwangi"
-            className="field bg-slate-50/70 border-slate-200 text-ink text-[13px]"
-            autoComplete="off"
-          />
-          <p className="text-[11px] text-muted">
-            Set this before you add files. It is applied to every recording in this batch. Leave blank to assign later.
-          </p>
-        </div>
-
         <div>
           <input
             ref={fileInputRef}

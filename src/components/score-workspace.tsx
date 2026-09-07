@@ -9,8 +9,8 @@ import { CallAuditExport } from "@/components/call-audit-export";
 import { CallDownloads } from "@/components/call-downloads";
 import { AuditPrintDocument } from "@/components/audit-print-document";
 import { StandardsFilesPanel } from "@/components/standards-files-panel";
-import { auditStatus, formatDate, formatDuration, languageLabel } from "@/lib/format";
-import type { Call, CallScore, CallStatus, Utterance } from "@/lib/types";
+import { agentIdFromFile, auditStatus, formatDate, formatDuration, languageLabel } from "@/lib/format";
+import type { Call, CallScore } from "@/lib/types";
 import { PageHeader } from "@/components/ui";
 
 const Icons = {
@@ -22,26 +22,23 @@ const Icons = {
   ),
 };
 
-function readyForAudit(status: CallStatus) {
-  return ["transcribed", "analyzing", "completed"].includes(status);
-}
-
 export function ScoreWorkspace({
   initialCall,
   initialScore,
-  initialUtterances = [],
+  initialHasTranscript = false,
 }: {
   initialCall: Call & { agents?: { name: string } | null };
   initialScore: CallScore | null;
-  initialUtterances?: Utterance[];
+  initialHasTranscript?: boolean;
 }) {
-  const { call, setCall, score } = useCallLive(
+  const { call, setCall, score, hasTranscript } = useCallLive(
     initialCall,
     initialScore,
-    initialUtterances,
+    initialHasTranscript,
   );
+  const showScore = Boolean(score) && call.status === "completed";
   const busy = call.status === "analyzing";
-  const canAudit = readyForAudit(call.status);
+  const canAudit = hasTranscript;
   const bucket = auditStatus(call.status);
 
   return (
@@ -58,7 +55,7 @@ export function ScoreWorkspace({
         </div>
         <PageHeader
           kicker="Step 3 of 3 · Score"
-          title={call.title || call.file_name || "Call"}
+          title={`Agent ${agentIdFromFile(call.file_name || call.title)}`}
           description={[
             `Language: ${languageLabel(call.detected_language || call.language_mode)}`,
             call.duration_seconds ? `Duration: ${formatDuration(call.duration_seconds)}` : null,
@@ -107,18 +104,28 @@ export function ScoreWorkspace({
         </section>
       )}
 
-      {canAudit && !score && (
+      {canAudit && !showScore && (
         <div className="no-print grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] items-start">
           <section className="surface p-6 space-y-4">
             {busy ? (
-              <div className="flex items-start gap-4">
-                <div className="h-6 w-6 rounded-full border-2 border-blue/30 border-t-blue animate-spin shrink-0 mt-0.5" />
-                <div>
-                  <h2 className="text-[16px] font-semibold text-ink">Reading company files, then scoring</h2>
-                  <p className="mt-1 text-[13px] text-muted leading-relaxed">
-                    The model loads your scorecard, compliance, and process documents first, then marks the call against those files only.
-                  </p>
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="h-6 w-6 rounded-full border-2 border-blue/30 border-t-blue animate-spin shrink-0 mt-0.5" />
+                  <div>
+                    <h2 className="text-[16px] font-semibold text-ink">Reading company files, then scoring</h2>
+                    <p className="mt-1 text-[13px] text-muted leading-relaxed">
+                      The model loads your scorecard, compliance, and process documents first, then marks the call against those files only.
+                    </p>
+                  </div>
                 </div>
+                <AuditActions
+                  callId={call.id}
+                  status={call.status}
+                  force
+                  onStatus={(status) =>
+                    setCall((prev) => ({ ...prev, status, error_message: null }))
+                  }
+                />
               </div>
             ) : (
               <>
@@ -131,6 +138,7 @@ export function ScoreWorkspace({
                 <AuditActions
                   callId={call.id}
                   status={call.status}
+                  force={Boolean(score)}
                   onStatus={(status) =>
                     setCall((prev) => ({ ...prev, status, error_message: null }))
                   }
@@ -142,7 +150,7 @@ export function ScoreWorkspace({
         </div>
       )}
 
-      {score && (
+      {showScore && score && (
         <>
           <div className="no-print space-y-4">
             <ScoreCard score={score} />

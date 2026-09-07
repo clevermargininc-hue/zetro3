@@ -116,6 +116,19 @@ export function pipelineQueueCounts(statuses: Array<CallStatus | string>) {
   return { prepare, score };
 }
 
+/**
+ * Recording names end with the agent id, e.g.
+ * "…_255629623681_6223.mp3" → "6223". Falls back to the bare file name.
+ */
+export function agentIdFromFile(value: string | null | undefined) {
+  const base = (value || "").split(/[\\/]/).pop()?.trim() || "";
+  if (!base) return "Unknown";
+  const stem = base.replace(/\.[^.]+$/, "");
+  const trailing = /_(\d{2,8})$/.exec(stem);
+  if (trailing) return trailing[1];
+  return stem || "Unknown";
+}
+
 export function languageLabel(mode: string | null) {
   switch (mode) {
     case "en":

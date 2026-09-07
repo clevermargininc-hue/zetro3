@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
-import { loadQaReport, parseReportQuery } from "@/lib/reports";
+import { loadQaReport } from "@/lib/load-qa-report";
+import { parseReportQuery } from "@/lib/reports";
 
 export const runtime = "nodejs";
 

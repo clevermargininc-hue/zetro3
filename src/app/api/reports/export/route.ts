@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
-import { loadQaReport, parseReportQuery } from "@/lib/reports";
+import { loadQaReport } from "@/lib/load-qa-report";
+import { parseReportQuery } from "@/lib/reports";
 import { excelBuffer, exportFilename, pdfBuffer } from "@/lib/report-files";
 
 export const runtime = "nodejs";
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
 
   try {
     const report = await loadQaReport(supabase, user.id, period, date, agentId);
-    const body = format === "xlsx" ? excelBuffer(report) : pdfBuffer(report);
+    const body = format === "xlsx" ? await excelBuffer(report) : pdfBuffer(report);
     const filename = exportFilename(report, format);
     const type =
       format === "xlsx"

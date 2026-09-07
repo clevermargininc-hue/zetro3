@@ -73,6 +73,8 @@ export type MetricEvidence = Partial<Record<ScoreDimension, MetricEvidenceItem>>
   parameters?: ScoreParameter[];
   key_terms?: KeyTermFinding[];
   raw_score?: number;
+  /** True only when a company Auto-Zero / Auto-Fail rule was applied. */
+  auto_zero_applied?: boolean;
   /** Present when a re-audit was clamped to ±variance of the previous score. */
   rescore_variance?: {
     previous_overall: number;

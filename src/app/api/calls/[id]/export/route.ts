@@ -59,7 +59,7 @@ export async function GET(
     score: score as CallScore,
     utterances: (utterances as Utterance[] | null) || [],
   };
-  const body = format === "xlsx" ? callAuditExcel(pack) : callAuditPdf(pack);
+  const body = format === "xlsx" ? await callAuditExcel(pack) : callAuditPdf(pack);
   const filename = callAuditFilename(pack, format);
   const type =
     format === "xlsx"

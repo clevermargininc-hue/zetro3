@@ -1,6 +1,8 @@
-import * as XLSX from "xlsx";
-import { formatDuration, languageLabel } from "@/lib/format";
-import { PdfDoc } from "@/lib/report-files";
+import ExcelJS from "exceljs";
+import { agentIdFromFile, formatDuration, languageLabel } from "@/lib/format";
+import { scoreBand } from "@/lib/brand";
+import { brandBanner, headerRow, paintScoreCell, styleBody } from "@/lib/xlsx-brand";
+import { PdfDoc } from "@/lib/pdf-doc";
 import { auditModeLabel, formatReportDate, scoreLabel, verdictCell } from "@/lib/reports";
 import { scorecardRows } from "@/lib/scorecard-rows";
 import type { Call, CallScore, Utterance } from "@/lib/types";
@@ -20,217 +22,262 @@ function list(value: string[] | null | undefined) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
 }
 
-function agentName(call: AuditedCallExport["call"]) {
-  return call.agents?.name || "Unassigned";
+function agentId(call: AuditedCallExport["call"]) {
+  return agentIdFromFile(call.file_name || call.title);
 }
 
 function callSlug(call: AuditedCallExport["call"]) {
-  const title = (call.title || "call").replace(/[^\w]+/g, "-").replace(/^-|-$/g, "");
-  const agent = agentName(call).replace(/[^\w]+/g, "-").replace(/^-|-$/g, "");
   const day = (call.completed_at || call.created_at).slice(0, 10);
-  return `zetro-audit-${agent}-${title}-${day}`.toLowerCase().slice(0, 80);
+  return `zetro-audit-${agentId(call)}-${day}`.toLowerCase().slice(0, 80);
 }
 
+function auditedAt(pack: AuditedCallExport) {
+  const { call, score } = pack;
+  return score.created_at || call.completed_at || call.created_at;
+}
+
+/** Call properties shown at the top of both exports. */
 function details(pack: AuditedCallExport): Array<[string, string]> {
   const { call, score } = pack;
-  const rows = scorecardRows(score);
   return [
-    ["Call", call.title || "Untitled call"],
-    ["Agent", agentName(call)],
-    ["File", dash(call.file_name)],
+    ["Agent ID", agentId(call)],
+    ["Recording", dash(call.file_name || call.title)],
     ["Duration", formatDuration(call.duration_seconds)],
     ["Language mode", languageLabel(call.language_mode)],
     ["Detected language", languageLabel(call.detected_language)],
     ["Uploaded", formatReportDate(call.created_at)],
-    ["Audited", formatReportDate(score.created_at || call.completed_at || call.created_at)],
+    ["Audited", formatReportDate(auditedAt(pack))],
     ["Audit path", auditModeLabel(score.audit_mode)],
     ["Overall score", String(score.overall_score)],
-    ...rows.map((row) => [row.name, scoreLabel(row.score)] as [string, string]),
     ["Verdict", verdictCell(score.verdict)],
     ["Customer sentiment", dash(score.customer_sentiment)],
-    ["Summary", dash(score.summary)],
   ];
 }
 
-export function callAuditExcel(pack: AuditedCallExport): Buffer {
+function banner(workbook: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, pack: AuditedCallExport, caption: string, lastColumn: number) {
+  brandBanner(
+    workbook,
+    sheet,
+    `Call audit · Agent ${agentId(pack.call)}`,
+    `${caption} · Overall ${pack.score.overall_score} (${scoreBand(pack.score.overall_score).label})` +
+      ` · Audited ${formatReportDate(auditedAt(pack))}`,
+    lastColumn,
+  );
+}
+
+export async function callAuditExcel(pack: AuditedCallExport): Promise<Buffer> {
   const { score } = pack;
-  const wb = XLSX.utils.book_new();
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "Zetro";
+  wb.created = new Date(auditedAt(pack));
 
-  const detailSheet = XLSX.utils.aoa_to_sheet([
-    ["ZETRO CALL AUDIT REPORT"],
-    [],
-    ["Field", "Value"],
-    ...details(pack),
-  ]);
-  detailSheet["!cols"] = [{ wch: 24 }, { wch: 80 }];
-  XLSX.utils.book_append_sheet(wb, detailSheet, "Call details");
-
-  const scoreRows = scorecardRows(score);
-  const scoreSheet = XLSX.utils.aoa_to_sheet([
-    ["Parameter", "Score", "Why", "Transcript evidence", "Source file", "Weight %"],
-    ["Overall", score.overall_score, "", "", "", ""],
-    ...scoreRows.map((row) => {
-      const match = score.metric_evidence?.parameters?.find(
-        (item) => item.name === row.name,
-      );
-      return [
-        row.name,
-        row.score,
-        dash(row.note || match?.note),
-        dash(row.quote || match?.quote),
-        dash(match?.source_file),
-        match?.weight_pct == null ? "" : String(match.weight_pct),
-      ];
-    }),
-    ["Verdict", verdictCell(score.verdict), "", "", "", ""],
-    ["Customer sentiment", dash(score.customer_sentiment), "", "", "", ""],
-    ["Audit path", auditModeLabel(score.audit_mode), "", "", "", ""],
-  ]);
-  scoreSheet["!cols"] = [
-    { wch: 40 },
-    { wch: 12 },
-    { wch: 48 },
-    { wch: 48 },
-    { wch: 32 },
-    { wch: 12 },
-  ];
-  XLSX.utils.book_append_sheet(wb, scoreSheet, "Scores");
-
-  const noteSheet = (title: string, items: string[]) => {
-    const sheet = XLSX.utils.aoa_to_sheet([
-      [title],
-      [],
-      ...((items.length ? items : ["None identified"]).map((item) => [item])),
-    ]);
-    sheet["!cols"] = [{ wch: 90 }];
-    return sheet;
+  const landscape: Partial<ExcelJS.PageSetup> = {
+    paperSize: 9,
+    orientation: "landscape",
+    fitToPage: true,
+    fitToWidth: 1,
   };
 
-  XLSX.utils.book_append_sheet(wb, noteSheet("Strengths", list(score.strengths)), "Strengths");
-  XLSX.utils.book_append_sheet(
-    wb,
-    noteSheet("Recommendations", list(score.improvements)),
-    "Recommendations",
-  );
-  XLSX.utils.book_append_sheet(
-    wb,
-    noteSheet("Compliance findings", list(score.compliance_findings)),
-    "Compliance",
-  );
+  // ---- Call details --------------------------------------------------------
+  const overview = wb.addWorksheet("Call details", {
+    views: [{ showGridLines: false }],
+    pageSetup: { ...landscape, orientation: "portrait" },
+  });
+  overview.columns = [{ width: 26 }, { width: 78 }, { width: 20 }, { width: 20 }];
+  banner(wb, overview, pack, "Call details", 4);
+  headerRow(overview, ["Field", "Value"], 6);
+  details(pack).forEach((row) => overview.addRow(row));
+  overview.addRow(["Summary", dash(score.summary)]);
+  styleBody(overview, 7);
 
+  // ---- Scorecard -----------------------------------------------------------
+  const scores = wb.addWorksheet("Scorecard", {
+    views: [{ showGridLines: false, state: "frozen", ySplit: 6 }],
+    pageSetup: landscape,
+  });
+  scores.columns = [
+    { width: 34 },
+    { width: 10 },
+    { width: 12 },
+    { width: 10 },
+    { width: 52 },
+    { width: 52 },
+    { width: 28 },
+  ];
+  banner(wb, scores, pack, "Scorecard", 7);
+  headerRow(scores, ["Parameter", "Score", "Band", "Weight %", "Why", "Transcript evidence", "Source file"], 6);
+
+  scores.addRow([
+    "Overall",
+    score.overall_score,
+    scoreBand(score.overall_score).label,
+    "",
+    verdictCell(score.verdict),
+    "",
+    "",
+  ]);
+  for (const row of scorecardRows(score)) {
+    const match = score.metric_evidence?.parameters?.find((item) => item.name === row.name);
+    scores.addRow([
+      row.name,
+      row.score,
+      scoreBand(row.score).label,
+      match?.weight_pct ?? "",
+      dash(row.note || match?.note),
+      dash(row.quote || match?.quote),
+      dash(match?.source_file),
+    ]);
+  }
+  styleBody(scores, 7);
+  for (let i = 7; i <= scores.rowCount; i++) {
+    paintScoreCell(scores.getRow(i).getCell(2));
+  }
+  scores.getRow(7).font = { name: "Segoe UI", size: 10, bold: true };
+
+  // ---- Findings ------------------------------------------------------------
+  const findings = wb.addWorksheet("Findings", {
+    views: [{ showGridLines: false, state: "frozen", ySplit: 6 }],
+    pageSetup: landscape,
+  });
+  findings.columns = [{ width: 22 }, { width: 104 }];
+  banner(wb, findings, pack, "Strengths, recommendations and compliance", 2);
+  headerRow(findings, ["Type", "Detail"], 6);
+  const groups: [string, string[]][] = [
+    ["Strength", list(score.strengths)],
+    ["Recommendation", list(score.improvements)],
+    ["Compliance finding", list(score.compliance_findings)],
+  ];
+  for (const [label, items] of groups) {
+    if (!items.length) {
+      findings.addRow([label, "None identified"]);
+      continue;
+    }
+    items.forEach((item) => findings.addRow([label, item]));
+  }
+  styleBody(findings, 7);
+
+  // ---- Standards and references -------------------------------------------
+  const sources = wb.addWorksheet("Standards", {
+    views: [{ showGridLines: false, state: "frozen", ySplit: 6 }],
+    pageSetup: landscape,
+  });
+  sources.columns = [{ width: 20 }, { width: 34 }, { width: 62 }, { width: 16 }];
+  banner(wb, sources, pack, "Standards and document references", 4);
+  headerRow(sources, ["Kind", "Title", "Criterion / file", "Result"], 6);
   const standards = score.standards_used || [];
-  const standardsSheet = XLSX.utils.aoa_to_sheet([
-    ["Kind", "Title", "File"],
-    ...(standards.length
-      ? standards.map((doc) => [doc.kind, doc.title, doc.file_name])
-      : [["—", "No standards used", ""]]),
-  ]);
-  standardsSheet["!cols"] = [{ wch: 14 }, { wch: 32 }, { wch: 32 }];
-  XLSX.utils.book_append_sheet(wb, standardsSheet, "Standards");
-
   const references = score.metric_evidence?.document_references || [];
-  const refSheet = XLSX.utils.aoa_to_sheet([
-    ["File", "Criterion", "Result"],
-    ...(references.length
-      ? references.map((row) => [row.file_name, row.criterion, row.result])
-      : [["—", "No document references recorded", ""]]),
-  ]);
-  refSheet["!cols"] = [{ wch: 32 }, { wch: 70 }, { wch: 12 }];
-  XLSX.utils.book_append_sheet(wb, refSheet, "Document references");
+  if (!standards.length && !references.length) {
+    sources.addRow(["—", "No standards used", "", ""]);
+  }
+  standards.forEach((doc) => sources.addRow(["Standard", doc.title, doc.file_name, ""]));
+  references.forEach((row) => sources.addRow(["Reference", row.file_name, row.criterion, row.result]));
+  styleBody(sources, 7);
 
-  const out = XLSX.write(wb, { type: "array", bookType: "xlsx" }) as Uint8Array;
-  return Buffer.from(out);
+  const out = await wb.xlsx.writeBuffer();
+  return Buffer.from(out as ArrayBuffer);
 }
 
+const scoreColor = (raw: string) => scoreBand(Number.parseInt(raw, 10) || null).color;
+
 export function callAuditPdf(pack: AuditedCallExport): Buffer {
-  const { score } = pack;
-  const doc = new PdfDoc();
-  doc.fillBar(790, 52, 0.04, 0.06, 0.12);
-  doc.text(40, 810, 22, "ZETRO", "0.2 0.6 1.0");
-  doc.text(125, 810, 16, " |  CALL AUDIT REPORT", "1 1 1");
-  doc.y = 750;
-  doc.heading(pack.call.title || "Untitled call");
-  doc.line("Agent", agentName(pack.call));
-  doc.line("Generated", formatReportDate(new Date().toISOString()));
-  doc.gap(12);
+  const { call, score } = pack;
+  const doc = new PdfDoc({
+    title: "Call audit report",
+    subtitle: `Agent ${agentId(call)}`,
+    footerNote: `Zetro · Agent ${agentId(call)} · ${formatReportDate(auditedAt(pack))}`,
+  });
+
+  doc.cards([
+    {
+      label: "Overall score",
+      value: String(score.overall_score),
+      hint: scoreBand(score.overall_score).label,
+    },
+    { label: "Verdict", value: verdictCell(score.verdict), hint: "Audit outcome" },
+    { label: "Handle time", value: formatDuration(call.duration_seconds), hint: "Recording length" },
+    {
+      label: "Compliance",
+      value: String(list(score.compliance_findings).length),
+      hint: list(score.compliance_findings).length ? "Findings raised" : "Clean call",
+    },
+  ]);
+  doc.gap(6);
 
   doc.heading("Call properties");
-  doc.table(
-    ["Field", "Value"],
-    details(pack).map(([k, v]) => [k, v]),
-    [150, 360],
+  doc.grid(
+    [
+      { header: "Field", width: 150 },
+      { header: "Value", width: 365 },
+    ],
+    details(pack).map(([field, value]) => [field, value]),
     "No call details.",
   );
-  doc.gap(10);
+  doc.gap(16);
 
-  doc.heading("Scores");
-  doc.table(
-    ["Parameter", "Score"],
+  doc.heading("Scorecard");
+  doc.grid(
     [
-      ["Overall", String(score.overall_score)],
-      ...scorecardRows(score).map((row) => [row.name, scoreLabel(row.score)]),
-      ["Verdict", verdictCell(score.verdict)],
-      ["Customer sentiment", dash(score.customer_sentiment)],
-      ["Audit path", auditModeLabel(score.audit_mode)],
+      { header: "Parameter", width: 235 },
+      { header: "Score", width: 60, align: "right", bold: true, color: scoreColor },
+      { header: "Band", width: 100, align: "right" },
+      { header: "Weight", width: 120, align: "right" },
     ],
-    [200, 310],
+    scorecardRows(score).map((row) => [
+      row.name,
+      scoreLabel(row.score),
+      scoreBand(row.score).label,
+      row.weight_pct == null ? "—" : `${row.weight_pct}%`,
+    ]),
+    "No scorecard parameters.",
   );
-  doc.gap(10);
+  doc.gap(16);
 
   doc.heading("Summary");
   doc.para(score.summary || "No summary.");
-  doc.gap(10);
+  doc.gap(14);
 
-  doc.heading("Strengths");
-  const strengths = list(score.strengths);
-  doc.table(
-    ["Note"],
-    (strengths.length ? strengths : ["None identified"]).map((item) => [item]),
-    [510],
-    "None identified.",
-  );
-  doc.gap(10);
-
-  doc.heading("Recommendations");
-  const improvements = list(score.improvements);
-  doc.table(
-    ["Note"],
-    (improvements.length ? improvements : ["None identified"]).map((item) => [item]),
-    [510],
-    "None identified.",
-  );
-  doc.gap(10);
-
-  doc.heading("Compliance findings");
-  const findings = list(score.compliance_findings);
-  doc.table(
-    ["Finding"],
-    (findings.length ? findings : ["None identified"]).map((item) => [item]),
-    [510],
-    "None identified.",
-  );
-  doc.gap(10);
-
-  if (score.metric_evidence?.document_references?.length) {
-    doc.heading("Document references");
-    doc.table(
-      ["File", "Criterion", "Result"],
-      score.metric_evidence.document_references.map((row) => [
-        row.file_name,
-        row.criterion,
-        row.result,
-      ]),
-      [140, 300, 70],
+  const notes: [string, string[], string][] = [
+    ["Strengths", list(score.strengths), "None identified."],
+    ["Recommendations", list(score.improvements), "None identified."],
+    ["Compliance findings", list(score.compliance_findings), "No compliance findings."],
+  ];
+  for (const [title, items, empty] of notes) {
+    doc.heading(title);
+    doc.grid(
+      [
+        { header: "#", width: 30, align: "right" },
+        { header: "Detail", width: 485 },
+      ],
+      items.map((item, index) => [String(index + 1), item]),
+      empty,
     );
-    doc.gap(10);
+    doc.gap(14);
   }
 
-  if (score.standards_used?.length) {
+  const references = score.metric_evidence?.document_references || [];
+  if (references.length) {
+    doc.heading("Document references");
+    doc.grid(
+      [
+        { header: "File", width: 140 },
+        { header: "Criterion", width: 285 },
+        { header: "Result", width: 90, align: "right" },
+      ],
+      references.map((row) => [row.file_name, row.criterion, row.result]),
+    );
+    doc.gap(14);
+  }
+
+  const standards = score.standards_used || [];
+  if (standards.length) {
     doc.heading("Standards this audit read");
-    doc.table(
-      ["Kind", "Title"],
-      score.standards_used.map((row) => [row.kind, row.title]),
-      [120, 390],
+    doc.grid(
+      [
+        { header: "Kind", width: 110 },
+        { header: "Title", width: 220 },
+        { header: "File", width: 185 },
+      ],
+      standards.map((row) => [row.kind, row.title, row.file_name]),
     );
   }
 

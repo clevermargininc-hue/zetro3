@@ -3,11 +3,10 @@ import { getRequestUser } from "@/lib/supabase/request-user";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTeamScope } from "@/lib/workspaces";
 import { transcribeCall } from "@/lib/process-call";
+import { describePrepareError } from "@/lib/ai-client";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
-
-const PREPARED = new Set(["transcribed", "analyzing", "completed"]);
 
 export async function POST(
   request: Request,
@@ -44,24 +43,25 @@ export async function POST(
       return NextResponse.json({ error: "Call not found." }, { status: 404 });
     }
 
-    if (!force) {
-      const admin = createAdminClient();
-      const { count } = await admin
-        .from("utterances")
-        .select("id", { count: "exact", head: true })
-        .eq("call_id", id);
-      if ((count ?? 0) > 0) {
-        after(async () => {
-          await transcribeCall(id).catch((error) => {
-            console.error("Transcription failed", error);
-          });
-        });
-        const status = PREPARED.has(call.status) ? call.status : "transcribed";
-        return NextResponse.json({ ok: true, status, reused: true });
+    const admin = createAdminClient();
+    const { count } = await admin
+      .from("utterances")
+      .select("id", { count: "exact", head: true })
+      .eq("call_id", id);
+    const turns = count ?? 0;
+
+    if (!force && turns > 0) {
+      const status =
+        call.status === "analyzing" || call.status === "completed" || call.status === "transcribed"
+          ? call.status
+          : "transcribed";
+      if (status !== call.status) {
+        await admin
+          .from("calls")
+          .update({ status, error_message: null })
+          .eq("id", id);
       }
-      if (PREPARED.has(call.status)) {
-        return NextResponse.json({ ok: true, status: call.status, reused: true });
-      }
+      return NextResponse.json({ ok: true, status, reused: true });
     }
 
     const work = transcribeCall(id, { force }).catch((error) => {
@@ -73,17 +73,12 @@ export async function POST(
 
     return NextResponse.json({
       ok: true,
-      status: force || call.status === "transcribing" ? "transcribing" : "started",
+      status: force || call.status === "transcribing" || turns === 0 ? "transcribing" : "started",
     });
   } catch (error) {
     console.error("Prepare route failed", error);
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Could not prepare call. Try again.",
-      },
+      { error: describePrepareError(error) },
       { status: 500 },
     );
   }

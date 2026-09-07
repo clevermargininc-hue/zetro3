@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
-import { formatAht, formatDate, formatDuration, languageLabel } from "@/lib/format";
+import { agentIdFromFile, formatAht, formatDate, formatDuration, languageLabel } from "@/lib/format";
 import { getTeamScope } from "@/lib/workspaces";
-import type { AgentPerformance, Call, CallScore } from "@/lib/types";
+import type { Call, CallScore } from "@/lib/types";
 import { JoinRequestBanner } from "@/components/join-request-banner";
 import { KpiStrip, PageHeader, scoreChipClass } from "@/components/ui";
 
@@ -16,16 +16,6 @@ const Icons = {
   ),
 };
 
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .substring(0, 2);
-}
-
 function formatTotalTime(seconds: number) {
   if (!seconds || seconds <= 0) return "0 mins";
   const hours = Math.floor(seconds / 3600);
@@ -38,14 +28,11 @@ function formatTotalTime(seconds: number) {
 
 export default async function DashboardPage() {
   const { supabase, user } = await requireUser();
-  const teamScope = await getTeamScope(user.id);
-  const [{ data: calls }, { data: agents }] = await Promise.all([
-    supabase
-      .from("calls")
-      .select("*, agents(name), call_scores(*)")
-      .order("created_at", { ascending: false }),
-    supabase.from("agents").select("id, name"),
-  ]);
+  await getTeamScope(user.id);
+  const { data: calls } = await supabase
+    .from("calls")
+    .select("*, agents(name), call_scores(*)")
+    .order("created_at", { ascending: false });
 
   const allCalls = calls || [];
   const completedCalls = allCalls.filter((c) => c.status === "completed");
@@ -101,7 +88,7 @@ export default async function DashboardPage() {
 
 
 
-  const agentLeaderboard = rankAgents(agents || [], allCalls);
+  const agentLeaderboard = rankByAgentId(allCalls);
 
   return (
     <div className="space-y-6 pb-10">
@@ -197,8 +184,8 @@ export default async function DashboardPage() {
       <section className="surface overflow-hidden">
         <div className="px-5 py-3.5 border-b border-line flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-[14px] font-semibold text-ink">Agent rankings</h2>
-            <p className="text-[12px] text-muted mt-0.5">Average QA score by representative</p>
+            <h2 className="text-[14px] font-semibold text-ink">Leaderboard</h2>
+            <p className="text-[12px] text-muted mt-0.5">Average QA score by agent ID</p>
           </div>
           <Link href="/leaderboard" className="btn btn-ghost text-[12px]">
             View all
@@ -208,26 +195,21 @@ export default async function DashboardPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-line bg-slate-50 text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                <th className="px-6 py-3">Representative</th>
+                <th className="px-6 py-3">Agent ID</th>
                 <th className="px-6 py-3 text-right">Audits</th>
                 <th className="px-6 py-3 text-right">Avg score</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-[13px]">
-              {agentLeaderboard.slice(0, 6).map((agent) => (
-                <tr key={agent.id} className="hover:bg-slate-50">
+              {agentLeaderboard.slice(0, 6).map((row) => (
+                <tr key={row.id} className="hover:bg-slate-50">
                   <td className="px-6 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded bg-navy text-white flex items-center justify-center text-[10px] font-medium shrink-0">
-                        {getInitials(agent.name)}
-                      </div>
-                      <span className="font-medium text-ink">{agent.name}</span>
-                    </div>
+                    <span className="font-medium text-ink tabular-nums">{row.name}</span>
                   </td>
-                  <td className="px-6 py-3 text-right tabular-nums text-slate-600">{agent.call_count}</td>
+                  <td className="px-6 py-3 text-right tabular-nums text-slate-600">{row.call_count}</td>
                   <td className="px-6 py-3 text-right">
-                    <span className={`${scoreChipClass(agent.avg_score)} tabular-nums`}>
-                      {agent.avg_score != null ? `${agent.avg_score}%` : "—"}
+                    <span className={`${scoreChipClass(row.avg_score)} tabular-nums`}>
+                      {row.avg_score != null ? `${row.avg_score}%` : "—"}
                     </span>
                   </td>
                 </tr>
@@ -235,7 +217,7 @@ export default async function DashboardPage() {
             </tbody>
           </table>
           {!agentLeaderboard.length ? (
-            <p className="px-6 py-8 text-[13px] text-muted">Assign agents on upload to populate rankings.</p>
+            <p className="px-6 py-8 text-[13px] text-muted">Upload and score recordings to populate the leaderboard.</p>
           ) : null}
         </div>
       </section>
@@ -256,7 +238,7 @@ export default async function DashboardPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-line bg-slate-50 text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                <th className="px-6 py-3">Call Title / Recording</th>
+                <th className="px-6 py-3">Agent ID</th>
 
                 <th className="px-6 py-3">Date & Time</th>
                 <th className="px-6 py-3">Language</th>
@@ -274,9 +256,9 @@ export default async function DashboardPage() {
 
                 return (
                   <tr key={call.id} className="hover:bg-slate-50 transition-colors">
-                    {/* Title & Duration */}
+                    {/* Agent ID & Duration */}
                     <td className="px-6 py-3.5">
-                      <div className="font-semibold text-ink line-clamp-1 max-w-xs">{call.title || call.file_name || "Audio Recording"}</div>
+                      <div className="font-semibold text-ink tabular-nums">{agentLabel(call)}</div>
                       <div className="text-[11px] text-muted flex items-center gap-1.5 mt-0.5">
                         <span>Duration: {formatDuration(call.duration_seconds)}</span>
                       </div>
@@ -356,35 +338,44 @@ export default async function DashboardPage() {
   );
 }
 
-function rankAgents(
-  agents: { id: string; name: string }[],
+function agentLabel(call: { file_name?: string | null; title?: string | null }) {
+  return agentIdFromFile(call.file_name || call.title);
+}
+
+function rankByAgentId(
   calls: Array<
     Call & {
-      agents?: { name: string } | null;
       call_scores?: CallScore[] | CallScore | null;
     }
   >,
-): AgentPerformance[] {
-  return agents
-    .map((agent) => {
-      const scored = calls.filter((c) => c.agent_id === agent.id && c.status === "completed");
-      const values = scored
-        .map((c) => {
-          const score = Array.isArray(c.call_scores) ? c.call_scores[0] : c.call_scores;
-          return score;
-        })
-        .filter(Boolean) as CallScore[];
-      const avg = values.length
-        ? Math.round(values.reduce((s, v) => s + v.overall_score, 0) / values.length)
-        : null;
-      return {
-        id: agent.id,
-        name: agent.name,
-        call_count: values.length,
-        avg_score: avg,
-        excellent_count: values.filter((v) => v.verdict === "excellent").length,
-        poor_count: values.filter((v) => v.verdict === "poor").length,
-      };
-    })
-    .sort((a, b) => (b.avg_score ?? -1) - (a.avg_score ?? -1));
+) {
+  const groups = new Map<
+    string,
+    { id: string; name: string; scores: CallScore[] }
+  >();
+
+  for (const call of calls) {
+    if (call.status !== "completed") continue;
+    const score = Array.isArray(call.call_scores) ? call.call_scores[0] : call.call_scores;
+    if (!score || typeof score.overall_score !== "number") continue;
+    const name = agentLabel(call);
+    const key = name.toLowerCase();
+    const existing = groups.get(key);
+    if (existing) {
+      existing.scores.push(score);
+    } else {
+      groups.set(key, { id: call.id, name, scores: [score] });
+    }
+  }
+
+  return [...groups.values()]
+    .map((row) => ({
+      id: row.id,
+      name: row.name,
+      call_count: row.scores.length,
+      avg_score: Math.round(
+        row.scores.reduce((sum, score) => sum + score.overall_score, 0) / row.scores.length,
+      ),
+    }))
+    .sort((a, b) => b.avg_score - a.avg_score);
 }

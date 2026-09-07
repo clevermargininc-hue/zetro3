@@ -5,7 +5,14 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { DeleteCallButton } from "@/components/delete-call-button";
 import { CallDownloads } from "@/components/call-downloads";
-import { formatDate, formatDuration, isCallAudited, languageLabel, statusLabel } from "@/lib/format";
+import {
+  agentIdFromFile,
+  formatDate,
+  formatDuration,
+  isCallAudited,
+  languageLabel,
+  statusLabel,
+} from "@/lib/format";
 import type { Call, CallScore, CallStatus } from "@/lib/types";
 import { KpiStrip, scoreChipClass } from "@/components/ui";
 
@@ -18,16 +25,6 @@ type Filter = "all" | "audited" | "not_yet";
 
 function scoreOf(call: CallRow) {
   return Array.isArray(call.call_scores) ? call.call_scores[0] : call.call_scores;
-}
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .substring(0, 2);
 }
 
 const Icons = {
@@ -131,8 +128,7 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-line bg-slate-50 text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                <th className="px-6 py-3">Call Title / Duration</th>
-                <th className="px-6 py-3">Representative</th>
+                <th className="px-6 py-3">Agent ID</th>
                 <th className="px-6 py-3">Language</th>
                 <th className="px-6 py-3">Audit status</th>
                 <th className="px-6 py-3 text-right">QA Score</th>
@@ -144,25 +140,15 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                 const score = scoreOf(call);
                 return (
                   <tr key={call.id} className="hover:bg-slate-50 transition-colors">
-                    {/* Call Title & Date */}
+                    {/* Agent ID & Date */}
                     <td className="px-6 py-3.5">
-                      <div className="font-semibold text-ink line-clamp-1 max-w-xs">{call.title || call.file_name || "Audio Recording"}</div>
+                      <div className="font-semibold text-ink tabular-nums">
+                        {agentIdFromFile(call.file_name || call.title)}
+                      </div>
                       <div className="text-[11px] text-muted flex items-center gap-1.5 mt-0.5">
                         <span>{formatDate(call.created_at)}</span>
                         <span>•</span>
                         <span>{formatDuration(call.duration_seconds)}</span>
-                      </div>
-                    </td>
-
-                    {/* Agent */}
-                    <td className="px-6 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded bg-navy text-white flex items-center justify-center text-[10px] font-medium shrink-0">
-                          {getInitials(call.agents?.name || "Unassigned")}
-                        </div>
-                        <span className="font-medium text-slate-700 text-[13px]">
-                          {call.agents?.name || <span className="text-slate-400 italic">Unassigned</span>}
-                        </span>
                       </div>
                     </td>
 
