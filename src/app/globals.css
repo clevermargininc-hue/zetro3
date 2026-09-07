@@ -308,6 +308,41 @@ h3,
   cursor: not-allowed;
 }
 
+/* Anything clickable shows the hand cursor across the whole product. */
+a[href],
+button,
+summary,
+label[for],
+select,
+option,
+[role="button"],
+[role="tab"],
+[role="option"],
+[role="menuitem"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+input[type="checkbox"],
+input[type="radio"],
+input[type="file"],
+input[type="range"],
+input[type="color"],
+.btn,
+.nav-link,
+.audit-step,
+.chip[role="button"] {
+  cursor: pointer;
+}
+
+a[aria-disabled="true"],
+button:disabled,
+select:disabled,
+input:disabled,
+[aria-disabled="true"],
+[data-disabled="true"] {
+  cursor: not-allowed;
+}
+
 .field {
   width: 100%;
   border-radius: 4px;
