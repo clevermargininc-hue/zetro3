@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { HeroLines } from "@/components/hero-lines";
 import { createClient } from "@/lib/supabase/server";
 
 const FEATURES = [
@@ -39,8 +38,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="relative overflow-hidden pt-24 pb-28 lg:pt-36 lg:pb-36">
-        <HeroLines />
+      <section className="relative overflow-hidden bg-white pt-24 pb-28 lg:pt-36 lg:pb-36">
         <div className="relative mx-auto flex max-w-7xl flex-col items-center px-6 text-center lg:px-8">
           <h1 className="max-w-4xl text-5xl font-semibold tracking-tight text-ink sm:text-7xl leading-[1.1]">
             Audit every conversation with <span className="text-blue">enterprise AI.</span>

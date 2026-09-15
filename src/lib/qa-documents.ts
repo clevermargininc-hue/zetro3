@@ -135,10 +135,12 @@ export function extractCompanyRuleLines(docs: QaDocument[], limit = 60): string[
       const looksLikeRule =
         /\d+\s*%/.test(line) ||
         /\?/.test(line) ||
-        /\b(auto\s*-?\s*zero|auto\s*-?\s*fail|if applicable)\b/i.test(line) ||
+        /\b(auto\s*-?\s*zero|auto\s*-?\s*fail|auto\s*-?\s*100|auto\s*-?\s*pass|if applicable)\b/i.test(
+          line,
+        ) ||
         /^\d+[\).:-]\s+\S+/.test(line) ||
         /^[-*•]\s+\S+/.test(line) ||
-        /\b(opening|closing|greeting|empathy|hold|tone|professional|resolution|knowledge|escalation|disposition|wrap\s*up|personalization|troubleshooting|listening|apology|education|upsell|ftr|first time)\b/i.test(
+        /\b(opening|closing|greeting|empathy|hold|tone|professional|resolution|knowledge|escalation|disposition|wrap\s*up|personalization|troubleshooting|listening|apology|education|upsell|ftr|first time|further assistance|product|compliance)\b/i.test(
           line,
         );
 
@@ -168,6 +170,7 @@ export function formatCompanyRuleChecklist(docs: QaDocument[]) {
     "Read every line carefully. Give a parameter score for each. Do not invent extra Zetro categories.",
     "Each line is INDEPENDENT — score and deduct only against that line. Do not move a hold miss into opening, product knowledge, further assistance, etc.",
     "Use the EXACT weight % written on each line in the company scorecard (do not invent 5/10/20/25 defaults).",
+    "Respect special marks on each line: (Auto Zero) / Auto-Fail, (Auto 100) / Auto-Pass, If applicable — apply only to that line.",
     "The same recording + these same rules must produce consistent scores (±5) across accounts and re-audits.",
     ...rules.map((rule, index) => `${index + 1}. ${rule}`),
   ].join("\n");
@@ -186,7 +189,7 @@ export function formatQaContext(docs: QaDocument[]) {
     if (!items.length) return "";
     const heading =
       kind === "scorecard"
-        ? "SCORECARD — READ EVERY RULE CAREFULLY. This file is the only scoring rubric. Score every criterion / weight / Auto-Zero line in it. Be consistent every time."
+        ? "SCORECARD — READ EVERY RULE CAREFULLY. This file is the only scoring rubric. Score every criterion / weight / Auto-Zero / Auto-100 / If-applicable line in it. Be consistent every time."
         : kind === "compliance"
           ? "COMPLIANCE — READ EVERY RULE CAREFULLY. Flag every breach of these company rules."
           : "PROCESS DOCUMENTS — READ THESE RULES CAREFULLY. Required scripts, steps, product names, and key terms.";

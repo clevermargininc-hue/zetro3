@@ -15,6 +15,7 @@ import type {
 } from "@/lib/types";
 import type { QaDocument } from "@/lib/qa-kinds";
 import { SCRIPT_KINDS } from "@/lib/qa-kinds";
+import { formatCompanyRuleChecklist } from "@/lib/qa-documents";
 import { extractKeytermsFromDocuments, scriptsOf } from "@/lib/call-scripts";
 import { detectHoldEvents, formatHoldListenBlock } from "@/lib/detect-holds";
 import { cleanScoreLine, cleanScoreLines, cleanScoreQuote } from "@/lib/clean-score-text";
@@ -248,14 +249,20 @@ parameters (REQUIRED — this is the company scorecard):
 - Do NOT stop at 6 items. If the company file has 8, 12, 20, or more lines, score all of them.
 - Do NOT invent Zetro's generic categories (Greeting & Identity, Empathy & Active Listening, etc.) unless that exact line appears in the company files.
 - name: the criterion name exactly as written in the company file (include weight text if it is part of the line).
-- score: 0–100 for how well the agent met THAT ONE company rule on this call — nothing else. Apply only that line's own scoring / Auto-Zero / "if applicable" rules from the company file.
+- score: 0–100 for how well the agent met THAT ONE company rule on this call — nothing else. Apply only that line's own scoring / Auto-Zero / Auto-100 / "if applicable" rules from the company file and the PARAMETER PLAYBOOK.
 - weight_pct: copy the EXACT weight printed on that scorecard line (e.g. 3, 7.5, 12, 15). Do NOT invent 5/10/20/25% defaults. If the file has no weight for that line, set null.
 - result: hit, miss, or partial according to THAT company rule only.
 - source_file: exact uploaded file name from FILE INDEX.
-- note: one short English sentence explaining WHY this score was EARNED for THIS parameter only (what the agent did vs that company rule). Do not mention other parameters. Required even for 100%.
+- note: one short English sentence explaining WHY this score was EARNED for THIS parameter only (what the agent did vs that company rule / playbook meaning). Do not mention other parameters. Required even for 100%.
 - gap_note: one short sentence explaining WHY points were CUT on THIS parameter only (what was missing vs that same company rule). FORBIDDEN: blaming holding, opening, product knowledge, tone, or any OTHER parameter for this cut. Example bad: cutting "Provide further assistance" because hold procedure failed. Example good: cutting it only if further assistance itself was incomplete. If score is 100, use "" or "Full marks — nothing deducted." If score is 0, explain the full miss of THIS rule. Required for every parameter.
 - quote: a SHORT clean transcript snippet that proves THIS parameter's score. Never paste garbled ASR. If "If applicable" and not needed, quote "" and say so in note.
 - utterance_index: the timed turn index [i] that best supports the quote, or -1 if no turn applies.
+
+SPECIAL MARKS ON COMPANY LINES (read from scorecard / PARAMETER PLAYBOOK):
+- Auto Zero / Auto-Fail / (Auto Zero): if THAT line's fail condition is met, score that parameter 0 and set auto_zero_applied=true when the company intends call-level zero.
+- Auto 100 / Auto-Pass / (Auto 100): if THAT line's full-marks condition is fully met, score that parameter 100.
+- If applicable: if the situation did not arise on this call, do not invent a miss for that line.
+- These marks apply ONLY to the line that carries them — never to other parameters.
 
 PARAMETER INDEPENDENCE (critical — never violate):
 - Each parameter is judged alone. A miss on Hold procedure must NOT reduce Opening, Product knowledge, Provide further assistance, Empathy, Closing, or any other line.
@@ -546,6 +553,202 @@ function formatCallUnderstandingBlock(brief: CallUnderstanding | null) {
     `- Speaker roles (verify):\n${speakers}`,
     "Score like a wise human QA: weigh the full conversation arc above, then verify each scorecard rule against the timed turns. Do not punish the agent for things the customer never asked for. Do not invent misses from garbled ASR — if unclear_parts says it is unclear, be fair and conservative on that point.",
   ].join("\n");
+}
+
+const PARAMETER_PLAYBOOK_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    parameters: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          name: { type: "string" },
+          meaning: { type: "string" },
+          full_marks_requires: { type: "string" },
+          deduction_or_fail_when: { type: "string" },
+          special_rule: {
+            type: "string",
+            enum: ["none", "auto_zero", "auto_100", "if_applicable"],
+          },
+          weight_pct: { type: ["number", "null"] },
+        },
+        required: [
+          "name",
+          "meaning",
+          "full_marks_requires",
+          "deduction_or_fail_when",
+          "special_rule",
+          "weight_pct",
+        ],
+      },
+    },
+  },
+  required: ["parameters"],
+} as const;
+
+export type ParameterPlaybookEntry = {
+  name: string;
+  meaning: string;
+  full_marks_requires: string;
+  deduction_or_fail_when: string;
+  special_rule: "none" | "auto_zero" | "auto_100" | "if_applicable";
+  weight_pct: number | null;
+};
+
+function normalizeSpecialRule(value: unknown): ParameterPlaybookEntry["special_rule"] {
+  const raw = String(value || "")
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
+  if (raw.includes("autozero") || raw.includes("autofail")) return "auto_zero";
+  if (raw.includes("auto100") || raw.includes("autopass")) return "auto_100";
+  if (raw.includes("ifapplicable") || raw.includes("applicable")) return "if_applicable";
+  return "none";
+}
+
+/**
+ * Read company scorecard lines first — explain what each parameter means
+ * (including Auto Zero / Auto 100) before any call score is assigned.
+ */
+export async function understandCompanyParameters(
+  docs: QaDocument[],
+  standardsText: string,
+  scoringSeed?: number,
+): Promise<ParameterPlaybookEntry[]> {
+  const checklist = formatCompanyRuleChecklist(docs);
+  const scorecardDocs = docs.filter((doc) => doc.kind === "scorecard");
+  const scorecardBody = scorecardDocs.length
+    ? scorecardDocs
+        .map((doc) => `### ${doc.file_name}\n${(doc.extracted_text || "").trim()}`)
+        .join("\n\n")
+    : standardsText;
+  if (!checklist.trim() && !scorecardBody.trim()) return [];
+
+  try {
+    const parsed = (await completeJson(
+      `You are a contact-center QA standards analyst.
+Your ONLY job is to READ the company's uploaded scorecard / standards and build a clear playbook for each scored parameter BEFORE any call is audited.
+
+Rules:
+- Use ONLY what is written in the company files. Do not invent Zetro categories.
+- For each parameter, explain in plain English what it checks (you may translate or clarify awkward labels).
+- Detect special marks exactly: (Auto Zero), Auto-Zero, Auto-Fail → special_rule=auto_zero; (Auto 100), Auto-100, Auto-Pass → special_rule=auto_100; If applicable → if_applicable; otherwise none.
+- auto_zero means: if THAT parameter's severe miss happens, the call overall can be forced to 0 (company Auto-Zero).
+- auto_100 means: if THAT parameter's required behaviour is fully met as the company defines, that parameter scores 100 automatically for that line.
+- weight_pct must be the EXACT percentage from the company line (3, 7, 12, 15, etc.). Never invent 5/10/20/25 defaults. Use null if the file has no weight.
+- Each parameter is independent — do not merge hold into opening, etc.
+- Write all explanations in English.`,
+      [
+        checklist || "No checklist extracted — read the scorecard text below carefully.",
+        "COMPANY SCORECARD / STANDARDS TEXT:",
+        clipKeepStart(scorecardBody, 28000),
+        "Return one playbook entry for every scored criterion / weight / Auto-Zero / Auto-100 / If-applicable line.",
+      ].join("\n\n"),
+      "company_parameter_playbook",
+      PARAMETER_PLAYBOOK_SCHEMA,
+      "reasoning",
+      { stable: true, seed: scoringSeed },
+    )) as { parameters?: unknown[] };
+
+    const rows = Array.isArray(parsed.parameters) ? parsed.parameters : [];
+    const out: ParameterPlaybookEntry[] = [];
+    const seen = new Set<string>();
+    for (const row of rows) {
+      if (!row || typeof row !== "object") continue;
+      const item = row as Record<string, unknown>;
+      const name = cleanScoreLine(String(item.name || "")).slice(0, 180);
+      if (!name) continue;
+      const key = name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const weightRaw = item.weight_pct;
+      const weight =
+        weightRaw == null || weightRaw === ""
+          ? null
+          : Number.isFinite(Number(weightRaw))
+            ? Math.max(0, Math.min(100, Number(weightRaw)))
+            : null;
+      out.push({
+        name,
+        meaning: cleanScoreLine(String(item.meaning || "")).slice(0, 320),
+        full_marks_requires: cleanScoreLine(String(item.full_marks_requires || "")).slice(
+          0,
+          320,
+        ),
+        deduction_or_fail_when: cleanScoreLine(
+          String(item.deduction_or_fail_when || ""),
+        ).slice(0, 320),
+        special_rule: normalizeSpecialRule(item.special_rule),
+        weight_pct: weight,
+      });
+      if (out.length >= 60) break;
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+function formatParameterPlaybookBlock(entries: ParameterPlaybookEntry[]) {
+  if (!entries.length) return "";
+  const lines = entries.map((row, index) => {
+    const weight =
+      row.weight_pct == null ? "weight not stated in file" : `weight ${row.weight_pct}%`;
+    const special =
+      row.special_rule === "auto_zero"
+        ? "SPECIAL: Auto Zero / Auto-Fail for THIS line — if the fail condition happens, set this parameter to 0 and auto_zero_applied=true for the call when the company intends call-level zero."
+        : row.special_rule === "auto_100"
+          ? "SPECIAL: Auto 100 / Auto-Pass for THIS line — if the full-marks condition is fully met, score this parameter 100."
+          : row.special_rule === "if_applicable"
+            ? "SPECIAL: If applicable — if the situation did not arise, do not force a miss; note N/A in gap_note and score fairly."
+            : "SPECIAL: none";
+    return [
+      `${index + 1}. ${row.name} (${weight})`,
+      `   Meaning: ${row.meaning || "as written on the company scorecard"}`,
+      `   Full marks requires: ${row.full_marks_requires || "meet this company line fully"}`,
+      `   Deduct / fail when: ${row.deduction_or_fail_when || "this company line is missed"}`,
+      `   ${special}`,
+    ].join("\n");
+  });
+  return [
+    "COMPANY PARAMETER PLAYBOOK (read this before scoring — built from the uploaded Standards):",
+    "This explains what each company parameter means. Score ONLY against these meanings.",
+    "Do not invent extra parameters. Do not mix deductions across lines.",
+    ...lines,
+  ].join("\n");
+}
+
+function applyPlaybookSpecialScores(
+  parameters: ScoreParameter[],
+  playbook: ParameterPlaybookEntry[],
+): { parameters: ScoreParameter[]; autoZeroFromPlaybook: boolean } {
+  if (!parameters.length || !playbook.length) {
+    return { parameters, autoZeroFromPlaybook: false };
+  }
+  const byName = new Map(playbook.map((row) => [row.name.trim().toLowerCase(), row]));
+  let autoZeroFromPlaybook = false;
+  const next = parameters.map((row) => {
+    const guide = byName.get(row.name.trim().toLowerCase());
+    if (!guide) return row;
+    const patched: ScoreParameter = {
+      ...row,
+      weight_pct: row.weight_pct ?? guide.weight_pct,
+    };
+    if (guide.special_rule === "auto_100" && (row.result === "hit" || row.score >= 95)) {
+      patched.score = 100;
+      patched.result = "hit";
+      if (!patched.gap_note) patched.gap_note = "Full marks — Auto 100 condition met.";
+    }
+    if (guide.special_rule === "auto_zero" && (row.result === "miss" || row.score <= 5)) {
+      patched.score = 0;
+      patched.result = "miss";
+      autoZeroFromPlaybook = true;
+    }
+    return patched;
+  });
+  return { parameters: next, autoZeroFromPlaybook };
 }
 
 function resolveCompanyFileName(named: string, files: QaDocument[]): string {
@@ -964,12 +1167,13 @@ HUMAN-LIKE UNDERSTANDING + CONSISTENT COMPANY AUDIT:
 
 const STANDARDS_READING_BLOCK = `
 CAREFUL STANDARDS READING (required before any mark):
-- Read FILE INDEX, COMPANY RULE CHECKLIST, then the full SCORECARD text, then COMPLIANCE, then PROCESS DOCUMENTS and scripts.
+- Read FILE INDEX, COMPANY RULE CHECKLIST, COMPANY PARAMETER PLAYBOOK, then the full SCORECARD text, then COMPLIANCE, then PROCESS DOCUMENTS and scripts.
+- The PARAMETER PLAYBOOK explains what each company line means in plain English — use it to understand awkward labels, Auto Zero, Auto 100, and If applicable.
 - Extract every criterion EXACTLY as written, with its EXACT weight % from the file (companies differ — some use 3%, 7%, 12%, 15%, etc.; never assume 5/10/20/25).
-- Extract Auto-Zero and "if applicable" lines only as the company wrote them.
+- Extract Auto-Zero / Auto-100 / "if applicable" marks only as the company wrote them on each line.
 - Apply the company's own definitions and examples from their files; do not substitute a generic Zetro rubric.
 - Key terms, product names, and required phrases come only from those uploaded files.
-- When a rule is ambiguous, prefer the company's wording and stay consistent with prior audits of this recording.
+- When a rule is ambiguous, prefer the company's wording + playbook meaning, and stay consistent with prior audits of this recording.
 - Never transfer a deduction from one scorecard line to another.`;
 
 const DOCUMENTS_PROMPT = `You are a bilingual (Kiswahili + English) call-center quality assurance analyst.
@@ -1035,7 +1239,7 @@ Numeric fields:
 - parameters: score EVERY company scorecard / checklist criterion (any count). This drives the scorecard UI.
 - overall_score / raw_score: follow the company scorecard weighting across those parameters
 - greeting, empathy, professionalism, resolution, communication, language_handling: optional closest roll-ups for analytics only — do not replace the company parameter list
-- AUTO-ZERO (AUTO-FAIL): If the scorecard explicitly defines an "Auto-Zero" or "Auto-Fail" for a specific severe violation, and the agent commits it, you MUST set the \`auto_zero_applied\` boolean to true. Calculate the \`overall_score\` normally based on all other points earned. The system will automatically zero out the final score if \`auto_zero_applied\` is true, but you must provide the normal sum in \`overall_score\`. Use extreme wisdom: only apply this if it is a genuine, explicitly defined severe violation, to prevent unfair zeroes. If no auto-zero occurred, set \`auto_zero_applied\` to false.
+- AUTO-ZERO / AUTO-100: Follow the company scorecard and PARAMETER PLAYBOOK. If a line marked Auto Zero / Auto-Fail is truly violated, set that parameter to 0 and set \`auto_zero_applied\` true when the company intends a call-level zero. If a line marked Auto 100 / Auto-Pass is fully met, score that parameter 100. Calculate \`overall_score\` from the parameters (weighted when weights exist). The system zeros the final overall when \`auto_zero_applied\` is true, but you must still provide the normal sum in \`overall_score\` / raw_score. Use extreme wisdom: only apply Auto Zero for a genuine, explicitly defined severe violation on that line. If no auto-zero occurred, set \`auto_zero_applied\` to false.
 - A serious compliance breach should cap overall_score at 49 unless the scorecard says otherwise
 
 Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–49.
@@ -1096,7 +1300,7 @@ Numeric fields:
 - parameters: score EVERY company scorecard / checklist criterion (any count). This drives the scorecard UI.
 - overall_score / raw_score: follow the company scorecard weighting across those parameters
 - greeting, empathy, professionalism, resolution, communication, language_handling: optional closest roll-ups for analytics only — do not replace the company parameter list
-- AUTO-ZERO (AUTO-FAIL): If the scorecard explicitly defines an "Auto-Zero" or "Auto-Fail" for a specific severe violation, and the agent commits it, you MUST set the \`auto_zero_applied\` boolean to true. Calculate the \`overall_score\` normally based on all other points earned. The system will automatically zero out the final score if \`auto_zero_applied\` is true, but you must provide the normal sum in \`overall_score\`. Use extreme wisdom: only apply this if it is a genuine, explicitly defined severe violation, to prevent unfair zeroes. If no auto-zero occurred, set \`auto_zero_applied\` to false.
+- AUTO-ZERO / AUTO-100: Follow the company scorecard and PARAMETER PLAYBOOK. If a line marked Auto Zero / Auto-Fail is truly violated, set that parameter to 0 and set \`auto_zero_applied\` true when the company intends a call-level zero. If a line marked Auto 100 / Auto-Pass is fully met, score that parameter 100. Calculate \`overall_score\` from the parameters (weighted when weights exist). The system zeros the final overall when \`auto_zero_applied\` is true, but you must still provide the normal sum in \`overall_score\` / raw_score. Use extreme wisdom: only apply Auto Zero for a genuine, explicitly defined severe violation on that line. If no auto-zero occurred, set \`auto_zero_applied\` to false.
 - A serious compliance breach should cap overall_score at 49 unless the scorecard says otherwise
 
 Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–49.
@@ -1118,13 +1322,15 @@ export async function analyzeCall(
   scoringSeed?: number,
 ): Promise<CallAnalysis> {
   const transcript = packTranscriptForAudit(utterances, 16000);
-  const understanding = await understandCallBrief(
-    utterances,
-    bilingual,
-    agentName,
-    scoringSeed,
-  );
+  const catalogForPlaybook = scriptDocs.length ? scriptDocs : standards;
+  const [understanding, parameterPlaybook] = await Promise.all([
+    understandCallBrief(utterances, bilingual, agentName, scoringSeed),
+    mode === "documents"
+      ? understandCompanyParameters(catalogForPlaybook, standardsText, scoringSeed)
+      : Promise.resolve([] as ParameterPlaybookEntry[]),
+  ]);
   const understandingBlock = formatCallUnderstandingBlock(understanding);
+  const playbookBlock = formatParameterPlaybookBlock(parameterPlaybook);
 
   const holdListen = detectHoldEvents(utterances);
   const holdingDocs = scriptsOf(scriptDocs, "holding");
@@ -1160,14 +1366,15 @@ export async function analyzeCall(
   const userPrompt = `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}READ THE CUSTOMER'S / WORKSPACE'S UPLOADED FILES FIRST.
 1) FILE INDEX — which files exist
 2) COMPANY RULE CHECKLIST — every rule to score (one parameters[] row each)
-3) SCORECARD / COMPLIANCE / PROCESS DOCUMENTS — full text behind those rules
-Score only from those files. Do not invent a Zetro rubric, company name, or key term.
-If the checklist lists N rules, return about N parameters with matching names, exact weight_pct from the company file, a short note (why THIS parameter earned its score), a gap_note (why THIS parameter alone lost points — never blame another parameter), and a transcript quote for each (including 100% scores).
+3) COMPANY PARAMETER PLAYBOOK — plain-English meaning of each line, including Auto Zero / Auto 100 / If applicable
+4) SCORECARD / COMPLIANCE / PROCESS DOCUMENTS — full text behind those rules
+Score only from those files and the playbook. Do not invent a Zetro rubric, company name, or key term.
+If the checklist / playbook lists N rules, return about N parameters with matching names, exact weight_pct from the company file, a short note (why THIS parameter earned its score), a gap_note (why THIS parameter alone lost points — never blame another parameter), and a transcript quote for each (including 100% scores).
 
 Then UNDERSTAND the call (CALL UNDERSTANDING + timed transcript) before you assign marks — like a wise human QA who listened carefully.
-Read the company Standards carefully. Score each parameter independently. Stay consistent with any CONSISTENCY ANCHOR (±5).
+Read the company Standards and PARAMETER PLAYBOOK carefully. Score each parameter independently against its playbook meaning. Stay consistent with any CONSISTENCY ANCHOR (±5).
 ${rescoreBlock}
-${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${understandingBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript, meaning-repaired for clear understanding (opening + closing preserved). Audit against the company checklist, scorecard, scripts, and key terms. Write the scorecard in English. Quotes may stay in the speaker's language with an English gloss. If a word is still broken, do not mention it:\n${transcript}`;
+${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${playbookBlock}\n\n${understandingBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript, meaning-repaired for clear understanding (opening + closing preserved). Audit against the company checklist, PARAMETER PLAYBOOK, scorecard, scripts, and key terms. Write the scorecard in English. Quotes may stay in the speaker's language with an English gloss. If a word is still broken, do not mention it:\n${transcript}`;
 
   const parsed = (await completeJson(
     bilingual
@@ -1267,11 +1474,15 @@ ${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${under
     }
   }
   metric_evidence.document_references = document_references;
-  const parameters = normalizeScoreParameters(
+  const parametersRaw = normalizeScoreParameters(
     parsed.parameters,
     catalogFiles,
     document_references,
     utterances,
+  );
+  const { parameters, autoZeroFromPlaybook } = applyPlaybookSpecialScores(
+    parametersRaw,
+    parameterPlaybook,
   );
   if (parameters.length) {
     metric_evidence.parameters = parameters;
@@ -1282,7 +1493,7 @@ ${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${under
   const fromParams = overallFromParameters(parameters);
   if (fromParams != null) final_overall_score = fromParams;
 
-  if (parsed.auto_zero_applied) {
+  if (parsed.auto_zero_applied || autoZeroFromPlaybook) {
     metric_evidence.auto_zero_applied = true;
     metric_evidence.raw_score = final_overall_score;
     final_overall_score = 0;
