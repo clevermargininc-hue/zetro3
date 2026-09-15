@@ -49,11 +49,20 @@ export function TranscribeWorkspace({
   const callId = call?.id ?? initialCall.id;
   const callStatus = call?.status ?? initialCall.status;
   const canScore = hasTranscript;
-  const preparingBusy =
+  // Only the in-flight request disables the CTA. Server "queued"/"transcribing"
+  // alone must not hide the button — that left uploads stuck with no clickable control.
+  const preparingBusy = preparing;
+  const showWorking =
     preparing || callStatus === "transcribing" || callStatus === "queued";
 
   useEffect(() => {
-    if (hasTranscript || callStatus === "failed" || callStatus === "completed" || callStatus === "analyzing") {
+    if (hasTranscript) return;
+    if (
+      callStatus === "failed" ||
+      callStatus === "completed" ||
+      callStatus === "analyzing" ||
+      callStatus === "transcribed"
+    ) {
       return;
     }
     if (callStatus !== "queued" && callStatus !== "transcribing") return;
@@ -113,8 +122,12 @@ export function TranscribeWorkspace({
     return () => {
       cancelled = true;
       setPreparing(false);
+      // Strict Mode remount / leave-and-return must be able to restart prepare.
+      if (startedFor.current === callId) startedFor.current = null;
     };
-  }, [callId, callStatus, hasTranscript, setCall]);
+    // Intentionally omit callStatus: updating to "transcribing" must not cancel waitForCallStatus.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- auto-start once per callId visit
+  }, [callId, hasTranscript, setCall]);
 
   async function prepare(force = false) {
     setActionError(null);
@@ -199,7 +212,9 @@ export function TranscribeWorkspace({
                 <span className="chip chip-bad">Failed</span>
               ) : (
                 <span className="chip chip-wait">
-                  {call.status === "transcribing" ? "Transcribing…" : "Preparing…"}
+                  {call.status === "transcribing" || preparing
+                    ? "Transcribing…"
+                    : "Preparing…"}
                 </span>
               )}
               <CallDownloads callId={call.id} hasTranscript={false} />
@@ -240,28 +255,37 @@ export function TranscribeWorkspace({
         <section className="surface p-6 space-y-4">
           <div>
             <h2 className="text-[16px] font-semibold text-ink">
-              {preparingBusy && !actionError ? "Preparing this recording…" : "Prepare this recording"}
+              {showWorking && !actionError ? "Preparing this recording…" : "Prepare this recording"}
             </h2>
             <p className="mt-1 text-[13px] text-muted max-w-lg">
-              {preparingBusy && !actionError
+              {showWorking && !actionError
                 ? "Speakers and language are being prepared for scoring. Stay on this step until it finishes."
                 : "Start preparation. Do not open Score until this step is done."}
             </p>
           </div>
-          {preparingBusy && !actionError ? (
+          {showWorking && !actionError ? (
             <div className="flex items-center gap-2.5 text-ink text-[13px] font-medium border border-line px-4 py-3">
               <div className="h-4 w-4 rounded-full border-2 border-blue/30 border-t-blue animate-spin" />
               <span>Working on the recording…</span>
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => void prepare(call.status === "transcribing" || call.status === "failed")}
-              className="btn btn-blue text-[13px] px-5 py-2.5"
-            >
-              {call.status === "failed" || actionError ? "Retry preparation" : "Start prepare"}
-            </button>
-          )}
+          ) : null}
+          <button
+            type="button"
+            onClick={() =>
+              void prepare(
+                showWorking ||
+                  call.status === "failed" ||
+                  Boolean(actionError),
+              )
+            }
+            className="btn btn-blue text-[13px] px-5 py-2.5 relative z-10"
+          >
+            {preparingBusy && !actionError
+              ? "Preparing… (tap to retry)"
+              : call.status === "failed" || actionError || call.status === "transcribing"
+                ? "Retry preparation"
+                : "Start prepare"}
+          </button>
         </section>
       ) : (
         <section className="surface p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -275,9 +299,8 @@ export function TranscribeWorkspace({
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              disabled={preparingBusy && !actionError}
               onClick={() => void prepare(true)}
-              className="inline-flex items-center gap-1 text-[12px] text-slate-500 hover:text-ink font-medium"
+              className="inline-flex items-center gap-1 text-[12px] text-slate-500 hover:text-ink font-medium relative z-10"
             >
               {Icons.refresh}
               <span>{preparingBusy && !actionError ? "Re-processing…" : "Re-prepare"}</span>
@@ -285,7 +308,7 @@ export function TranscribeWorkspace({
             <Link
               href={`/upload/score/${callId}`}
               prefetch={false}
-              className="btn btn-blue text-[13px] px-4 py-2"
+              className="btn btn-blue text-[13px] px-4 py-2 relative z-10"
             >
               Go to Score
             </Link>
@@ -297,9 +320,8 @@ export function TranscribeWorkspace({
         <div className="flex justify-center pt-2">
           <button
             type="button"
-            disabled={preparingBusy && !actionError}
             onClick={() => void prepare(true)}
-            className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[12px] px-4 py-2"
+            className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[12px] px-4 py-2 relative z-10"
           >
             {preparingBusy && !actionError ? "Retrying…" : "Retry preparation"}
           </button>

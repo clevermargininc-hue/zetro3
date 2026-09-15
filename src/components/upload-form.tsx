@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { authFetch } from "@/lib/auth-fetch";
 import { createClient } from "@/lib/supabase/client";
@@ -60,7 +59,6 @@ type DoneCall = { id: string; title: string };
 type FailedCall = { title: string; error: string };
 
 export function UploadForm() {
-  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const zipInputRef = useRef<HTMLInputElement>(null);
@@ -314,19 +312,14 @@ export function UploadForm() {
               {failed.length} failed: {failed.map((row) => `${row.title} (${row.error})`).join("; ")}
             </p>
           )}
-          <div className="pt-1 flex flex-wrap gap-2">
-            <button
-              type="button"
+          <div className="pt-1 flex flex-wrap gap-2 relative z-10">
+            <Link
+              href={done.length === 1 ? `/upload/prepare/${done[0].id}` : "/upload/prepare"}
+              prefetch={false}
               className="btn btn-blue text-[13px] px-4 py-2"
-              onClick={() => {
-                const href =
-                  done.length === 1 ? `/upload/prepare/${done[0].id}` : "/upload/prepare";
-                router.push(href);
-                router.refresh();
-              }}
             >
               Continue to Prepare
-            </button>
+            </Link>
             {done.length > 1 ? (
               <Link
                 href={`/upload/prepare/${done[0].id}`}
