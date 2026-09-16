@@ -45,7 +45,7 @@ export type QaReadiness = {
   setupRequired: boolean;
 };
 
-export const MIN_READABLE_CHARS = 20;
+export const MIN_READABLE_CHARS = 80;
 
 export function readinessErrorMessage(
   missing: Array<(typeof QA_KINDS)[number]>,

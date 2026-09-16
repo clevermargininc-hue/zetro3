@@ -6,6 +6,7 @@ import { loadQaDocuments, summarizeDocuments } from "@/lib/qa-documents";
 import { readinessErrorMessage } from "@/lib/qa-kinds";
 import { getTeamScope } from "@/lib/workspaces";
 import type { AuditMode } from "@/lib/types";
+import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -23,6 +24,14 @@ export async function POST(
   const { user, supabase } = await getRequestUser(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const limited = rateLimit(`score:${clientKey(request, user.id)}`, 12, 60_000);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many audit requests. Wait a moment and retry." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } },
+    );
   }
 
   const body = (await request.json().catch(() => ({}))) as {
@@ -90,7 +99,9 @@ export async function POST(
     }
   }
 
-  const work = scoreCall(id, mode, { force }).catch((error) => {
+  const work = scoreCall(id, mode, {
+    force: force || call.status === "analyzing",
+  }).catch((error) => {
     console.error("Scoring failed", error);
   });
   after(async () => {

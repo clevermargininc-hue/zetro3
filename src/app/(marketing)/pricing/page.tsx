@@ -24,12 +24,11 @@ const PLANS = [
     cta: "Start free",
     featured: false,
     features: [
-      "2,000 AI minutes",
-      "Automated QA scorecards",
+      "Company-document QA scorecards",
       "Compliance checks & sentiment analysis",
       "Agent performance & basic analytics",
-      "English + Swahili",
-      "Renew monthly. Cancel anytime.",
+      "English + Kiswahili (East Africa)",
+      "Talk to sales to activate billing",
     ],
   },
   {
@@ -37,16 +36,15 @@ const PLANS = [
     price: "$149",
     period: "/ month",
     blurb: "For growing contact centers that need full QA automation.",
-    href: "/signup",
-    cta: "Start free",
+    href: "/talk-sales",
+    cta: "Talk to sales",
     featured: true,
     features: [
-      "10,000 AI minutes",
       "Everything in Starter",
-      "Advanced QA scorecards",
       "Custom SOPs & knowledge base",
       "Team & agent analytics",
       "Priority support",
+      "Billing activation via sales",
     ],
   },
   {
@@ -54,13 +52,12 @@ const PLANS = [
     price: "$299",
     period: "/ month",
     blurb: "For large contact centers with complex requirements.",
-    href: "/signup",
-    cta: "Start free",
+    href: "/talk-sales",
+    cta: "Talk to sales",
     featured: false,
     features: [
-      "25,000 AI minutes",
-      "Custom integrations & custom retention",
-      "SSO / Microsoft Entra",
+      "Custom integrations & retention policies",
+      "SSO / Microsoft Entra (roadmap)",
       "Custom QA & AI policies",
       "Dedicated support & SLA",
     ],
@@ -75,7 +72,7 @@ const PLANS = [
     featured: false,
     features: [
       "Volume-based discounts",
-      "On-premise deployment options",
+      "Dedicated deployment options",
       "Dedicated account manager",
       "White-glove onboarding",
     ],
@@ -98,7 +95,8 @@ export default function PricingPage() {
           Plans that scale with call volume
         </h1>
         <p className="mt-4 text-[16px] leading-relaxed text-muted">
-          No hidden fees. Pay a predictable monthly rate for included AI minutes, then only for what you process beyond that.
+          Indicative plan tiers for contact-center QA. Self-serve signup works today; paid metering,
+          overage billing, and SSO are activated with sales — not auto-enforced in-app yet.
         </p>
       </header>
 
@@ -139,9 +137,9 @@ export default function PricingPage() {
 
       <section className="mt-10 border border-line bg-white">
         <div className="border-b border-line px-6 py-4">
-          <h2 className="text-[15px] font-semibold text-ink">Overage</h2>
+          <h2 className="text-[15px] font-semibold text-ink">Overage (when billing is activated)</h2>
           <p className="mt-1 text-[13px] text-muted">
-            If you exceed included monthly AI minutes, additional minutes are billed at the plan rate.
+            Target rates after sales enables metering. Until then, usage is not auto-billed in the product.
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -168,9 +166,9 @@ export default function PricingPage() {
 
       <section className="mt-10 grid gap-px border border-line bg-line sm:grid-cols-3">
         {[
-          ["Bilingual by default", "Tanzania workspaces audit in Kiswahili and English. Other regions audit in English."],
-          ["Cancel anytime", "Starter, Growth, and Professional renew monthly. Stop at the end of the billing period."],
-          ["Need a custom contract?", "Enterprise covers volume pricing, on-premise options, and a dedicated account team."],
+          ["Bilingual by default", "East Africa workspaces (including Tanzania, Kenya, Uganda) audit in Kiswahili and English. Other regions default to English."],
+          ["Start free, pay with sales", "Create a workspace now. Talk to sales when you are ready for a paid plan and usage metering."],
+          ["Need a custom contract?", "Enterprise covers volume pricing, dedicated deployment options, and an account team."],
         ].map(([title, body]) => (
           <div key={title} className="bg-white px-6 py-5">
             <h3 className="text-[13px] font-semibold text-ink">{title}</h3>

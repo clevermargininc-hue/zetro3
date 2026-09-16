@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import { agentIdFromFile, formatDuration, languageLabel } from "@/lib/format";
+import { agentLabel, formatDuration, languageLabel } from "@/lib/format";
 import { scoreBand } from "@/lib/brand";
 import { brandBanner, headerRow, paintScoreCell, styleBody } from "@/lib/xlsx-brand";
 import { PdfDoc } from "@/lib/pdf-doc";
@@ -23,7 +23,7 @@ function list(value: string[] | null | undefined) {
 }
 
 function agentId(call: AuditedCallExport["call"]) {
-  return agentIdFromFile(call.file_name || call.title);
+  return agentLabel(call);
 }
 
 function callSlug(call: AuditedCallExport["call"]) {

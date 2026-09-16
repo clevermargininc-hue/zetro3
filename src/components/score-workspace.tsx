@@ -9,7 +9,7 @@ import { CallAuditExport } from "@/components/call-audit-export";
 import { CallDownloads } from "@/components/call-downloads";
 import { AuditPrintDocument } from "@/components/audit-print-document";
 import { StandardsFilesPanel } from "@/components/standards-files-panel";
-import { agentIdFromFile, auditStatus, formatDate, formatDuration, languageLabel } from "@/lib/format";
+import { agentLabel, auditStatus, formatDate, formatDuration, languageLabel } from "@/lib/format";
 import type { Call, CallScore } from "@/lib/types";
 import { PageHeader } from "@/components/ui";
 
@@ -55,7 +55,7 @@ export function ScoreWorkspace({
         </div>
         <PageHeader
           kicker="Step 3 of 3 · Score"
-          title={`Agent ${agentIdFromFile(call.file_name || call.title)}`}
+          title={`Agent ${agentLabel(call)}`}
           description={[
             `Language: ${languageLabel(call.detected_language || call.language_mode)}`,
             call.duration_seconds ? `Duration: ${formatDuration(call.duration_seconds)}` : null,
@@ -72,7 +72,7 @@ export function ScoreWorkspace({
               ) : (
                 <span className="chip">Ready to score</span>
               )}
-              <CallDownloads callId={call.id} hasTranscript={false} />
+              <CallDownloads callId={call.id} hasTranscript={hasTranscript} />
               {score ? <CallAuditExport callId={call.id} /> : null}
               <DeleteCallButton
                 callId={call.id}

@@ -9,7 +9,21 @@ export type InviteRecord = {
   workspaceId: string;
   workspaceName: string;
   invitedBy: string;
+  createdAt?: string | null;
+  expiresAt?: string | null;
 };
+
+const INVITE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+
+function inviteExpired(invite: { createdAt?: string | null; expiresAt?: string | null }) {
+  const expiresAt = invite.expiresAt
+    ? new Date(invite.expiresAt).getTime()
+    : invite.createdAt
+      ? new Date(invite.createdAt).getTime() + INVITE_TTL_MS
+      : null;
+  if (expiresAt == null || !Number.isFinite(expiresAt)) return false;
+  return Date.now() > expiresAt;
+}
 
 export function appOrigin(request: Request) {
   return cleanSiteUrl(process.env.NEXT_PUBLIC_SITE_URL, new URL(request.url).origin);
@@ -66,6 +80,8 @@ function rowToInvite(
     token?: string | null;
     workspace_id: string;
     invited_by: string;
+    created_at?: string | null;
+    expires_at?: string | null;
   },
   workspaceName: string,
 ): InviteRecord {
@@ -76,37 +92,73 @@ function rowToInvite(
     workspaceId: data.workspace_id,
     workspaceName: workspaceName || "a Zetro workspace",
     invitedBy: data.invited_by,
+    createdAt: data.created_at ?? null,
+    expiresAt: data.expires_at ?? null,
   };
 }
 
+type InviteRow = {
+  id: string;
+  email: string;
+  token?: string | null;
+  workspace_id: string;
+  invited_by: string;
+  created_at?: string | null;
+  expires_at?: string | null;
+};
+
 export async function getInviteByToken(token: string) {
   const supabase = createAdminClient();
-  const select = "id, email, token, workspace_id, invited_by";
-  let { data, error } = await supabase.from("workspace_invites").select(select).eq("token", token).maybeSingle();
-  if (error && /token/i.test(error.message)) {
+  const select = "id, email, token, workspace_id, invited_by, created_at, expires_at";
+  let data: InviteRow | null = null;
+  let error: { message: string } | null = null;
+
+  {
+    const res = await supabase.from("workspace_invites").select(select).eq("token", token).maybeSingle();
+    data = (res.data as InviteRow | null) || null;
+    error = res.error;
+  }
+
+  if (error && /token|expires_at|created_at/i.test(error.message)) {
     const fallback = await supabase
       .from("workspace_invites")
       .select("id, email, workspace_id, invited_by")
       .eq("id", token)
       .maybeSingle();
-    data = fallback.data ? { ...fallback.data, token: fallback.data.id } : null;
+    data = fallback.data
+      ? ({ ...fallback.data, token: fallback.data.id } as InviteRow)
+      : null;
     error = fallback.error;
+  }
+  if (error && /expires_at|created_at/i.test(error.message)) {
+    const plain = await supabase
+      .from("workspace_invites")
+      .select("id, email, token, workspace_id, invited_by")
+      .eq("token", token)
+      .maybeSingle();
+    data = (plain.data as InviteRow | null) || null;
+    error = plain.error;
   }
   if (error) throw new Error(error.message);
   if (!data) {
     const byId = await supabase.from("workspace_invites").select(select).eq("id", token).maybeSingle();
-    if (byId.error && /token/i.test(byId.error.message)) {
+    if (byId.error && /token|expires_at|created_at/i.test(byId.error.message)) {
       const plain = await supabase
         .from("workspace_invites")
         .select("id, email, workspace_id, invited_by")
         .eq("id", token)
         .maybeSingle();
-      data = plain.data ? { ...plain.data, token: plain.data.id } : null;
+      data = plain.data ? ({ ...plain.data, token: plain.data.id } as InviteRow) : null;
     } else {
-      data = byId.data;
+      data = (byId.data as InviteRow | null) || null;
     }
   }
   if (!data) return null;
+  const invite = rowToInvite(data, "a Zetro workspace");
+  if (inviteExpired(invite)) {
+    await supabase.from("workspace_invites").delete().eq("id", invite.id);
+    return null;
+  }
   const { data: workspace } = await supabase
     .from("workspaces")
     .select("name")
@@ -117,7 +169,9 @@ export async function getInviteByToken(token: string) {
 
 export async function acceptInvite(token: string, userId: string, userEmail: string) {
   const invite = await getInviteByToken(token);
-  if (!invite) throw new Error("This invitation is invalid or has already been used.");
+  if (!invite) {
+    throw new Error("This invitation is invalid, expired, or has already been used.");
+  }
   if (invite.email !== userEmail.trim().toLowerCase()) {
     throw new Error(`This invitation is for ${invite.email}. Sign in with that email.`);
   }
@@ -156,13 +210,19 @@ async function insertInvite(input: {
     .eq("email", input.email);
 
   const token = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + INVITE_TTL_MS).toISOString();
   const row: Record<string, string> = {
     workspace_id: input.workspaceId,
     email: input.email,
     invited_by: input.invitedById,
     token,
+    expires_at: expiresAt,
   };
   let { data, error } = await supabase.from("workspace_invites").insert(row).select("id, token").single();
+  if (error && /expires_at/i.test(error.message)) {
+    delete row.expires_at;
+    ({ data, error } = await supabase.from("workspace_invites").insert(row).select("id, token").single());
+  }
   if (error && /token/i.test(error.message)) {
     delete row.token;
     const retry = await supabase.from("workspace_invites").insert(row).select("id").single();

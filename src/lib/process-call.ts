@@ -55,6 +55,17 @@ function isAsrTimeout(err: unknown) {
   return err instanceof Error && /timed out/i.test(err.message);
 }
 
+async function markPrepareFailed(
+  supabase: AdminClient,
+  callId: string,
+  message: string,
+) {
+  await supabase
+    .from("calls")
+    .update({ status: "failed", error_message: message })
+    .eq("id", callId);
+}
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -143,7 +154,14 @@ export async function transcribeCall(callId: string, options: JobOptions = {}) {
       try {
         transcript = await waitForTranscript(call.assembly_id);
       } catch (err) {
-        if (isAsrTimeout(err)) return;
+        if (isAsrTimeout(err)) {
+          await markPrepareFailed(
+            supabase,
+            callId,
+            "Transcription timed out. Open Prepare and tap Retry preparation.",
+          );
+          return;
+        }
         transcript = null;
       }
     }
@@ -167,7 +185,14 @@ export async function transcribeCall(callId: string, options: JobOptions = {}) {
       try {
         transcript = await waitForTranscript(queued.id);
       } catch (err) {
-        if (isAsrTimeout(err)) return;
+        if (isAsrTimeout(err)) {
+          await markPrepareFailed(
+            supabase,
+            callId,
+            "Transcription timed out. Open Prepare and tap Retry preparation.",
+          );
+          return;
+        }
         throw err;
       }
     }
@@ -234,11 +259,15 @@ export async function transcribeCall(callId: string, options: JobOptions = {}) {
       await settlePreparedCall(supabase, callId, "transcribing");
       return;
     }
-    if (isAsrTimeout(err)) return;
-    await supabase
-      .from("calls")
-      .update({ status: "failed", error_message: message })
-      .eq("id", callId);
+    if (isAsrTimeout(err)) {
+      await markPrepareFailed(
+        supabase,
+        callId,
+        "Transcription timed out. Open Prepare and tap Retry preparation.",
+      );
+      return;
+    }
+    await markPrepareFailed(supabase, callId, message);
     throw new Error(message);
   }
 }
@@ -271,9 +300,8 @@ export async function scoreCall(
     return;
   }
 
-  if (!force && call.status === "analyzing" && !existingScore) {
-    return;
-  }
+  // Do not block forever on a dead "analyzing" job (serverless timeout / crash).
+  // Claim below may reclaim analyzing when there is no saved score yet.
 
   const consistencyAnchor = await loadConsistencyAnchor(call).catch(() => null);
 
@@ -303,11 +331,14 @@ export async function scoreCall(
       .update({ status: "analyzing", error_message: null })
       .eq("id", callId);
   } else {
+    const claimStatuses = existingScore
+      ? (["transcribed", "completed", "queued", "failed"] as const)
+      : (["transcribed", "completed", "queued", "failed", "analyzing"] as const);
     const { data: claimed } = await db
       .from("calls")
       .update({ status: "analyzing", error_message: null })
       .eq("id", callId)
-      .in("status", ["transcribed", "completed", "queued", "failed"])
+      .in("status", [...claimStatuses])
       .select("id")
       .maybeSingle();
     if (!claimed) {
@@ -342,11 +373,12 @@ export async function scoreCall(
       }
     }
 
+    const standardsFp = standardsFingerprint(orgDocs);
     const seed = consistencySeed({
       fileName: call.file_name,
       durationSeconds: call.duration_seconds,
       assemblyId: call.assembly_id,
-      standardsFingerprint: standardsFingerprint(orgDocs),
+      standardsFingerprint: standardsFp,
     });
 
     const analysis = stabilizeRescoreAnalysis(
@@ -364,6 +396,7 @@ export async function scoreCall(
       ),
       consistencyAnchor?.score,
       consistencyAnchor?.source,
+      { standardsFingerprint: standardsFp },
     );
 
     const roleUpdates = stored

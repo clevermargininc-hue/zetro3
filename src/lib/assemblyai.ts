@@ -100,7 +100,6 @@ function bilingualAsrBody(audioUrl: string, keyterms: string[]) {
     {
       audio_url: audioUrl,
       speaker_labels: true,
-      speakers_expected: 2,
       punctuate: true,
       format_text: true,
       speech_models: ["universal-2"],
@@ -135,7 +134,6 @@ function transcriptBody(
       {
         audio_url: audioUrl,
         speaker_labels: true,
-        speakers_expected: 2,
         punctuate: true,
         format_text: true,
         speech_models: ["universal-3-5-pro", "universal-2"],
@@ -158,7 +156,6 @@ function transcriptBody(
       {
         audio_url: audioUrl,
         speaker_labels: true,
-        speakers_expected: 2,
         punctuate: true,
         format_text: true,
         speech_models: ["universal-2"],

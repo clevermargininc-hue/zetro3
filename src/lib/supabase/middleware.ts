@@ -62,13 +62,12 @@ function nextWithPathname(request: NextRequest, path: string) {
 }
 
 async function userHasWorkspace(
-  request: NextRequest,
+  _request: NextRequest,
   supabase: ReturnType<typeof createServerClient>,
   userId: string,
 ) {
-  if (request.cookies.get(WORKSPACE_COOKIE)?.value === "1") {
-    return true;
-  }
+  // Always verify membership in the database. The workspace cookie is only a
+  // cache written AFTER a successful check — never trust it alone.
   const { data, error } = await supabase
     .from("workspace_members")
     .select("workspace_id")

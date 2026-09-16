@@ -129,6 +129,19 @@ export function agentIdFromFile(value: string | null | undefined) {
   return stem || "Unknown";
 }
 
+/** Prefer linked agent name; otherwise parse from the recording filename. */
+export function agentLabel(
+  call: {
+    file_name?: string | null;
+    title?: string | null;
+    agents?: { name?: string | null } | null;
+  },
+) {
+  const named = call.agents?.name?.trim();
+  if (named) return named;
+  return agentIdFromFile(call.file_name || call.title);
+}
+
 export function languageLabel(mode: string | null) {
   switch (mode) {
     case "en":

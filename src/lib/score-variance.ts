@@ -97,14 +97,15 @@ function formatAnchorBlock(previous: PreviousCallScore, source: ConsistencyAncho
   const who =
     source === "same_call"
       ? "same call re-audit (any account / any number of times)"
-      : "same recording already audited in this company workspace";
+      : "same recording already audited in this company workspace (same Standards fingerprint)";
 
   return [
     `CONSISTENCY ANCHOR (${who}):`,
     `A prior audit of this same recording scored overall ${previous.overall_score}%.`,
-    `You MUST stay within ±${RESCORE_VARIANCE} of that overall and of matching company parameters.`,
+    `You MUST stay within ±${RESCORE_VARIANCE} of that overall and of matching company parameters when Standards files are unchanged.`,
+    `If company Standards / scorecard content changed, score freshly from the new files — do not chase the old number.`,
     `Different auditors and repeated audits must produce consistent results against the SAME company Standards files.`,
-    `Only leave this band if a company Auto-Zero rule newly and clearly applies.`,
+    `Only leave this band if a company Auto-Zero rule newly and clearly applies, or Standards changed.`,
     `Read the company scorecard / checklist carefully — do not invent a new rubric.`,
     `Previous company parameters:`,
     paramLines,
@@ -143,10 +144,25 @@ export function consistencySeed(parts: {
 }
 
 export function standardsFingerprint(
-  docs: { id: string; kind: string; updated_at?: string | null; created_at?: string }[],
+  docs: {
+    id: string;
+    kind: string;
+    extracted_text?: string | null;
+    updated_at?: string | null;
+    created_at?: string;
+  }[],
 ) {
   return docs
-    .map((doc) => `${doc.kind}:${doc.id}:${doc.updated_at || doc.created_at || ""}`)
+    .map((doc) => {
+      const text = (doc.extracted_text || "").trim();
+      let hash = 2166136261;
+      const sample = text.slice(0, 4000);
+      for (let i = 0; i < sample.length; i++) {
+        hash ^= sample.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return `${doc.kind}:${doc.id}:${text.length}:${Math.abs(hash)}:${doc.updated_at || doc.created_at || ""}`;
+    })
     .sort()
     .join(";");
 }
@@ -238,23 +254,49 @@ function stabilizeParameters(
 
 /**
  * Keep overall (and matching company parameters) within ±RESCORE_VARIANCE of a
- * prior audit of the same recording — except a newly applied Auto-Zero.
+ * prior audit of the same recording — except a newly applied Auto-Zero, or when
+ * company Standards content changed (fingerprint mismatch).
  */
 export function stabilizeRescoreAnalysis(
   analysis: CallAnalysis,
   previous: PreviousCallScore | null | undefined,
   source: ConsistencyAnchor["source"] = "same_call",
+  options?: { standardsFingerprint?: string },
 ): CallAnalysis {
-  if (!previous || previous.overall_score == null) return analysis;
+  const nextFp = options?.standardsFingerprint?.trim() || "";
+  const evidenceBase: MetricEvidence = {
+    ...(analysis.metric_evidence || {}),
+    ...(nextFp ? { standards_fingerprint: nextFp } : {}),
+  };
+
+  if (!previous || previous.overall_score == null) {
+    return { ...analysis, metric_evidence: evidenceBase };
+  }
+
+  const prevFp = String(previous.metric_evidence?.standards_fingerprint || "").trim();
+  if (nextFp && prevFp && nextFp !== prevFp) {
+    return {
+      ...analysis,
+      metric_evidence: {
+        ...evidenceBase,
+        rescore_variance: {
+          previous_overall: Number(previous.overall_score) || 0,
+          max_delta: RESCORE_VARIANCE,
+          applied: false,
+          source,
+        },
+      },
+    };
+  }
 
   const nextAutoZero = hadAutoZero(analysis);
   const prevAutoZero = hadAutoZero(previous);
 
   if (nextAutoZero && !prevAutoZero) {
-    return analysis;
+    return { ...analysis, metric_evidence: evidenceBase };
   }
 
-  const evidence: MetricEvidence = { ...(analysis.metric_evidence || {}) };
+  const evidence: MetricEvidence = { ...evidenceBase };
   const stabilizedParams = stabilizeParameters(
     evidence.parameters,
     previous.metric_evidence?.parameters,

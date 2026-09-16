@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getTeamScope } from "@/lib/workspaces";
 import { transcribeCall } from "@/lib/process-call";
 import { describePrepareError } from "@/lib/ai-client";
+import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -19,6 +20,14 @@ export async function POST(
       return NextResponse.json(
         { error: "Please sign in again, then retry prepare." },
         { status: 401 },
+      );
+    }
+
+    const limited = rateLimit(`prepare:${clientKey(request, user.id)}`, 20, 60_000);
+    if (!limited.ok) {
+      return NextResponse.json(
+        { error: "Too many prepare requests. Wait a moment and retry." },
+        { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } },
       );
     }
 

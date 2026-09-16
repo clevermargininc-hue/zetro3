@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
 import { resolvedLanguageMode } from "@/lib/locale";
+import { agentIdFromFile } from "@/lib/format";
 import type { LanguageMode } from "@/lib/types";
 import { getMembership, getTeamScope } from "@/lib/workspaces";
+import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -34,6 +36,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const limited = rateLimit(`calls:create:${clientKey(request, user.id)}`, 60, 60_000);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many uploads. Try again in a moment." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } },
+    );
+  }
+
   const body = (await request.json()) as {
     audio_path?: string;
     file_name?: string;
@@ -44,6 +54,14 @@ export async function POST(request: Request) {
 
   if (!body.audio_path) {
     return NextResponse.json({ error: "audio_path is required" }, { status: 400 });
+  }
+
+  const path = body.audio_path.replace(/^\/+/, "");
+  if (!path.startsWith(`${user.id}/`) || path.includes("..")) {
+    return NextResponse.json(
+      { error: "Invalid audio path. Upload the file again." },
+      { status: 400 },
+    );
   }
 
   const requested = MODES.includes(body.language_mode || "auto")
@@ -59,8 +77,11 @@ export async function POST(request: Request) {
 
   const teamScope = await getTeamScope(user.id);
   let agentId: string | null = null;
-  const agentName = body.agent_name?.trim();
-  if (agentName) {
+  const agentName =
+    body.agent_name?.trim() ||
+    agentIdFromFile(body.file_name || body.title) ||
+    "";
+  if (agentName && agentName !== "Unknown") {
     const { data: existing } = await supabase
       .from("agents")
       .select("id")
@@ -91,7 +112,7 @@ export async function POST(request: Request) {
       agent_id: agentId,
       title: body.title?.trim() || body.file_name || "Untitled call",
       file_name: body.file_name || null,
-      audio_path: body.audio_path,
+      audio_path: path,
       language_mode: languageMode,
       status: "queued",
     })

@@ -78,17 +78,20 @@ Open [http://localhost:3000](http://localhost:3000), sign up, and upload a call.
 ```
 Browser → Supabase Storage (private bucket)
        → POST /api/calls
-       → POST /api/calls/:id/process
-            → AssemblyAI: speech-to-text + speaker diarization (Agent / Customer hints)
-            → GPT-5-mini: correct roles + clean two-speaker script
-            → text-embedding-3-small indexes process document + scorecard + compliance
-            → GPT-5 analysis against retrieved chunks (confirm roles + scores + compliance findings)
-            → utterances + call_scores rows
-Leaderboard averages overall_score per named agent.
+       → POST /api/calls/:id/transcribe   (Prepare)
+            → AssemblyAI: speech-to-text + speaker diarization
+            → optional Swahili meaning repair for bilingual calls
+       → POST /api/calls/:id/score        (documents mode only)
+            → load Standards (scorecard + compliance + process)
+            → GPT analysis against company rules / Parameter Playbook
+            → utterances already saved; call_scores row written
+Leaderboard averages overall_score per agent (linked agent or filename id).
 ```
 
-API keys never leave the server. The service role key is used only in `process-call` to download audio and write analysis rows.
+API keys never leave the server. The service role key is used only in server jobs to download audio and write analysis rows.
 
 ## Deploy
 
-Set the same env vars on Vercel (or similar). Add the production URL to Supabase redirect URLs. Call processing can take a few minutes — the process route is configured with `maxDuration = 300`.
+Set the same env vars on Vercel (or similar). Add the production URL to Supabase redirect URLs. Prepare/score routes use `maxDuration = 300`.
+
+For existing projects, also run any missing SQL helpers under `supabase/` (including `sales-requests.sql` and `invite-expiry.sql`).

@@ -75,7 +75,9 @@ export type MetricEvidence = Partial<Record<ScoreDimension, MetricEvidenceItem>>
   raw_score?: number;
   /** True only when a company Auto-Zero / Auto-Fail rule was applied. */
   auto_zero_applied?: boolean;
-  /** Present when a re-audit was clamped to ±variance of the previous score. */
+  /** Hash of Standards content used for this audit (invalidates ±5 clamp when files change). */
+  standards_fingerprint?: string;
+  /** Present when a re-audit was compared to a previous score. */
   rescore_variance?: {
     previous_overall: number;
     max_delta: number;

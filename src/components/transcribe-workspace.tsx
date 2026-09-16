@@ -7,7 +7,7 @@ import { waitForCallStatus } from "@/lib/wait-call-status";
 import { friendlyPrepareError } from "@/lib/prepare-error";
 import { DeleteCallButton } from "@/components/delete-call-button";
 import { CallDownloads } from "@/components/call-downloads";
-import { agentIdFromFile, auditStatus, formatDate, formatDuration, languageLabel } from "@/lib/format";
+import { agentLabel, auditStatus, formatDate, formatDuration, languageLabel } from "@/lib/format";
 import type { Call, CallScore, CallStatus } from "@/lib/types";
 import { useCallLive } from "@/components/use-call-live";
 import { PageHeader } from "@/components/ui";
@@ -194,7 +194,7 @@ export function TranscribeWorkspace({
         </Link>
         <PageHeader
           kicker="Step 2 of 3 · Prepare"
-          title={`Agent ${agentIdFromFile(call.file_name || call.title)}`}
+          title={`Agent ${agentLabel(call)}`}
           description={[
             `Language: ${languageLabel(call.detected_language || call.language_mode)}`,
             call.duration_seconds ? formatDuration(call.duration_seconds) : null,
