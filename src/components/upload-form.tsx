@@ -255,7 +255,7 @@ export function UploadForm() {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[12px] px-3.5 py-1.5 font-semibold"
+                className="btn btn-ghost text-[12px] px-3.5 py-1.5 font-semibold"
               >
                 {Icons.files}
                 Choose files
@@ -269,7 +269,7 @@ export function UploadForm() {
                   el.setAttribute("directory", "");
                   el.click();
                 }}
-                className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[12px] px-3.5 py-1.5 font-semibold"
+                className="btn btn-ghost text-[12px] px-3.5 py-1.5 font-semibold"
               >
                 {Icons.folder}
                 Choose folder
@@ -277,7 +277,7 @@ export function UploadForm() {
               <button
                 type="button"
                 onClick={() => zipInputRef.current?.click()}
-                className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[12px] px-3.5 py-1.5 font-semibold"
+                className="btn btn-ghost text-[12px] px-3.5 py-1.5 font-semibold"
               >
                 {Icons.zip}
                 Choose ZIP

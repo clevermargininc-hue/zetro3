@@ -88,6 +88,9 @@ export async function excelBuffer(report: QaReport): Promise<Buffer> {
     ["Calls with compliance issues", s.calls_with_compliance_issue],
     ["Compliance findings", s.total_compliance_findings],
     ["Documents audits", s.documents_audits],
+    ["Satisfied customers %", s.customer_satisfied_pct ?? "—"],
+    ["Frustrated customers %", s.customer_frustrated_pct ?? "—"],
+    ["Customer reactions analyzed", s.customer_analyzed],
   ];
   metrics.forEach((row) => summary.addRow(row));
   styleBody(summary, 9);
@@ -183,6 +186,53 @@ export async function excelBuffer(report: QaReport): Promise<Buffer> {
     compliance.addRow(["—", "—", "No compliance findings in this period."]);
   }
   styleBody(compliance, 7);
+
+  // ---- Customers -----------------------------------------------------------
+  const customers = wb.addWorksheet("Customers", {
+    views: [{ showGridLines: false, state: "frozen", ySplit: 6 }],
+    pageSetup: { paperSize: 9, orientation: "landscape", fitToPage: true, fitToWidth: 1 },
+  });
+  customers.columns = [
+    { width: 14 },
+    { width: 20 },
+    { width: 14 },
+    { width: 12 },
+    { width: 48 },
+    { width: 42 },
+    { width: 48 },
+  ];
+  titleBlock(wb, customers, report, "Customer satisfaction & frustration", 7);
+  headerRow(
+    customers,
+    ["Type", "Audited at", "Agent ID", "Stance", "Themes", "Note", "Quote"],
+    6,
+  );
+  const voiceRows = [
+    ...(report.customer_voice?.satisfactions || []).map((row) => ({
+      type: "Satisfied",
+      ...row,
+    })),
+    ...(report.customer_voice?.frustrations || []).map((row) => ({
+      type: "Frustrated",
+      ...row,
+    })),
+  ];
+  if (voiceRows.length) {
+    for (const row of voiceRows) {
+      customers.addRow([
+        row.type,
+        formatReportDate(row.audited_at),
+        row.title,
+        row.stance,
+        row.themes.join("; "),
+        row.note || "—",
+        row.quote || "—",
+      ]);
+    }
+  } else {
+    customers.addRow(["—", "—", "—", "—", "No customer voice themes in this period.", "—", "—"]);
+  }
+  styleBody(customers, 7);
 
   // ---- Agent IDs -----------------------------------------------------------
   const agents = wb.addWorksheet("Agent IDs", {

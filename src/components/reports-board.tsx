@@ -52,7 +52,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<"xlsx" | "pdf" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"scores" | "compliance" | "agents">("scores");
+  const [activeTab, setActiveTab] = useState<"scores" | "compliance" | "customers">("scores");
 
   const query = useMemo(() => {
     const params = new URLSearchParams({ period, date, agentId });
@@ -123,7 +123,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
       {!compact && (
         <PageHeader
           title="Score & Compliance Reports"
-          description="Formal quality evaluation reports, compliance audit summaries, and multi-format downloadable records."
+          description="Quality scores, compliance findings, and what customers liked or complained about."
         />
       )}
 
@@ -225,9 +225,23 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
               hint: `${summary.total_compliance_findings} total findings logged`,
             },
             {
-              label: "Avg handle time",
-              value: formatAht(summary.aht_seconds),
-              hint: `Total talk time: ${formatAht(summary.total_handling_seconds)}`,
+              label: "Satisfied customers",
+              value:
+                summary.customer_satisfied_pct != null
+                  ? `${summary.customer_satisfied_pct}%`
+                  : "—",
+              hint:
+                summary.customer_analyzed > 0
+                  ? `From ${summary.customer_analyzed} customer reactions`
+                  : "No customer voice yet",
+            },
+            {
+              label: "Frustrated customers",
+              value:
+                summary.customer_frustrated_pct != null
+                  ? `${summary.customer_frustrated_pct}%`
+                  : "—",
+              hint: "See Customers tab for themes",
             },
           ]}
         />
@@ -265,6 +279,19 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
               }`}
             >
               Compliance Findings ({report.compliance.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("customers")}
+              className={`py-3.5 font-bold text-[13px] transition-colors border-b-2 ${
+                activeTab === "customers"
+                  ? "border-blue text-blue"
+                  : "border-transparent text-slate-500 hover:text-ink"
+              }`}
+            >
+              Customers (
+              {(report.customer_voice?.satisfactions.length || 0) +
+                (report.customer_voice?.frustrations.length || 0)}
+              )
             </button>
 
           </div>
@@ -390,6 +417,103 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                   )}
                 </tbody>
               </table>
+            )}
+
+            {/* Tab 3: Customer voice themes */}
+            {activeTab === "customers" && (
+              <div className="grid gap-0 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-line">
+                <div>
+                  <div className="px-6 py-3.5 border-b border-line bg-slate-50/50">
+                    <h3 className="text-[13px] font-semibold text-ink">Satisfactions</h3>
+                    <p className="text-[12px] text-muted mt-0.5">
+                      What customers liked about the service
+                    </p>
+                  </div>
+                  <ul className="divide-y divide-line">
+                    {(report.customer_voice?.satisfactions || []).map((row) => (
+                      <li key={`sat-${row.call_id}`} className="px-6 py-4 space-y-2">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <Link
+                            href={`/upload/score/${row.call_id}`}
+                            className="font-semibold text-[13px] text-ink hover:text-blue tabular-nums"
+                          >
+                            {row.title}
+                          </Link>
+                          <span className="text-[11px] text-muted whitespace-nowrap">
+                            {new Intl.DateTimeFormat("en-KE", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            }).format(new Date(row.audited_at))}
+                          </span>
+                        </div>
+                        <ul className="space-y-1">
+                          {row.themes.map((theme) => (
+                            <li key={theme} className="text-[13px] text-slate-700 leading-relaxed">
+                              {theme}
+                            </li>
+                          ))}
+                        </ul>
+                        {row.quote ? (
+                          <p className="text-[12px] text-muted italic leading-relaxed">
+                            “{row.quote}”
+                          </p>
+                        ) : null}
+                      </li>
+                    ))}
+                    {!report.customer_voice?.satisfactions?.length ? (
+                      <li className="px-6 py-10 text-center text-[13px] text-muted">
+                        No satisfaction themes in this period.
+                      </li>
+                    ) : null}
+                  </ul>
+                </div>
+
+                <div>
+                  <div className="px-6 py-3.5 border-b border-line bg-slate-50/50">
+                    <h3 className="text-[13px] font-semibold text-ink">Frustrated</h3>
+                    <p className="text-[12px] text-muted mt-0.5">
+                      What customers complained about
+                    </p>
+                  </div>
+                  <ul className="divide-y divide-line">
+                    {(report.customer_voice?.frustrations || []).map((row) => (
+                      <li key={`fru-${row.call_id}`} className="px-6 py-4 space-y-2">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <Link
+                            href={`/upload/score/${row.call_id}`}
+                            className="font-semibold text-[13px] text-ink hover:text-blue tabular-nums"
+                          >
+                            {row.title}
+                          </Link>
+                          <span className="text-[11px] text-muted whitespace-nowrap">
+                            {new Intl.DateTimeFormat("en-KE", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            }).format(new Date(row.audited_at))}
+                          </span>
+                        </div>
+                        <ul className="space-y-1">
+                          {row.themes.map((theme) => (
+                            <li key={theme} className="text-[13px] text-slate-700 leading-relaxed">
+                              {theme}
+                            </li>
+                          ))}
+                        </ul>
+                        {row.quote ? (
+                          <p className="text-[12px] text-muted italic leading-relaxed">
+                            “{row.quote}”
+                          </p>
+                        ) : null}
+                      </li>
+                    ))}
+                    {!report.customer_voice?.frustrations?.length ? (
+                      <li className="px-6 py-10 text-center text-[13px] text-muted">
+                        No frustration themes in this period.
+                      </li>
+                    ) : null}
+                  </ul>
+                </div>
+              </div>
             )}
 
 

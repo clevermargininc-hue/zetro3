@@ -66,6 +66,22 @@ export type KeyTermFinding = {
   file_name?: string;
 };
 
+export type CustomerStance =
+  | "satisfied"
+  | "frustrated"
+  | "mixed"
+  | "neutral"
+  | "unknown";
+
+/** What the customer liked or complained about on the call. */
+export type CustomerVoiceInsight = {
+  stance: CustomerStance;
+  satisfaction_themes: string[];
+  frustration_themes: string[];
+  note: string;
+  quote: string;
+};
+
 export type MetricEvidence = Partial<Record<ScoreDimension, MetricEvidenceItem>> & {
   holding?: MetricEvidenceItem;
   document_references?: DocumentReference[];
@@ -75,6 +91,8 @@ export type MetricEvidence = Partial<Record<ScoreDimension, MetricEvidenceItem>>
   raw_score?: number;
   /** True only when a company Auto-Zero / Auto-Fail rule was applied. */
   auto_zero_applied?: boolean;
+  /** Customer likes / complaints extracted from the conversation. */
+  customer_voice?: CustomerVoiceInsight;
   /** Hash of Standards content used for this audit (invalidates ±5 clamp when files change). */
   standards_fingerprint?: string;
   /** Present when a re-audit was compared to a previous score. */

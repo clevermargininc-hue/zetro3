@@ -120,10 +120,7 @@ export function UploadSectionNav({
       <div className="audit-pipeline-head">
         <div>
           <p className="page-kicker">Quality audit</p>
-          <p className="mt-1 text-[14px] font-semibold text-ink">Three steps. One recording at a time.</p>
-          <p className="mt-0.5 text-[12px] text-muted max-w-xl">
-            Upload files, prepare the audio, then score against the scorecard and compliance files in Standards.
-          </p>
+          <p className="mt-0.5 text-[13px] font-semibold text-ink">Upload → Prepare → Score</p>
         </div>
         <Link href="/standards" className="text-[12px] font-semibold text-blue hover:underline">
           Company files

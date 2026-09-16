@@ -91,7 +91,7 @@ export default function PricingPage() {
     <div className="mx-auto w-full max-w-6xl px-6 py-16 lg:py-24">
       <header className="mx-auto max-w-2xl text-center">
         <p className="page-kicker">Pricing</p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
+        <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
           Plans that scale with call volume
         </h1>
         <p className="mt-4 text-[16px] leading-relaxed text-muted">
@@ -105,12 +105,12 @@ export default function PricingPage() {
           <article
             key={plan.name}
             className={`flex flex-col border-b border-line p-6 last:border-b-0 lg:border-b-0 lg:border-r lg:last:border-r-0 ${
-              plan.featured ? "bg-blue-soft/40 ring-1 ring-inset ring-blue" : ""
+              plan.featured ? "bg-blue-soft ring-2 ring-inset ring-blue" : ""
             }`}
           >
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-[15px] font-semibold text-ink">{plan.name}</h2>
-              {plan.featured ? <span className="chip">Recommended</span> : null}
+              <h2 className="font-display text-[16px] font-semibold text-ink">{plan.name}</h2>
+              {plan.featured ? <span className="chip chip-ok">Recommended</span> : null}
             </div>
             <p className="mt-2 min-h-[40px] text-[13px] leading-relaxed text-muted">{plan.blurb}</p>
             <p className="mt-5 flex items-baseline gap-1">

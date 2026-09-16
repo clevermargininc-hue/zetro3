@@ -62,7 +62,7 @@ export default function SolutionsPage() {
     <div className="mx-auto w-full max-w-6xl px-6 py-16 lg:py-24">
       <header className="max-w-2xl">
         <p className="page-kicker">Solutions</p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
+        <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
           Built for the whole floor
         </h1>
         <p className="mt-4 text-[16px] leading-relaxed text-muted">
@@ -75,12 +75,12 @@ export default function SolutionsPage() {
           <article
             key={role.title}
             className={`flex flex-col border-b border-line p-6 last:border-b-0 lg:border-b-0 lg:border-r lg:last:border-r-0 ${
-              role.featured ? "bg-blue-soft/40 ring-1 ring-inset ring-blue" : ""
+              role.featured ? "bg-blue-soft ring-2 ring-inset ring-blue" : ""
             }`}
           >
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-[15px] font-semibold text-ink">{role.title}</h2>
-              {role.featured ? <span className="chip">Operations</span> : null}
+              <h2 className="font-display text-[16px] font-semibold text-ink">{role.title}</h2>
+              {role.featured ? <span className="chip chip-ok">Operations</span> : null}
             </div>
             <p className="mt-2 text-[13px] font-medium text-ink">{role.kicker}</p>
             <p className="mt-3 flex-1 text-[13px] leading-relaxed text-muted">{role.body}</p>

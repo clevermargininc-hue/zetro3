@@ -153,21 +153,30 @@ export function AppNav({
           collapsed ? "w-16" : "w-60"
         }`}
       >
-        {/* Collapse Button */}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="absolute -right-3 top-7 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-line bg-white text-slate-500 hover:text-ink"
-          style={{ transform: collapsed ? "rotate(180deg)" : "rotate(0deg)" }}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
-
-        {/* Logo Brand Header */}
-        <div className={`flex items-center h-14 border-b border-line bg-white px-5 shrink-0 ${collapsed ? "justify-center px-0" : ""}`}>
+        {/* Logo + edge collapse control */}
+        <div className={`relative flex h-14 shrink-0 items-center border-b border-line bg-white ${collapsed ? "justify-center px-0" : "px-5"}`}>
           <Logo size="sm" collapsed={collapsed} />
+          <button
+            type="button"
+            onClick={() => setCollapsed(!collapsed)}
+            className="absolute -right-3 top-1/2 z-20 flex h-6 w-6 -translate-y-1/2 items-center justify-center border border-line bg-white text-muted hover:text-ink"
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={collapsed ? "rotate-180" : ""}
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
         </div>
 
         {/* Navigation Items */}

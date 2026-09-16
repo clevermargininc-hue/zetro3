@@ -270,11 +270,51 @@ export function stabilizeRescoreAnalysis(
   };
 
   if (!previous || previous.overall_score == null) {
+    if (hadAutoZero(analysis)) {
+      const fromParams = overallFromParameters(evidenceBase.parameters);
+      let favoured = Number(evidenceBase.raw_score);
+      if (!Number.isFinite(favoured) || (favoured === 0 && fromParams != null && fromParams > 0)) {
+        favoured = fromParams ?? 0;
+      }
+      return {
+        ...analysis,
+        overall_score: 0,
+        verdict: verdictFromOverall(0),
+        metric_evidence: {
+          ...evidenceBase,
+          auto_zero_applied: true,
+          raw_score: clampScore(favoured),
+        },
+      };
+    }
     return { ...analysis, metric_evidence: evidenceBase };
   }
 
   const prevFp = String(previous.metric_evidence?.standards_fingerprint || "").trim();
   if (nextFp && prevFp && nextFp !== prevFp) {
+    if (hadAutoZero(analysis)) {
+      const fromParams = overallFromParameters(evidenceBase.parameters);
+      let favoured = Number(evidenceBase.raw_score);
+      if (!Number.isFinite(favoured) || (favoured === 0 && fromParams != null && fromParams > 0)) {
+        favoured = fromParams ?? 0;
+      }
+      return {
+        ...analysis,
+        overall_score: 0,
+        verdict: verdictFromOverall(0),
+        metric_evidence: {
+          ...evidenceBase,
+          auto_zero_applied: true,
+          raw_score: clampScore(favoured),
+          rescore_variance: {
+            previous_overall: Number(previous.overall_score) || 0,
+            max_delta: RESCORE_VARIANCE,
+            applied: false,
+            source,
+          },
+        },
+      };
+    }
     return {
       ...analysis,
       metric_evidence: {
@@ -291,10 +331,6 @@ export function stabilizeRescoreAnalysis(
 
   const nextAutoZero = hadAutoZero(analysis);
   const prevAutoZero = hadAutoZero(previous);
-
-  if (nextAutoZero && !prevAutoZero) {
-    return { ...analysis, metric_evidence: evidenceBase };
-  }
 
   const evidence: MetricEvidence = { ...evidenceBase };
   const stabilizedParams = stabilizeParameters(
@@ -322,27 +358,54 @@ export function stabilizeRescoreAnalysis(
   ) as Pick<CallAnalysis, (typeof dimensions)[number]>;
 
   const prevRaw = Number(previous.metric_evidence?.raw_score);
-  const prevOverall = prevAutoZero && Number.isFinite(prevRaw)
-    ? prevRaw
-    : Number(previous.overall_score) || 0;
+
+  // Auto Zero: overall is always 0; Favoured Score (raw_score) stays the earned sum.
+  if (nextAutoZero) {
+    const fromParams = overallFromParameters(evidence.parameters);
+    let favoured = Number(evidence.raw_score);
+    if (!Number.isFinite(favoured) || favoured < 0) {
+      favoured =
+        fromParams != null
+          ? fromParams
+          : prevAutoZero && Number.isFinite(prevRaw)
+            ? prevRaw
+            : 0;
+    }
+    // Prefer parameter sum when model/storage left raw_score missing or stuck at 0.
+    if (favoured === 0 && fromParams != null && fromParams > 0) {
+      favoured = fromParams;
+    }
+    if (prevAutoZero && Number.isFinite(prevRaw)) {
+      favoured = withinVariance(favoured, prevRaw);
+    }
+    evidence.auto_zero_applied = true;
+    evidence.raw_score = clampScore(favoured);
+    evidence.rescore_variance = {
+      previous_overall: prevAutoZero && Number.isFinite(prevRaw) ? prevRaw : Number(previous.overall_score) || 0,
+      max_delta: RESCORE_VARIANCE,
+      applied: true,
+      source,
+    };
+    return {
+      ...analysis,
+      ...(nextAutoZero && !prevAutoZero ? {} : clampedDims),
+      overall_score: 0,
+      verdict: verdictFromOverall(0),
+      metric_evidence: evidence,
+    };
+  }
+
+  const prevOverall =
+    prevAutoZero && Number.isFinite(prevRaw)
+      ? prevRaw
+      : Number(previous.overall_score) || 0;
 
   let overall = Number(analysis.overall_score) || 0;
-
-  if (nextAutoZero && prevAutoZero) {
-    const nextRaw = Number(evidence.raw_score);
-    if (Number.isFinite(prevRaw) && Number.isFinite(nextRaw)) {
-      evidence.raw_score = withinVariance(nextRaw, prevRaw);
-    }
-    overall = 0;
-  } else {
-    const fromParams = overallFromParameters(stabilizedParams);
-    if (fromParams != null) overall = fromParams;
-    overall = withinVariance(overall, prevOverall);
-    if (evidence.auto_zero_applied) {
-      evidence.raw_score = overall;
-    } else if (evidence.raw_score != null) {
-      delete evidence.raw_score;
-    }
+  const fromParams = overallFromParameters(stabilizedParams);
+  if (fromParams != null) overall = fromParams;
+  overall = withinVariance(overall, prevOverall);
+  if (evidence.raw_score != null) {
+    delete evidence.raw_score;
   }
 
   evidence.rescore_variance = {

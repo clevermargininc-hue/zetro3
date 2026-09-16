@@ -1,39 +1,132 @@
 import { verdictLabel } from "@/lib/format";
 import { QA_KIND_LABELS } from "@/lib/qa-kinds";
 import { scorecardRows } from "@/lib/scorecard-rows";
+import { customerVoiceFromScore, stanceLabel } from "@/lib/customer-voice";
 import type { CallScore } from "@/lib/types";
 import { scoreChipClass } from "@/components/ui";
+import type { CSSProperties } from "react";
 
 export function ScoreCard({ score }: { score: CallScore }) {
   const rows = scorecardRows(score);
+  const autoZero = score.metric_evidence?.auto_zero_applied === true;
+  const favouredRaw = Number(score.metric_evidence?.raw_score);
+  const favouredScore = Number.isFinite(favouredRaw) ? favouredRaw : null;
+  const customerVoice = customerVoiceFromScore(score);
+  const hasCustomerThemes =
+    customerVoice.satisfaction_themes.length > 0 ||
+    customerVoice.frustration_themes.length > 0 ||
+    Boolean(customerVoice.note);
 
   return (
     <div className="space-y-5">
       <section className="surface p-5 sm:p-6 flex flex-col md:flex-row md:items-start gap-6">
         <div className="shrink-0 min-w-[140px]">
           <span className="kpi-label">Overall score</span>
-          <span className="kpi-value mt-1">{score.overall_score}%</span>
-          {score.overall_score === 0 &&
-          score.metric_evidence?.auto_zero_applied &&
-          score.metric_evidence?.raw_score ? (
-            <span className="block mt-1 text-[13px] font-medium text-slate-500">
-              Favoured Score: {score.metric_evidence.raw_score}%
-            </span>
-          ) : null}
-          <span className={`mt-2 ${scoreChipClass(score.overall_score)}`}>
-            {verdictLabel(score.verdict)}
-          </span>
+          <div className="mt-3 flex items-center gap-4">
+            <div
+              className="score-ring grid h-20 w-20 place-items-center rounded-full"
+              style={
+                {
+                  "--p": score.overall_score,
+                  "--ring-color":
+                    score.overall_score >= 70
+                      ? "var(--good)"
+                      : score.overall_score >= 50
+                        ? "var(--warn)"
+                        : "var(--rose)",
+                } as CSSProperties
+              }
+            >
+              <span className="grid h-14 w-14 place-items-center rounded-full bg-white text-[18px] font-bold tabular-nums text-ink">
+                {score.overall_score}
+              </span>
+            </div>
+            <div>
+              <span className="kpi-value">{score.overall_score}%</span>
+              {autoZero && favouredScore != null ? (
+                <span className="block mt-1 text-[13px] font-semibold text-ink">
+                  Favoured Score: {favouredScore}%
+                </span>
+              ) : null}
+              {autoZero ? (
+                <span className="mt-1 block text-[12px] font-medium text-[color:var(--rose)]">
+                  Auto Zero applied from company Standards
+                </span>
+              ) : null}
+              <span className={`mt-2 ${scoreChipClass(score.overall_score)}`}>
+                {verdictLabel(score.verdict)}
+              </span>
+            </div>
+          </div>
         </div>
         <div className="flex-1 min-w-0 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="chip">Scored from company files</span>
-            {score.customer_sentiment && (
+            {autoZero ? <span className="chip">Auto Zero</span> : null}
+            {customerVoice.stance !== "unknown" ? (
+              <span className="chip capitalize">
+                Customer: {stanceLabel(customerVoice.stance)}
+              </span>
+            ) : score.customer_sentiment ? (
               <span className="chip capitalize">Sentiment: {score.customer_sentiment}</span>
-            )}
+            ) : null}
           </div>
           <p className="text-[14px] leading-relaxed text-slate-700">{score.summary}</p>
         </div>
       </section>
+
+      {hasCustomerThemes ? (
+        <section className="surface p-5 space-y-4">
+          <div>
+            <h4 className="text-[14px] font-semibold text-ink">Customer voice</h4>
+            <p className="text-[12px] text-muted mt-0.5">
+              What this customer liked or complained about
+            </p>
+          </div>
+          {customerVoice.note ? (
+            <p className="text-[13px] leading-relaxed text-slate-700">{customerVoice.note}</p>
+          ) : null}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <p className="text-[12px] font-medium uppercase tracking-wider text-muted">
+                Satisfied about
+              </p>
+              {customerVoice.satisfaction_themes.length ? (
+                <ul className="space-y-1.5">
+                  {customerVoice.satisfaction_themes.map((theme) => (
+                    <li key={theme} className="text-[13px] text-slate-700 leading-relaxed">
+                      {theme}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-[13px] text-muted">No satisfaction themes on this call.</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <p className="text-[12px] font-medium uppercase tracking-wider text-muted">
+                Frustrated about
+              </p>
+              {customerVoice.frustration_themes.length ? (
+                <ul className="space-y-1.5">
+                  {customerVoice.frustration_themes.map((theme) => (
+                    <li key={theme} className="text-[13px] text-slate-700 leading-relaxed">
+                      {theme}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-[13px] text-muted">No frustration themes on this call.</p>
+              )}
+            </div>
+          </div>
+          {customerVoice.quote ? (
+            <p className="text-[12px] text-muted italic leading-relaxed border-t border-line pt-3">
+              “{customerVoice.quote}”
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       {score.standards_used?.length ? (
         <section className="surface p-5 space-y-3">
@@ -57,14 +150,26 @@ export function ScoreCard({ score }: { score: CallScore }) {
         <h3 className="text-[14px] font-semibold text-ink">Scorecard</h3>
         <div className="grid gap-3 sm:grid-cols-2">
           {rows.map((row) => (
-            <div
-              key={row.name}
-              className="flex items-center justify-between gap-4 border border-line px-4 py-3"
-            >
-              <h4 className="text-[14px] font-semibold text-ink">{row.name}</h4>
-              <span className="font-bold text-[14px] tabular-nums text-ink shrink-0">
-                {row.score}%
-              </span>
+            <div key={row.name} className="border border-line px-4 py-3 space-y-2">
+              <div className="flex items-center justify-between gap-4">
+                <h4 className="text-[14px] font-semibold text-ink">{row.name}</h4>
+                <span className="font-bold text-[14px] tabular-nums text-ink shrink-0">
+                  {row.score}%
+                </span>
+              </div>
+              <div className="bar">
+                <span
+                  style={{
+                    width: `${Math.max(0, Math.min(100, row.score))}%`,
+                    background:
+                      row.score >= 70
+                        ? "var(--good)"
+                        : row.score >= 50
+                          ? "var(--warn)"
+                          : "var(--rose)",
+                  }}
+                />
+              </div>
             </div>
           ))}
         </div>

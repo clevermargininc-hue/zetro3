@@ -46,7 +46,7 @@ export default function HowItWorksPage() {
     <div className="mx-auto w-full max-w-6xl px-6 py-16 lg:py-24">
       <header className="max-w-2xl">
         <p className="page-kicker">How it works</p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
+        <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
           From region and audio to a scored call
         </h1>
         <p className="mt-4 text-[16px] leading-relaxed text-muted">

@@ -1,5 +1,12 @@
 import { agentIdFromFile, verdictLabel } from "@/lib/format";
-import type { AuditMode, Verdict } from "@/lib/types";
+import type { AuditMode, MetricEvidence, Verdict } from "@/lib/types";
+import {
+  customerVoiceFromScore,
+  summarizeCustomerVoice,
+  type CustomerStance,
+  type CustomerVoiceSummary,
+  type CustomerVoiceThemeRow,
+} from "@/lib/customer-voice";
 
 export const REPORT_PERIODS = ["daily", "weekly", "monthly", "annually"] as const;
 export type ReportPeriod = (typeof REPORT_PERIODS)[number];
@@ -22,6 +29,11 @@ export type ReportCallRow = {
   language_handling: number | null;
   verdict: Verdict | string;
   customer_sentiment: string | null;
+  customer_stance: string | null;
+  satisfaction_themes: string[];
+  frustration_themes: string[];
+  customer_note: string;
+  customer_quote: string;
   audit_mode: AuditMode | string | null;
   summary: string | null;
   compliance_findings: string[];
@@ -76,10 +88,18 @@ export type QaReport = {
     calls_with_compliance_issue: number;
     total_compliance_findings: number;
     documents_audits: number;
+    customer_satisfied_pct: number | null;
+    customer_frustrated_pct: number | null;
+    customer_analyzed: number;
   };
   calls: ReportCallRow[];
   agents: ReportAgentRow[];
   compliance: ReportComplianceRow[];
+  customer_voice: {
+    summary: CustomerVoiceSummary;
+    satisfactions: CustomerVoiceThemeRow[];
+    frustrations: CustomerVoiceThemeRow[];
+  };
 };
 
 export function isReportPeriod(value: string | null): value is ReportPeriod {
@@ -246,7 +266,7 @@ export function buildQaReport(
 ): QaReport {
   const range = periodRange(opts.period, opts.date);
   const rows: ReportCallRow[] = calls
-    .map((call) => {
+    .map((call): ReportCallRow | null => {
       const score = scoreOf(call);
       if (!score || typeof score.overall_score !== "number") return null;
       const auditedAt = call.completed_at || score.created_at || call.created_at;
@@ -258,6 +278,12 @@ export function buildQaReport(
       const durationRaw = Number(call.duration_seconds);
       const duration_seconds =
         Number.isFinite(durationRaw) && durationRaw > 0 ? Math.round(durationRaw) : null;
+      const voice = customerVoiceFromScore({
+        customer_sentiment:
+          score.customer_sentiment == null ? null : String(score.customer_sentiment),
+        summary: score.summary == null ? null : String(score.summary),
+        metric_evidence: (score.metric_evidence as MetricEvidence | null | undefined) || null,
+      });
       return {
         call_id: call.id,
         title: agentIdFromFile(call.file_name || call.title),
@@ -271,15 +297,21 @@ export function buildQaReport(
         professionalism: score.professionalism == null ? null : Number(score.professionalism),
         resolution: score.resolution == null ? null : Number(score.resolution),
         communication: score.communication == null ? null : Number(score.communication),
-        language_handling: score.language_handling == null ? null : Number(score.language_handling),
+        language_handling:
+          score.language_handling == null ? null : Number(score.language_handling),
         verdict: String(score.verdict || ""),
-        customer_sentiment: score.customer_sentiment ? String(score.customer_sentiment) : null,
+        customer_sentiment: voice.stance === "unknown" ? null : String(voice.stance),
+        customer_stance: String(voice.stance),
+        satisfaction_themes: voice.satisfaction_themes,
+        frustration_themes: voice.frustration_themes,
+        customer_note: voice.note,
+        customer_quote: voice.quote,
         audit_mode: score.audit_mode ? String(score.audit_mode) : null,
         summary: score.summary ? String(score.summary) : null,
         compliance_findings: findings,
-      } satisfies ReportCallRow;
+      };
     })
-    .filter((row): row is ReportCallRow => Boolean(row))
+    .filter((row): row is ReportCallRow => row != null)
     .sort((a, b) => b.audited_at.localeCompare(a.audited_at));
 
   const compliance: ReportComplianceRow[] = rows.flatMap((row) =>
@@ -320,6 +352,67 @@ export function buildQaReport(
     })
     .sort((a, b) => (b.avg_score ?? -1) - (a.avg_score ?? -1));
 
+  const voiceSummary = summarizeCustomerVoice(
+    rows.map((row) => ({
+      customer_sentiment: row.customer_stance || row.customer_sentiment,
+      metric_evidence: {
+        customer_voice: {
+          stance: (row.customer_stance || "unknown") as CustomerStance,
+          satisfaction_themes: row.satisfaction_themes,
+          frustration_themes: row.frustration_themes,
+          note: row.customer_note,
+          quote: row.customer_quote,
+        },
+      },
+    })),
+  );
+
+  const satisfactions: CustomerVoiceThemeRow[] = rows
+    .filter(
+      (row) =>
+        row.customer_stance === "satisfied" ||
+        row.customer_stance === "mixed" ||
+        row.satisfaction_themes.length > 0,
+    )
+    .map((row) => ({
+      call_id: row.call_id,
+      title: row.title,
+      agent_name: row.agent_name,
+      audited_at: row.audited_at,
+      stance: (row.customer_stance || "unknown") as CustomerVoiceThemeRow["stance"],
+      themes: row.satisfaction_themes.length
+        ? row.satisfaction_themes
+        : row.customer_note
+          ? [row.customer_note]
+          : ["Customer expressed satisfaction"],
+      note: row.customer_note,
+      quote: row.customer_quote,
+      summary: row.summary,
+    }));
+
+  const frustrations: CustomerVoiceThemeRow[] = rows
+    .filter(
+      (row) =>
+        row.customer_stance === "frustrated" ||
+        row.customer_stance === "mixed" ||
+        row.frustration_themes.length > 0,
+    )
+    .map((row) => ({
+      call_id: row.call_id,
+      title: row.title,
+      agent_name: row.agent_name,
+      audited_at: row.audited_at,
+      stance: (row.customer_stance || "unknown") as CustomerVoiceThemeRow["stance"],
+      themes: row.frustration_themes.length
+        ? row.frustration_themes
+        : row.customer_note
+          ? [row.customer_note]
+          : ["Customer expressed frustration"],
+      note: row.customer_note,
+      quote: row.customer_quote,
+      summary: row.summary,
+    }));
+
   return {
     generated_at: new Date().toISOString(),
     period: opts.period,
@@ -345,10 +438,18 @@ export function buildQaReport(
       calls_with_compliance_issue: rows.filter((r) => r.compliance_findings.length > 0).length,
       total_compliance_findings: compliance.length,
       documents_audits: rows.filter((r) => r.audit_mode === "documents").length,
+      customer_satisfied_pct: voiceSummary.satisfied_pct,
+      customer_frustrated_pct: voiceSummary.frustrated_pct,
+      customer_analyzed: voiceSummary.analyzed,
     },
     calls: rows,
     agents,
     compliance,
+    customer_voice: {
+      summary: voiceSummary,
+      satisfactions,
+      frustrations,
+    },
   };
 }
 

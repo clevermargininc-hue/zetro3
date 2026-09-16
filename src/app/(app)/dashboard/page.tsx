@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/supabase/server";
 import { agentIdFromFile, formatAht, formatDate, formatDuration, languageLabel } from "@/lib/format";
 import { getTeamScope } from "@/lib/workspaces";
 import type { Call, CallScore } from "@/lib/types";
+import { summarizeCustomerVoice } from "@/lib/customer-voice";
 import { JoinRequestBanner } from "@/components/join-request-banner";
 import { KpiStrip, PageHeader, scoreChipClass } from "@/components/ui";
 
@@ -86,7 +87,7 @@ export default async function DashboardPage() {
   const tierNeedsImp = scoreValues.filter((s) => s >= 50 && s < 70).length;
   const tierPoor = scoreValues.filter((s) => s < 50).length;
 
-
+  const customerVoice = summarizeCustomerVoice(scoreObjects);
 
   const agentLeaderboard = rankByAgentId(allCalls);
 
@@ -94,7 +95,7 @@ export default async function DashboardPage() {
     <div className="space-y-6 pb-10">
       <PageHeader
         title="Overview"
-        description="Call quality, compliance, and handling time across this workspace."
+        description="Call quality, customer voice, compliance, and handling time across this workspace."
       />
 
       <JoinRequestBanner />
@@ -123,6 +124,45 @@ export default async function DashboardPage() {
           },
         ]}
       />
+
+      <section className="surface p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-5">
+          <div>
+            <h3 className="text-[14px] font-semibold text-ink">Customer voice</h3>
+            <p className="text-[12px] text-muted mt-0.5">
+              Share of customers who liked the service vs who were frustrated
+            </p>
+          </div>
+          <Link href="/reports" className="btn btn-ghost text-[12px] shrink-0">
+            See themes in Reports
+          </Link>
+        </div>
+
+        {customerVoice.analyzed > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="border border-line px-5 py-4">
+              <p className="text-[12px] font-medium uppercase tracking-wider text-muted">
+                Satisfied customers
+              </p>
+              <p className="mt-2 text-3xl font-bold tabular-nums text-ink">
+                {customerVoice.satisfied_pct}%
+              </p>
+            </div>
+            <div className="border border-line px-5 py-4">
+              <p className="text-[12px] font-medium uppercase tracking-wider text-muted">
+                Frustrated customers
+              </p>
+              <p className="mt-2 text-3xl font-bold tabular-nums text-ink">
+                {customerVoice.frustrated_pct}%
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className="py-2 text-[13px] text-muted">
+            Audit calls to measure how many customers are satisfied or frustrated.
+          </p>
+        )}
+      </section>
 
       <section className="surface p-5">
             <div className="flex items-center justify-between mb-4">
@@ -233,11 +273,58 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
-        {/* Data Table */}
-        <div className="overflow-x-auto">
+        {/* Mobile list */}
+        <div className="divide-y divide-line md:hidden">
+          {allCalls.slice(0, 8).map((call) => {
+            const score = Array.isArray(call.call_scores) ? call.call_scores[0] : call.call_scores;
+            const hasBreach = (score?.compliance_findings || []).some(
+              (f: string) => f && f.toLowerCase() !== "none identified" && f.trim().length > 0,
+            );
+            return (
+              <Link
+                key={call.id}
+                href={score ? `/upload/score/${call.id}` : `/upload/prepare/${call.id}`}
+                className="block px-5 py-4 hover:bg-surface-2"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-ink tabular-nums">{agentLabel(call)}</p>
+                    <p className="mt-1 text-[12px] text-muted">
+                      {formatDate(call.created_at)} · {languageLabel(call.detected_language || call.language_mode)}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    {score?.overall_score != null ? (
+                      <span className={`${scoreChipClass(score.overall_score)} tabular-nums`}>
+                        {score.overall_score}%
+                      </span>
+                    ) : (
+                      <span className="chip">{call.status === "failed" ? "Failed" : "Processing"}</span>
+                    )}
+                    <p className="mt-1 text-[11px] text-muted">
+                      {score ? (hasBreach ? "Flagged" : "Clean") : "—"}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+          {!allCalls.length ? (
+            <div className="py-12 text-center px-5">
+              <h3 className="text-[14px] font-semibold text-ink">No call records</h3>
+              <p className="mt-1 text-[13px] text-muted">Upload recordings to start quality auditing.</p>
+              <Link href="/upload" className="mt-4 btn btn-blue text-[13px] inline-flex">
+                Upload calls
+              </Link>
+            </div>
+          ) : null}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-line bg-slate-50 text-[11px] font-medium uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-line bg-bg text-[11px] font-medium uppercase tracking-wider text-muted">
                 <th className="px-6 py-3">Agent ID</th>
 
                 <th className="px-6 py-3">Date & Time</th>
@@ -247,7 +334,7 @@ export default async function DashboardPage() {
                 <th className="px-6 py-3 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-[13px]">
+            <tbody className="divide-y divide-line text-[13px]">
               {allCalls.slice(0, 8).map((call) => {
                 const score = Array.isArray(call.call_scores) ? call.call_scores[0] : call.call_scores;
                 const hasBreach = (score?.compliance_findings || []).some(
@@ -255,7 +342,7 @@ export default async function DashboardPage() {
                 );
 
                 return (
-                  <tr key={call.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={call.id} className="hover:bg-surface-2 transition-colors">
                     {/* Agent ID & Duration */}
                     <td className="px-6 py-3.5">
                       <div className="font-semibold text-ink tabular-nums">{agentLabel(call)}</div>
@@ -267,7 +354,7 @@ export default async function DashboardPage() {
 
 
                     {/* Date */}
-                    <td className="px-6 py-3.5 text-slate-600 whitespace-nowrap text-[12px]">
+                    <td className="px-6 py-3.5 text-muted whitespace-nowrap text-[12px]">
                       {formatDate(call.created_at)}
                     </td>
 
@@ -287,7 +374,7 @@ export default async function DashboardPage() {
                           <span className="chip chip-ok">Clean</span>
                         )
                       ) : (
-                        <span className="text-slate-400 text-[11px]">—</span>
+                        <span className="text-muted text-[11px]">—</span>
                       )}
                     </td>
 

@@ -20,6 +20,7 @@ import { extractKeytermsFromDocuments, scriptsOf } from "@/lib/call-scripts";
 import { detectHoldEvents, formatHoldListenBlock } from "@/lib/detect-holds";
 import { cleanScoreLine, cleanScoreLines, cleanScoreQuote } from "@/lib/clean-score-text";
 import { overallFromParameters, verdictFromOverall } from "@/lib/score-variance";
+import { normalizeCustomerVoice } from "@/lib/customer-voice";
 
 const SCORE_DIMENSIONS: ScoreDimension[] = [
   "greeting",
@@ -74,7 +75,37 @@ const ANALYSIS_SCHEMA = {
       type: "string",
       enum: ["excellent", "good", "needs_improvement", "poor"],
     },
-    customer_sentiment: { type: "string" },
+    customer_sentiment: {
+      type: "string",
+      enum: ["satisfied", "frustrated", "mixed", "neutral", "unknown"],
+    },
+    customer_voice: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        stance: {
+          type: "string",
+          enum: ["satisfied", "frustrated", "mixed", "neutral", "unknown"],
+        },
+        satisfaction_themes: {
+          type: "array",
+          items: { type: "string" },
+        },
+        frustration_themes: {
+          type: "array",
+          items: { type: "string" },
+        },
+        note: { type: "string" },
+        quote: { type: "string" },
+      },
+      required: [
+        "stance",
+        "satisfaction_themes",
+        "frustration_themes",
+        "note",
+        "quote",
+      ],
+    },
     summary: { type: "string" },
     strengths: {
       type: "array",
@@ -163,6 +194,7 @@ const ANALYSIS_SCHEMA = {
     "language_handling",
     "verdict",
     "customer_sentiment",
+    "customer_voice",
     "summary",
     "strengths",
     "improvements",
@@ -670,6 +702,8 @@ Rules:
           : Number.isFinite(Number(weightRaw))
             ? Math.max(0, Math.min(100, Number(weightRaw)))
             : null;
+      const fromField = normalizeSpecialRule(item.special_rule);
+      const fromName = normalizeSpecialRule(name);
       out.push({
         name,
         meaning: cleanScoreLine(String(item.meaning || "")).slice(0, 320),
@@ -680,7 +714,8 @@ Rules:
         deduction_or_fail_when: cleanScoreLine(
           String(item.deduction_or_fail_when || ""),
         ).slice(0, 320),
-        special_rule: normalizeSpecialRule(item.special_rule),
+        // Prefer explicit special_rule; also catch "(Auto Zero)" baked into the line name.
+        special_rule: fromField !== "none" ? fromField : fromName,
         weight_pct: weight,
       });
       if (out.length >= 60) break;
@@ -720,31 +755,72 @@ function formatParameterPlaybookBlock(entries: ParameterPlaybookEntry[]) {
   ].join("\n");
 }
 
+function normalizeParamMatchKey(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/\(.*?\)/g, " ")
+    .replace(/auto[\s_-]*zero|auto[\s_-]*fail|auto[\s_-]*100|auto[\s_-]*pass|if\s*applicable/gi, " ")
+    .replace(/[^a-z0-9]+/g, "")
+    .trim();
+}
+
+function nameMarksAutoZero(name: string) {
+  return normalizeSpecialRule(name) === "auto_zero";
+}
+
+function findPlaybookGuide(
+  name: string,
+  playbook: ParameterPlaybookEntry[],
+  byName: Map<string, ParameterPlaybookEntry>,
+): ParameterPlaybookEntry | undefined {
+  const exact = byName.get(name.trim().toLowerCase());
+  if (exact) return exact;
+  const key = normalizeParamMatchKey(name);
+  if (!key) return undefined;
+  return (
+    playbook.find((row) => normalizeParamMatchKey(row.name) === key) ||
+    playbook.find((row) => {
+      const other = normalizeParamMatchKey(row.name);
+      return Boolean(other && (other.includes(key) || key.includes(other)));
+    })
+  );
+}
+
 function applyPlaybookSpecialScores(
   parameters: ScoreParameter[],
   playbook: ParameterPlaybookEntry[],
 ): { parameters: ScoreParameter[]; autoZeroFromPlaybook: boolean } {
-  if (!parameters.length || !playbook.length) {
+  if (!parameters.length) {
     return { parameters, autoZeroFromPlaybook: false };
   }
   const byName = new Map(playbook.map((row) => [row.name.trim().toLowerCase(), row]));
   let autoZeroFromPlaybook = false;
   const next = parameters.map((row) => {
-    const guide = byName.get(row.name.trim().toLowerCase());
-    if (!guide) return row;
+    const guide = findPlaybookGuide(row.name, playbook, byName);
+    const special =
+      guide?.special_rule && guide.special_rule !== "none"
+        ? guide.special_rule
+        : nameMarksAutoZero(row.name)
+          ? "auto_zero"
+          : "none";
     const patched: ScoreParameter = {
       ...row,
-      weight_pct: row.weight_pct ?? guide.weight_pct,
+      weight_pct: row.weight_pct ?? guide?.weight_pct ?? row.weight_pct,
     };
-    if (guide.special_rule === "auto_100" && (row.result === "hit" || row.score >= 95)) {
+    if (special === "auto_100" && (row.result === "hit" || row.score >= 95)) {
       patched.score = 100;
       patched.result = "hit";
       if (!patched.gap_note) patched.gap_note = "Full marks — Auto 100 condition met.";
     }
-    if (guide.special_rule === "auto_zero" && (row.result === "miss" || row.score <= 5)) {
+    // Company Auto Zero / Auto-Fail: a clear miss on that line zeros the whole call.
+    if (special === "auto_zero" && (row.result === "miss" || row.score < 50)) {
       patched.score = 0;
       patched.result = "miss";
       autoZeroFromPlaybook = true;
+      if (!patched.gap_note) {
+        patched.gap_note =
+          "Auto Zero — company critical fail on this line; call overall forced to 0.";
+      }
     }
     return patched;
   });
@@ -1238,8 +1314,14 @@ ${SCRIPT_PROMPT_BLOCK}
 Numeric fields:
 - parameters: score EVERY company scorecard / checklist criterion (any count). This drives the scorecard UI.
 - overall_score / raw_score: follow the company scorecard weighting across those parameters
+- customer_sentiment + customer_voice: Listen to the CUSTOMER (not the agent). Set customer_sentiment and customer_voice.stance to one of: satisfied, frustrated, mixed, neutral, unknown.
+  * satisfaction_themes: short English phrases for what the customer liked / appreciated about the service (empty array if none).
+  * frustration_themes: short English phrases for what the customer complained about or disliked (empty array if none).
+  * note: one short English sentence on how the customer felt about the service.
+  * quote: a short customer quote that supports the stance (or empty string).
+  This is for company dashboards — be honest even when the agent scored well.
 - greeting, empathy, professionalism, resolution, communication, language_handling: optional closest roll-ups for analytics only — do not replace the company parameter list
-- AUTO-ZERO / AUTO-100: Follow the company scorecard and PARAMETER PLAYBOOK. If a line marked Auto Zero / Auto-Fail is truly violated, set that parameter to 0 and set \`auto_zero_applied\` true when the company intends a call-level zero. If a line marked Auto 100 / Auto-Pass is fully met, score that parameter 100. Calculate \`overall_score\` from the parameters (weighted when weights exist). The system zeros the final overall when \`auto_zero_applied\` is true, but you must still provide the normal sum in \`overall_score\` / raw_score. Use extreme wisdom: only apply Auto Zero for a genuine, explicitly defined severe violation on that line. If no auto-zero occurred, set \`auto_zero_applied\` to false.
+- AUTO-ZERO / AUTO-100: Follow the company scorecard and PARAMETER PLAYBOOK. If a line marked Auto Zero / Auto-Fail is truly violated, set that parameter to 0 and set \`auto_zero_applied\` true when the company intends a call-level zero. If a line marked Auto 100 / Auto-Pass is fully met, score that parameter 100. Always calculate the normal weighted sum first and put it in BOTH \`overall_score\` and \`raw_score\`. The system then forces \`overall_score\` to 0 when Auto Zero applies, and keeps \`raw_score\` as the Favoured Score. Use extreme wisdom: only apply Auto Zero for a genuine, explicitly defined severe violation on that line. If no auto-zero occurred, set \`auto_zero_applied\` to false.
 - A serious compliance breach should cap overall_score at 49 unless the scorecard says otherwise
 
 Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–49.
@@ -1299,8 +1381,14 @@ ${SCRIPT_PROMPT_BLOCK}
 Numeric fields:
 - parameters: score EVERY company scorecard / checklist criterion (any count). This drives the scorecard UI.
 - overall_score / raw_score: follow the company scorecard weighting across those parameters
+- customer_sentiment + customer_voice: Listen to the CUSTOMER (not the agent). Set customer_sentiment and customer_voice.stance to one of: satisfied, frustrated, mixed, neutral, unknown.
+  * satisfaction_themes: short English phrases for what the customer liked / appreciated about the service (empty array if none).
+  * frustration_themes: short English phrases for what the customer complained about or disliked (empty array if none).
+  * note: one short English sentence on how the customer felt about the service.
+  * quote: a short customer quote that supports the stance (or empty string).
+  This is for company dashboards — be honest even when the agent scored well.
 - greeting, empathy, professionalism, resolution, communication, language_handling: optional closest roll-ups for analytics only — do not replace the company parameter list
-- AUTO-ZERO / AUTO-100: Follow the company scorecard and PARAMETER PLAYBOOK. If a line marked Auto Zero / Auto-Fail is truly violated, set that parameter to 0 and set \`auto_zero_applied\` true when the company intends a call-level zero. If a line marked Auto 100 / Auto-Pass is fully met, score that parameter 100. Calculate \`overall_score\` from the parameters (weighted when weights exist). The system zeros the final overall when \`auto_zero_applied\` is true, but you must still provide the normal sum in \`overall_score\` / raw_score. Use extreme wisdom: only apply Auto Zero for a genuine, explicitly defined severe violation on that line. If no auto-zero occurred, set \`auto_zero_applied\` to false.
+- AUTO-ZERO / AUTO-100: Follow the company scorecard and PARAMETER PLAYBOOK. If a line marked Auto Zero / Auto-Fail is truly violated, set that parameter to 0 and set \`auto_zero_applied\` true when the company intends a call-level zero. If a line marked Auto 100 / Auto-Pass is fully met, score that parameter 100. Always calculate the normal weighted sum first and put it in BOTH \`overall_score\` and \`raw_score\`. The system then forces \`overall_score\` to 0 when Auto Zero applies, and keeps \`raw_score\` as the Favoured Score. Use extreme wisdom: only apply Auto Zero for a genuine, explicitly defined severe violation on that line. If no auto-zero occurred, set \`auto_zero_applied\` to false.
 - A serious compliance breach should cap overall_score at 49 unless the scorecard says otherwise
 
 Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–49.
@@ -1395,6 +1483,7 @@ ${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${playb
     hold_findings?: unknown;
     document_references?: unknown;
     parameters?: unknown;
+    customer_voice?: unknown;
   };
   const speakerMap: Record<string, SpeakerRole> = {
     ...(parsed.speaker_map || {}),
@@ -1489,13 +1578,32 @@ ${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${playb
   }
   delete metric_evidence.key_terms;
 
+  const customerVoice = normalizeCustomerVoice(
+    parsed.customer_voice,
+    parsed.customer_sentiment,
+  );
+  metric_evidence.customer_voice = customerVoice;
+
   let final_overall_score = clamp(parsed.overall_score);
   const fromParams = overallFromParameters(parameters);
   if (fromParams != null) final_overall_score = fromParams;
 
-  if (parsed.auto_zero_applied || autoZeroFromPlaybook) {
+  const parsedRaw = Number(parsed.raw_score);
+  const applyAutoZero = Boolean(parsed.auto_zero_applied || autoZeroFromPlaybook);
+  if (applyAutoZero) {
+    // Favoured Score = weighted/parameter sum BEFORE call-level Auto Zero.
+    let favoured =
+      fromParams != null
+        ? fromParams
+        : Number.isFinite(parsedRaw) && parsedRaw > 0
+          ? clamp(parsedRaw)
+          : final_overall_score;
+    // Model sometimes already zeros overall_score; recover favoured from raw_score.
+    if (favoured === 0 && Number.isFinite(parsedRaw) && parsedRaw > 0) {
+      favoured = clamp(parsedRaw);
+    }
     metric_evidence.auto_zero_applied = true;
-    metric_evidence.raw_score = final_overall_score;
+    metric_evidence.raw_score = favoured;
     final_overall_score = 0;
   } else {
     metric_evidence.auto_zero_applied = false;
@@ -1543,7 +1651,7 @@ ${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${playb
     communication,
     language_handling,
     verdict: verdictFromOverall(final_overall_score),
-    customer_sentiment: parsed.customer_sentiment || "unknown",
+    customer_sentiment: customerVoice.stance,
     summary: cleanScoreLine(parsed.summary || ""),
     strengths: cleanScoreLines(parsed.strengths),
     improvements: cleanScoreLines(parsed.improvements),

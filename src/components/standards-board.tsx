@@ -112,16 +112,16 @@ function KindSection({
   const required = (QA_KINDS as readonly string[]).includes(kind);
 
   return (
-    <div className="surface p-5">
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-5">
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-8 h-8 shrink-0 text-slate-500">
+    <div className="border-b border-line py-4 first:pt-0 last:border-b-0 last:pb-0">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex items-center justify-center w-7 h-7 shrink-0 text-muted">
               {getKindIcon(kind)}
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-[15px] font-bold text-ink capitalize">{QA_KIND_LABELS[kind]}</h3>
+                <h3 className="text-[14px] font-semibold text-ink capitalize">{QA_KIND_LABELS[kind]}</h3>
                 {required ? (
                   <span className="chip">Required</span>
                 ) : (
@@ -134,23 +134,22 @@ function KindSection({
                   </span>
                 )}
               </div>
-              <p className="mt-1 text-[13px] text-muted leading-relaxed">
+              <p className="mt-1 text-[12px] text-muted leading-relaxed">
                 {KIND_HELP[kind]}
               </p>
             </div>
           </div>
 
-          {/* Uploaded Documents List */}
           {rows.length > 0 && (
-            <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap gap-2 pl-10">
               {rows.map((doc) => (
                 <div
                   key={doc.id}
-                  className="flex items-center gap-2 border border-line px-3 py-1.5 text-[12px]"
+                  className="flex items-center gap-2 border border-line px-2.5 py-1 text-[12px]"
                 >
                   <span
-                    className={`font-semibold truncate max-w-[240px] ${
-                      doc.has_text ? "text-slate-800" : "text-rose line-through"
+                    className={`font-medium truncate max-w-[220px] ${
+                      doc.has_text ? "text-ink" : "text-rose line-through"
                     }`}
                     title={`${doc.title} ${!doc.has_text ? "(Unreadable content)" : ""}`}
                   >
@@ -159,7 +158,7 @@ function KindSection({
                   <button
                     type="button"
                     onClick={() => onRemove(doc.id)}
-                    className="text-slate-400 hover:text-rose p-0.5 rounded ml-1"
+                    className="text-muted hover:text-rose p-0.5"
                     title="Remove document"
                   >
                     {Icons.trash}
@@ -170,9 +169,8 @@ function KindSection({
           )}
         </div>
 
-        {/* Upload Button / Dropzone */}
-        <div className="md:w-56 shrink-0">
-          <label className="flex h-full min-h-[52px] items-center justify-center cursor-pointer border border-dashed border-line bg-slate-50 px-4 py-3 text-center hover:border-blue hover:bg-blue-soft group">
+        <div className="md:w-48 shrink-0 md:pl-0 pl-10">
+          <label className="flex min-h-[44px] cursor-pointer items-center justify-center border border-dashed border-line bg-bg px-3 py-2.5 text-center hover:border-blue hover:bg-blue-soft group">
             <input
               type="file"
               accept={FILE_ACCEPT}
@@ -184,9 +182,9 @@ function KindSection({
                 if (file) onUpload(kind, file);
               }}
             />
-            <div className="flex items-center gap-2 text-[12px] font-semibold text-slate-700 group-hover:text-blue transition-colors">
+            <div className="flex items-center gap-2 text-[12px] font-semibold text-ink group-hover:text-blue transition-colors">
               {Icons.upload}
-              <span>{pendingKind === kind ? "Processing file…" : "Upload Document"}</span>
+              <span>{pendingKind === kind ? "Processing…" : "Upload"}</span>
             </div>
           </label>
         </div>
@@ -280,42 +278,44 @@ export function StandardsBoard() {
 
       {error && <p className="alert-error">{error}</p>}
 
-      {/* Required Scorecard Standards */}
-      <div className="space-y-3.5">
+      <div className="space-y-3">
         <div>
-          <h2 className="text-[15px] font-bold text-ink">Evaluation Scorecards & Governance</h2>
+          <h2 className="text-[15px] font-semibold text-ink">Evaluation scorecards & governance</h2>
           <p className="text-[12px] text-muted">Required files for SOP-driven quality evaluations</p>
         </div>
-        {QA_KINDS.map((kind) => (
-          <KindSection
-            key={kind}
-            kind={kind}
-            readiness={readiness}
-            pendingKind={pendingKind}
-            onUpload={(k, f) => void upload(k, f)}
-            onRemove={(id) => void remove(id)}
-          />
-        ))}
+        <div className="surface px-5 py-2">
+          {QA_KINDS.map((kind) => (
+            <KindSection
+              key={kind}
+              kind={kind}
+              readiness={readiness}
+              pendingKind={pendingKind}
+              onUpload={(k, f) => void upload(k, f)}
+              onRemove={(id) => void remove(id)}
+            />
+          ))}
+        </div>
       </div>
 
-      {/* Organization Scripts */}
-      <div className="space-y-3.5 pt-4 border-t border-slate-100">
+      <div className="space-y-3 pt-2">
         <div>
-          <h2 className="text-[15px] font-bold text-ink">Organization Call Scripts</h2>
+          <h2 className="text-[15px] font-semibold text-ink">Organization call scripts</h2>
           <p className="text-[12px] text-muted">
-            Opening, closing, and holding procedures are optional. Upload only the ones your company uses. Holding is scored only when a call actually goes on hold.
+            Opening, closing, and holding are optional. Holding is scored only when a call goes on hold.
           </p>
         </div>
-        {SCRIPT_KINDS.map((kind) => (
-          <KindSection
-            key={kind}
-            kind={kind}
-            readiness={readiness}
-            pendingKind={pendingKind}
-            onUpload={(k, f) => void upload(k, f)}
-            onRemove={(id) => void remove(id)}
-          />
-        ))}
+        <div className="surface px-5 py-2">
+          {SCRIPT_KINDS.map((kind) => (
+            <KindSection
+              key={kind}
+              kind={kind}
+              readiness={readiness}
+              pendingKind={pendingKind}
+              onUpload={(k, f) => void upload(k, f)}
+              onRemove={(id) => void remove(id)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
