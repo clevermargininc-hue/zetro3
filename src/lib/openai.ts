@@ -1039,8 +1039,8 @@ async function completeJson(
           (body as { seed?: number }).seed = options.seed;
         }
         if (isReasoningModel(model) && !noReasoningEffort.has(model)) {
-          // Medium effort for careful standards reading on stable audits.
-          body.reasoning_effort = options.stable ? "medium" : "low";
+          // Low effort keeps production audits under serverless limits; stable seed still anchors scores.
+          body.reasoning_effort = "low";
         }
 
         let completion = await createCompletion(body);

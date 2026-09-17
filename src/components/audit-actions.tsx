@@ -54,14 +54,23 @@ export function AuditActions({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ mode, force }),
       });
-      const body = await res.json().catch(() => ({}));
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        code?: string;
+        status?: string;
+        ok?: boolean;
+      };
       if (!res.ok) {
         if (body.code === "STANDARDS_REQUIRED") {
           setShowStandardsGate(true);
         }
-        throw new Error(body.error || "Could not start audit");
+        throw new Error(body.error?.trim() || `Could not start audit (${res.status})`);
       }
-      await waitForCallStatus(callId, ["completed"]);
+      // Production completes scoring in the request; poll only as a fallback.
+      if (body.status !== "completed") {
+        await waitForCallStatus(callId, ["completed"]);
+      }
+      onStatus?.("completed");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Action failed");

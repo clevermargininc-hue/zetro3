@@ -34,12 +34,16 @@ export async function waitForCallStatus(
 
         const status = data?.status as CallStatus | undefined;
 
+        // Waiting only for a finished audit: transcribed again means scoring aborted.
         if (
           status === "transcribed" &&
           done.includes("completed") &&
-          data?.error_message
+          !done.includes("transcribed")
         ) {
-          throw new Error(friendlyPrepareError(data.error_message));
+          throw new Error(
+            friendlyPrepareError(data?.error_message) ||
+              "Audit stopped before finishing. Tap Retry documents audit.",
+          );
         }
 
         if (status && done.includes(status)) {

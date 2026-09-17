@@ -1,6 +1,7 @@
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
 import { scoreCall } from "@/lib/process-call";
+import { describeAiError } from "@/lib/ai-client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loadQaDocuments, summarizeDocuments } from "@/lib/qa-documents";
 import { readinessErrorMessage } from "@/lib/qa-kinds";
@@ -10,6 +11,7 @@ import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
+export const dynamic = "force-dynamic";
 
 function parseMode(value: unknown): AuditMode | null {
   if (value === "documents") return value;
@@ -99,20 +101,25 @@ export async function POST(
     }
   }
 
-  // Mark analyzing before returning so the UI polls while long LLM work runs in `after`.
+  // Keep this request open until scoring finishes. Fire-and-forget `after()` was
+  // getting killed in production while localhost kept running — audits looked
+  // like they "finished" with no score.
   await admin
     .from("calls")
     .update({ status: "analyzing", error_message: null })
     .eq("id", id);
 
-  const work = scoreCall(id, mode, {
-    force: true,
-  }).catch((error) => {
+  try {
+    await scoreCall(id, mode, { force: true });
+    return NextResponse.json({ ok: true, status: "completed", mode });
+  } catch (error) {
     console.error("Scoring failed", error);
-  });
-  after(async () => {
-    await work;
-  });
-
-  return NextResponse.json({ ok: true, status: "started", mode });
+    return NextResponse.json(
+      {
+        error: describeAiError(error),
+        status: "failed",
+      },
+      { status: 500 },
+    );
+  }
 }

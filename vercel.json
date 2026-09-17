@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "src/app/api/calls/[id]/score/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/calls/[id]/transcribe/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/calls/[id]/process/route.ts": {
+      "maxDuration": 300
+    }
+  }
+}
