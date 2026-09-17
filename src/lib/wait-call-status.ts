@@ -9,8 +9,8 @@ export async function waitForCallStatus(
   done: CallStatus[],
   options?: { timeoutMs?: number; intervalMs?: number },
 ) {
-  const timeoutMs = options?.timeoutMs ?? 6 * 60 * 1000;
-  const intervalMs = options?.intervalMs ?? 1000;
+  const timeoutMs = options?.timeoutMs ?? 8 * 60 * 1000;
+  const intervalMs = options?.intervalMs ?? 1500;
   const supabase = createClient();
   const started = Date.now();
 
@@ -54,5 +54,7 @@ export async function waitForCallStatus(
     await new Promise((resolve) => window.setTimeout(resolve, intervalMs));
   }
 
-  throw new Error("This is taking longer than expected. Keep this page open and try again.");
+  throw new Error(
+    "This audit is still running longer than usual. Keep this page open, wait a minute, then tap Retry if needed.",
+  );
 }

@@ -12,6 +12,9 @@ function createAgent() {
     connections: 8,
     keepAliveTimeout: 10_000,
     keepAliveMaxTimeout: 15_000,
+    // Long documents audits stream large JSON replies; do not cut them at defaults.
+    headersTimeout: 300_000,
+    bodyTimeout: 300_000,
     connect: {
       timeout: 20_000,
     },

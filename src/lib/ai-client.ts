@@ -98,6 +98,9 @@ export function describeAiError(error: unknown) {
     return "Could not reach OpenAI to score this call. Try the audit again in a moment.";
   }
   const message = error instanceof Error ? error.message : "";
+  if (/timed?\s*out|timeout/i.test(message)) {
+    return "The audit timed out while reading your company files. Tap Retry documents audit — large scorecards can take a couple of minutes.";
+  }
   if (
     message.toLowerCase().includes("empty response") ||
     message.toLowerCase().includes("ran out of output tokens")

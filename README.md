@@ -63,7 +63,7 @@ Default models:
 - `AI_FAST_MODEL=gpt-5-mini` — cleans the two-speaker script
 - `AI_EMBEDDING_MODEL=text-embedding-3-small` — indexes uploaded files
 - `LLM_PROVIDER=openai` and `EMBEDDING_PROVIDER=openai`
-- `AI_TEMPERATURE=0.1`, `AI_MAX_RETRIES=3`, `AI_TIMEOUT=120000`
+- `AI_TEMPERATURE=0.1`, `AI_MAX_RETRIES=3`, `AI_TIMEOUT=240000`
 
 ### 5. Run
 

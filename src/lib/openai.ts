@@ -344,9 +344,10 @@ function supportsTemperature(model: string) {
 
 function tokenLimit(model: string, extra = false) {
   if (isReasoningModel(model)) {
-    return { max_completion_tokens: extra ? 16000 : 8192 };
+    return { max_completion_tokens: extra ? 24000 : 12000 };
   }
-  return { max_tokens: extra ? 8192 : 4096 };
+  // Full scorecards need room for many parameters + customer_voice in one JSON reply.
+  return { max_tokens: extra ? 16000 : 8192 };
 }
 
 function stripJsonFence(text: string) {

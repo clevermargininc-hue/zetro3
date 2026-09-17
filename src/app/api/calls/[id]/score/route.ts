@@ -99,8 +99,14 @@ export async function POST(
     }
   }
 
+  // Mark analyzing before returning so the UI polls while long LLM work runs in `after`.
+  await admin
+    .from("calls")
+    .update({ status: "analyzing", error_message: null })
+    .eq("id", id);
+
   const work = scoreCall(id, mode, {
-    force: force || call.status === "analyzing",
+    force: true,
   }).catch((error) => {
     console.error("Scoring failed", error);
   });
