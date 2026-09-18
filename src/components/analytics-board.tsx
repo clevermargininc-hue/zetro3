@@ -280,9 +280,12 @@ export function AnalyticsBoard() {
                 hint: `${data.not_audited} pending in queue`,
               },
               {
-                label: "Compliance pass rate",
+                label: "Compliance followed",
                 value: data.compliance_rate != null ? `${data.compliance_rate}%` : "—",
-                hint: data.compliance_issues > 0 ? `${data.compliance_issues} calls flagged` : "Zero compliance breaches",
+                hint:
+                  data.compliance_rate != null
+                    ? `${100 - data.compliance_rate}% not followed`
+                    : "No company rules checked",
               },
               {
                 label: "Avg handle time",

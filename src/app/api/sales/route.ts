@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  formatMinutes,
+  formatUsd,
+  isCommercialPlanId,
+  quoteVolume,
+} from "@/lib/billing";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
@@ -12,7 +18,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const { fullName, workEmail, companyName, message } = await request.json();
+    const body = await request.json();
+    const { fullName, workEmail, companyName, message, plan, agents, talkHoursPerDay, auditPercent } = body;
 
     if (!fullName || !workEmail || !companyName) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -23,13 +30,42 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Enter a valid work email." }, { status: 400 });
     }
 
+    const planId = isCommercialPlanId(String(plan || "")) ? String(plan) : null;
+    const agentCount = Number(agents);
+    const hours = Number(talkHoursPerDay);
+    const percent = Number(auditPercent);
+    const hasVolume = Number.isFinite(agentCount) && agentCount > 0;
+
+    const quote = hasVolume
+      ? quoteVolume({
+          agents: agentCount,
+          talkHoursPerDay: Number.isFinite(hours) && hours > 0 ? hours : 5,
+          auditPercent: Number.isFinite(percent) && percent > 0 ? percent : 5,
+        })
+      : null;
+
+    const notes = [
+      message ? String(message).trim().slice(0, 4000) : "",
+      planId ? `Plan of interest: ${planId}` : "",
+      quote
+        ? [
+            `Volume: ${quote.agents} agents · ${quote.talkHoursPerDay} talk-hours/day · ${quote.auditPercent}% audited`,
+            `Talk minutes: ${formatMinutes(quote.talkMinutes)} · Audited: ${formatMinutes(quote.auditedMinutes)}`,
+            `List recommendation: ${quote.recommended.plan.name} · ${formatUsd(quote.recommended.totalUsd)} / mo`,
+          ].join("\n")
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n")
+      .slice(0, 4000);
+
     const supabase = createAdminClient();
 
     const { error } = await supabase.from("sales_requests").insert({
       full_name: String(fullName).trim().slice(0, 200),
       work_email: email.slice(0, 320),
       company_name: String(companyName).trim().slice(0, 200),
-      message: message ? String(message).trim().slice(0, 4000) : null,
+      message: notes || null,
     });
 
     if (error) {

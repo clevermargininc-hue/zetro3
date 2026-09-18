@@ -1,6 +1,8 @@
 import { getTeamScope } from "@/lib/workspaces";
+import { buildQaBriefing } from "@/lib/qa-briefing";
 import {
   buildQaReport,
+  previousPeriodDate,
   type CallRecord,
   type QaReport,
   type ReportPeriod,
@@ -41,10 +43,15 @@ export async function loadQaReport(
     throw new Error("Agent not found.");
   }
 
-  return buildQaReport((calls || []) as CallRecord[], {
-    period,
-    date,
-    agentId,
-    agentLabel,
+  const records = (calls || []) as CallRecord[];
+  const opts = { period, date, agentId, agentLabel };
+  const report = buildQaReport(records, opts);
+  const previous = buildQaReport(records, {
+    ...opts,
+    date: previousPeriodDate(period, date),
   });
+  return {
+    ...report,
+    briefing: buildQaBriefing(report, previous),
+  };
 }

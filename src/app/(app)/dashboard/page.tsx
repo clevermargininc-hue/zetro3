@@ -4,6 +4,7 @@ import { agentIdFromFile, formatAht, formatDate, formatDuration, languageLabel }
 import { getTeamScope } from "@/lib/workspaces";
 import type { Call, CallScore } from "@/lib/types";
 import { summarizeCustomerVoice } from "@/lib/customer-voice";
+import { complianceFollowRateFromScore, rollupComplianceRate } from "@/lib/compliance-engine";
 import { JoinRequestBanner } from "@/components/join-request-banner";
 import { KpiStrip, PageHeader, scoreChipClass } from "@/components/ui";
 
@@ -64,22 +65,12 @@ export default async function DashboardPage() {
     ? Math.round(totalAudioSeconds / handleDurations.length)
     : null;
 
-  // Compliance metrics
-  let totalBreaches = 0;
-  let cleanCalls = 0;
-  for (const s of scoreObjects) {
-    const breaches = (s.compliance_findings || []).filter(
-      (f) => f && f.toLowerCase() !== "none identified" && f.trim().length > 0
-    );
-    if (breaches.length > 0) {
-      totalBreaches += breaches.length;
-    } else {
-      cleanCalls += 1;
-    }
-  }
-  const compliancePassRate = scoreObjects.length
-    ? Math.round((cleanCalls / scoreObjects.length) * 100)
-    : null;
+  const complianceRate = rollupComplianceRate(
+    scoreObjects.map((s) => {
+      const rate = complianceFollowRateFromScore(s);
+      return { passed: rate.passed, failed: rate.failed };
+    }),
+  );
 
   // Quality distribution tiers
   const tierExcellent = scoreValues.filter((s) => s >= 85).length;
@@ -113,9 +104,12 @@ export default async function DashboardPage() {
             hint: `${formatTotalTime(totalAudioSeconds)} evaluated audio`,
           },
           {
-            label: "Compliance",
-            value: compliancePassRate != null ? `${compliancePassRate}%` : "—",
-            hint: `${totalBreaches} ${totalBreaches === 1 ? "finding" : "findings"} flagged`,
+            label: "Compliance followed",
+            value: complianceRate.followed_pct != null ? `${complianceRate.followed_pct}%` : "—",
+            hint:
+              complianceRate.not_followed_pct != null
+                ? `${complianceRate.not_followed_pct}% not followed`
+                : "No company rules checked",
           },
           {
             label: "Avg handle time",
@@ -277,9 +271,7 @@ export default async function DashboardPage() {
         <div className="divide-y divide-line md:hidden">
           {allCalls.slice(0, 8).map((call) => {
             const score = Array.isArray(call.call_scores) ? call.call_scores[0] : call.call_scores;
-            const hasBreach = (score?.compliance_findings || []).some(
-              (f: string) => f && f.toLowerCase() !== "none identified" && f.trim().length > 0,
-            );
+            const rate = score ? complianceFollowRateFromScore(score) : null;
             return (
               <Link
                 key={call.id}
@@ -302,7 +294,7 @@ export default async function DashboardPage() {
                       <span className="chip">{call.status === "failed" ? "Failed" : "Processing"}</span>
                     )}
                     <p className="mt-1 text-[11px] text-muted">
-                      {score ? (hasBreach ? "Flagged" : "Clean") : "—"}
+                      {rate?.followed_pct != null ? `${rate.followed_pct}% followed` : "—"}
                     </p>
                   </div>
                 </div>
@@ -329,7 +321,7 @@ export default async function DashboardPage() {
 
                 <th className="px-6 py-3">Date & Time</th>
                 <th className="px-6 py-3">Language</th>
-                <th className="px-6 py-3">Compliance</th>
+                    <th className="px-6 py-3 text-right">Followed</th>
                 <th className="px-6 py-3 text-right">QA Score</th>
                 <th className="px-6 py-3 text-right">Action</th>
               </tr>
@@ -337,9 +329,7 @@ export default async function DashboardPage() {
             <tbody className="divide-y divide-line text-[13px]">
               {allCalls.slice(0, 8).map((call) => {
                 const score = Array.isArray(call.call_scores) ? call.call_scores[0] : call.call_scores;
-                const hasBreach = (score?.compliance_findings || []).some(
-                  (f: string) => f && f.toLowerCase() !== "none identified" && f.trim().length > 0
-                );
+                const rate = score ? complianceFollowRateFromScore(score) : null;
 
                 return (
                   <tr key={call.id} className="hover:bg-surface-2 transition-colors">
@@ -366,13 +356,11 @@ export default async function DashboardPage() {
                     </td>
 
                     {/* Compliance */}
-                    <td className="px-6 py-3.5 whitespace-nowrap">
-                      {score ? (
-                        hasBreach ? (
-                          <span className="chip chip-bad">Flagged</span>
-                        ) : (
-                          <span className="chip chip-ok">Clean</span>
-                        )
+                    <td className="px-6 py-3.5 whitespace-nowrap text-right">
+                      {rate?.followed_pct != null ? (
+                        <span className={`${scoreChipClass(rate.followed_pct)} tabular-nums`}>
+                          {rate.followed_pct}%
+                        </span>
                       ) : (
                         <span className="text-muted text-[11px]">—</span>
                       )}

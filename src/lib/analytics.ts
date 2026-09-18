@@ -5,6 +5,7 @@ import {
   type ReportPeriod,
 } from "@/lib/reports";
 import type { Call, CallScore, Verdict } from "@/lib/types";
+import { complianceFollowRateFromScore, rollupComplianceRate } from "@/lib/compliance-engine";
 
 export type AnalyticsCall = Call & {
   agents?: { name: string } | null;
@@ -78,14 +79,8 @@ function scoreOf(call: AnalyticsCall): CallScore | null {
   return raw || null;
 }
 
-function isCleanCompliance(findings: unknown): boolean {
-  if (!Array.isArray(findings) || !findings.length) return true;
-  return findings.every((item) => {
-    const text = String(item || "")
-      .trim()
-      .toLowerCase();
-    return !text || text === "none identified" || text === "none";
-  });
+function isCleanCompliance(score: CallScore): boolean {
+  return complianceFollowRateFromScore(score).failed === 0;
 }
 
 function avg(nums: number[]) {
@@ -244,10 +239,15 @@ export function buildWorkspaceAnalytics(
     ? Math.round(total_handling_seconds / durations.length)
     : null;
 
-  const compliance_clean = scores.filter((s) => isCleanCompliance(s.compliance_findings)).length;
-  const compliance_issues = audited - compliance_clean;
-  const compliance_rate =
-    audited > 0 ? Math.round((compliance_clean / audited) * 100) : null;
+  const follow = rollupComplianceRate(
+    scores.map((s) => {
+      const rate = complianceFollowRateFromScore(s);
+      return { passed: rate.passed, failed: rate.failed };
+    }),
+  );
+  const compliance_clean = scores.filter((s) => isCleanCompliance(s)).length;
+  const compliance_issues = follow.failed;
+  const compliance_rate = follow.followed_pct;
 
   const documents_audits = scores.filter((s) => s.audit_mode === "documents").length;
 
@@ -296,7 +296,7 @@ export function buildWorkspaceAnalytics(
           (["needs_improvement", "poor"] as Verdict[]).includes(s.verdict as Verdict),
         ).length,
         compliance_clean: agentScores.filter((s) =>
-          isCleanCompliance(s.compliance_findings),
+          isCleanCompliance(s),
         ).length,
         total_handling_seconds: Math.round(handling),
       };
@@ -322,7 +322,7 @@ export function buildWorkspaceAnalytics(
           (["needs_improvement", "poor"] as Verdict[]).includes(s.verdict as Verdict),
         ).length,
         compliance_clean: agentScores.filter((s) =>
-          isCleanCompliance(s.compliance_findings),
+          isCleanCompliance(s),
         ).length,
         total_handling_seconds: Math.round(handling),
       });

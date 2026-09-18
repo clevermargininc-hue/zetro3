@@ -134,6 +134,8 @@ h3 {
 }
 
 .kpi {
+  min-width: 0;
+  overflow: hidden;
   padding: 1.15rem 1.25rem;
   border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
@@ -175,6 +177,8 @@ h3 {
   color: var(--text);
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .kpi-hint {
@@ -182,6 +186,8 @@ h3 {
   margin-top: 0.35rem;
   font-size: 12px;
   color: var(--muted);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .chip {
@@ -668,8 +674,20 @@ textarea {
   }
   .audit-print section,
   .audit-print table,
-  .audit-print tr {
+  .audit-print tr,
+  .qa-briefing section,
+  .qa-briefing li {
     break-inside: avoid;
+  }
+  .qa-briefing {
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+  .qa-briefing header,
+  .audit-print header .bg-navy,
+  .bg-navy {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .panel,
   .surface {

@@ -1,5 +1,31 @@
 import Link from "next/link";
 
+export function ZetroMark({
+  className = "h-9 w-9",
+  invert = false,
+}: {
+  className?: string;
+  invert?: boolean;
+}) {
+  return (
+    <span
+      className={`shrink-0 grid place-items-center rounded-[4px] ${
+        invert ? "bg-white text-blue" : "bg-blue text-white"
+      } ${className}`}
+    >
+      <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none" aria-hidden>
+        <path
+          d="M6.5 7.5L17.5 7.5L6.5 16.5L17.5 16.5"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
+}
+
 export function Logo({
   size = "md",
   invert = false,
@@ -14,21 +40,7 @@ export function Logo({
 
   return (
     <Link href="/" className="flex items-center gap-3">
-      <span
-        className={`${mark} shrink-0 grid place-items-center rounded-[4px] ${
-          invert ? "bg-white text-blue" : "bg-blue text-white"
-        }`}
-      >
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
-          <path
-            d="M6.5 7.5L17.5 7.5L6.5 16.5L17.5 16.5"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </span>
+      <ZetroMark className={mark} invert={invert} />
       {!collapsed && (
         <span className="leading-tight flex flex-col justify-center">
           <span

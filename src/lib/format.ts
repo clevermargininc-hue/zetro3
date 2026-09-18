@@ -118,14 +118,17 @@ export function pipelineQueueCounts(statuses: Array<CallStatus | string>) {
 
 /**
  * Recording names end with the agent id, e.g.
- * "…_255629623681_6223.mp3" → "6223". Falls back to the bare file name.
+ * "…_255629623681_6223.mp3" → "6223". Timestamp-prefixed files
+ * ("20260801T043733.479Z_1-001785559053") keep the id after the stamp.
  */
 export function agentIdFromFile(value: string | null | undefined) {
   const base = (value || "").split(/[\\/]/).pop()?.trim() || "";
   if (!base) return "Unknown";
-  const stem = base.replace(/\.[^.]+$/, "");
+  const stem = base.replace(/\.(?:mp3|wav|m4a|ogg|webm|mp4|aac|flac|mpeg)$/i, "");
   const trailing = /_(\d{2,8})$/.exec(stem);
   if (trailing) return trailing[1];
+  const stamped = /^(?:\d{8}T\d{6}(?:[.,]\d+)?Z?)[_-](.+)$/i.exec(stem);
+  if (stamped?.[1]) return stamped[1];
   return stem || "Unknown";
 }
 
@@ -134,10 +137,11 @@ export function agentLabel(
   call: {
     file_name?: string | null;
     title?: string | null;
-    agents?: { name?: string | null } | null;
+    agents?: { name?: string | null } | { name?: string | null }[] | null;
   },
 ) {
-  const named = call.agents?.name?.trim();
+  const agent = Array.isArray(call.agents) ? call.agents[0] : call.agents;
+  const named = agent?.name?.trim();
   if (named) return named;
   return agentIdFromFile(call.file_name || call.title);
 }

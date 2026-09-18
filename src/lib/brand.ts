@@ -2,9 +2,10 @@ import zlib from "node:zlib";
 
 /** Zetro palette. Keep these in sync with the app theme. */
 export const BRAND = {
-  navy: { r: 11, g: 18, b: 32 },
+  navy: { r: 17, g: 24, b: 39 },
   ink: { r: 16, g: 35, b: 63 },
-  blue: { r: 37, g: 99, b: 235 },
+  blue: { r: 26, g: 86, b: 219 },
+  mark: { r: 0, g: 102, b: 255 },
   blueSoft: { r: 219, g: 234, b: 254 },
   slate: { r: 100, g: 116, b: 139 },
   line: { r: 226, g: 232, b: 240 },
@@ -37,36 +38,62 @@ export function scoreBand(score: number | null | undefined) {
 
 type Point = [number, number];
 
-/** The Zetro mark: a triangle ring, drawn on a 24×24 grid like the app icon. */
-const OUTER: [Point, Point, Point] = [
-  [12, 2],
-  [2, 22],
-  [22, 22],
+/** App icon path on a 24×24 grid (same as `src/app/icon.svg`). */
+const Z_STROKE: Point[] = [
+  [6.5, 7.5],
+  [17.5, 7.5],
+  [6.5, 16.5],
+  [17.5, 16.5],
 ];
-const INNER: [Point, Point, Point] = [
-  [12, 5.8],
-  [5.7, 18.4],
-  [18.3, 18.4],
-];
+const Z_WIDTH = 2.5;
+const TILE_RADIUS = 4;
 
-/** PDF path for the mark, scaled into a box of `size` at (x, y) with y-up axes. */
-export function logoPath(x: number, y: number, size: number) {
+function mapLogoPoint(x: number, y: number, size: number, [px, py]: Point) {
   const s = size / 24;
-  const map = ([px, py]: Point) => `${(x + px * s).toFixed(2)} ${(y + (24 - py) * s).toFixed(2)}`;
-  const tri = (points: [Point, Point, Point]) =>
-    `${map(points[0])} m ${map(points[1])} l ${map(points[2])} l h`;
-  return `${tri(OUTER)} ${tri(INNER)}`;
+  return `${(x + px * s).toFixed(2)} ${(y + (24 - py) * s).toFixed(2)}`;
 }
 
-function inTriangle([px, py]: Point, [a, b, c]: [Point, Point, Point]) {
-  const sign = (p: Point, q: Point, r: Point) =>
-    (p[0] - r[0]) * (q[1] - r[1]) - (q[0] - r[0]) * (p[1] - r[1]);
-  const d1 = sign([px, py], a, b);
-  const d2 = sign([px, py], b, c);
-  const d3 = sign([px, py], c, a);
-  const neg = d1 < 0 || d2 < 0 || d3 < 0;
-  const pos = d1 > 0 || d2 > 0 || d3 > 0;
-  return !(neg && pos);
+/** PDF path for the Z stroke, y-up, sized into a `size` box at (x, y). */
+export function logoStrokePath(x: number, y: number, size: number) {
+  const pts = Z_STROKE.map((p) => mapLogoPoint(x, y, size, p));
+  return `${pts[0]} m ${pts.slice(1).map((p) => `${p} l`).join(" ")}`;
+}
+
+export function logoStrokeWidth(size: number) {
+  return (Z_WIDTH * size) / 24;
+}
+
+function distToSegment(p: Point, a: Point, b: Point) {
+  const vx = b[0] - a[0];
+  const vy = b[1] - a[1];
+  const wx = p[0] - a[0];
+  const wy = p[1] - a[1];
+  const c1 = vx * wx + vy * wy;
+  if (c1 <= 0) return Math.hypot(p[0] - a[0], p[1] - a[1]);
+  const c2 = vx * vx + vy * vy;
+  if (c2 <= c1) return Math.hypot(p[0] - b[0], p[1] - b[1]);
+  const t = c1 / c2;
+  return Math.hypot(p[0] - (a[0] + t * vx), p[1] - (a[1] + t * vy));
+}
+
+function onZStroke(p: Point) {
+  let min = Infinity;
+  for (let i = 0; i < Z_STROKE.length - 1; i++) {
+    min = Math.min(min, distToSegment(p, Z_STROKE[i], Z_STROKE[i + 1]));
+  }
+  return min <= Z_WIDTH / 2;
+}
+
+function inRoundedTile([x, y]: Point) {
+  if (x < 0 || y < 0 || x > 24 || y > 24) return false;
+  const r = TILE_RADIUS;
+  if (x >= r && x <= 24 - r) return true;
+  if (y >= r && y <= 24 - r) return true;
+  const cx = x < r ? r : 24 - r;
+  const cy = y < r ? r : 24 - r;
+  const dx = x - cx;
+  const dy = y - cy;
+  return dx * dx + dy * dy <= r * r;
 }
 
 function crc32(buf: Buffer) {
@@ -90,42 +117,52 @@ function pngChunk(type: string, data: Buffer) {
 }
 
 /**
- * Rasterized mark for embedding in spreadsheets, which cannot take vector paths.
- * 4×4 supersampled so the diagonals stay clean at small sizes.
+ * Official Zetro mark for spreadsheets: blue rounded tile + white Z, matching icon.svg.
+ * 4×4 supersampled so the stroke stays clean when Excel scales it down.
  */
-export function logoPng(size = 128, color: Rgb = BRAND.blue): Buffer {
+export function logoPng(size = 160): Buffer {
   const raw = Buffer.alloc(size * (size * 4 + 1));
   const samples = 4;
   const scale = 24 / size;
+  const fill = BRAND.mark;
+  const stroke = BRAND.white;
 
   for (let y = 0; y < size; y++) {
     const rowStart = y * (size * 4 + 1);
     raw[rowStart] = 0;
     for (let x = 0; x < size; x++) {
-      let hits = 0;
+      let tileHits = 0;
+      let strokeHits = 0;
       for (let sy = 0; sy < samples; sy++) {
         for (let sx = 0; sx < samples; sx++) {
-          const px: Point = [
+          const p: Point = [
             (x + (sx + 0.5) / samples) * scale,
             (y + (sy + 0.5) / samples) * scale,
           ];
-          if (inTriangle(px, OUTER) && !inTriangle(px, INNER)) hits++;
+          if (!inRoundedTile(p)) continue;
+          tileHits++;
+          if (onZStroke(p)) strokeHits++;
         }
       }
-      const alpha = Math.round((hits / (samples * samples)) * 255);
+      const total = samples * samples;
       const at = rowStart + 1 + x * 4;
-      raw[at] = color.r;
-      raw[at + 1] = color.g;
-      raw[at + 2] = color.b;
-      raw[at + 3] = alpha;
+      if (!tileHits) {
+        raw[at + 3] = 0;
+        continue;
+      }
+      const t = strokeHits / tileHits;
+      raw[at] = Math.round(fill.r + (stroke.r - fill.r) * t);
+      raw[at + 1] = Math.round(fill.g + (stroke.g - fill.g) * t);
+      raw[at + 2] = Math.round(fill.b + (stroke.b - fill.b) * t);
+      raw[at + 3] = Math.round((tileHits / total) * 255);
     }
   }
 
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(size, 0);
   ihdr.writeUInt32BE(size, 4);
-  ihdr[8] = 8; // bit depth
-  ihdr[9] = 6; // RGBA
+  ihdr[8] = 8;
+  ihdr[9] = 6;
   return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     pngChunk("IHDR", ihdr),

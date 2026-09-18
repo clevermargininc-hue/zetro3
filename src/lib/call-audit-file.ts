@@ -1,7 +1,18 @@
 import ExcelJS from "exceljs";
 import { agentLabel, formatDuration, languageLabel } from "@/lib/format";
 import { scoreBand } from "@/lib/brand";
-import { brandBanner, headerRow, paintScoreCell, styleBody } from "@/lib/xlsx-brand";
+import {
+  addTableRow,
+  brandBanner,
+  finishSheet,
+  headerRow,
+  paintScoreCell,
+  setTableColumns,
+  styleBody,
+  tableCol,
+  XLSX_DATA_ROW,
+} from "@/lib/xlsx-brand";
+import { complianceFollowRateFromScore } from "@/lib/compliance-engine";
 import { PdfDoc } from "@/lib/pdf-doc";
 import { auditModeLabel, formatReportDate, scoreLabel, verdictCell } from "@/lib/reports";
 import { scorecardRows } from "@/lib/scorecard-rows";
@@ -55,12 +66,11 @@ function details(pack: AuditedCallExport): Array<[string, string]> {
 }
 
 function banner(workbook: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, pack: AuditedCallExport, caption: string, lastColumn: number) {
-  brandBanner(
+  return brandBanner(
     workbook,
     sheet,
-    `Call audit · Agent ${agentId(pack.call)}`,
-    `${caption} · Overall ${pack.score.overall_score} (${scoreBand(pack.score.overall_score).label})` +
-      ` · Audited ${formatReportDate(auditedAt(pack))}`,
+    caption,
+    `Call audit  ·  Agent ${agentId(pack.call)}  ·  Overall ${pack.score.overall_score} (${scoreBand(pack.score.overall_score).label})  ·  ${formatReportDate(auditedAt(pack))}`,
     lastColumn,
   );
 }
@@ -83,31 +93,24 @@ export async function callAuditExcel(pack: AuditedCallExport): Promise<Buffer> {
     views: [{ showGridLines: false }],
     pageSetup: { ...landscape, orientation: "portrait" },
   });
-  overview.columns = [{ width: 26 }, { width: 78 }, { width: 20 }, { width: 20 }];
-  banner(wb, overview, pack, "Call details", 4);
-  headerRow(overview, ["Field", "Value"], 6);
-  details(pack).forEach((row) => overview.addRow(row));
-  overview.addRow(["Summary", dash(score.summary)]);
-  styleBody(overview, 7);
+  setTableColumns(overview, [26, 56]);
+  banner(wb, overview, pack, "Call details", 2);
+  headerRow(overview, ["Field", "Value"]);
+  details(pack).forEach((row) => addTableRow(overview, row));
+  addTableRow(overview, ["Summary", dash(score.summary)]);
+  styleBody(overview, XLSX_DATA_ROW, 2);
+  finishSheet(overview, 2);
 
   // ---- Scorecard -----------------------------------------------------------
   const scores = wb.addWorksheet("Scorecard", {
-    views: [{ showGridLines: false, state: "frozen", ySplit: 6 }],
+    views: [{ showGridLines: false }],
     pageSetup: landscape,
   });
-  scores.columns = [
-    { width: 34 },
-    { width: 10 },
-    { width: 12 },
-    { width: 10 },
-    { width: 52 },
-    { width: 52 },
-    { width: 28 },
-  ];
+  setTableColumns(scores, [34, 10, 12, 10, 52, 52, 28]);
   banner(wb, scores, pack, "Scorecard", 7);
-  headerRow(scores, ["Parameter", "Score", "Band", "Weight %", "Why", "Transcript evidence", "Source file"], 6);
+  headerRow(scores, ["Parameter", "Score", "Band", "Weight %", "Why", "Transcript evidence", "Source file"]);
 
-  scores.addRow([
+  addTableRow(scores, [
     "Overall",
     score.overall_score,
     scoreBand(score.overall_score).label,
@@ -118,7 +121,7 @@ export async function callAuditExcel(pack: AuditedCallExport): Promise<Buffer> {
   ]);
   for (const row of scorecardRows(score)) {
     const match = score.metric_evidence?.parameters?.find((item) => item.name === row.name);
-    scores.addRow([
+    addTableRow(scores, [
       row.name,
       row.score,
       scoreBand(row.score).label,
@@ -128,50 +131,71 @@ export async function callAuditExcel(pack: AuditedCallExport): Promise<Buffer> {
       dash(match?.source_file),
     ]);
   }
-  styleBody(scores, 7);
-  for (let i = 7; i <= scores.rowCount; i++) {
-    paintScoreCell(scores.getRow(i).getCell(2));
+  styleBody(scores, XLSX_DATA_ROW, 7);
+  for (let i = XLSX_DATA_ROW; i <= scores.rowCount; i++) {
+    paintScoreCell(scores.getRow(i).getCell(tableCol(1)));
   }
-  scores.getRow(7).font = { name: "Segoe UI", size: 10, bold: true };
+  scores.getRow(XLSX_DATA_ROW).font = { name: "Calibri", size: 10, bold: true };
+  finishSheet(scores, 7);
 
   // ---- Findings ------------------------------------------------------------
   const findings = wb.addWorksheet("Findings", {
-    views: [{ showGridLines: false, state: "frozen", ySplit: 6 }],
+    views: [{ showGridLines: false }],
     pageSetup: landscape,
   });
-  findings.columns = [{ width: 22 }, { width: 104 }];
-  banner(wb, findings, pack, "Strengths, recommendations and compliance", 2);
-  headerRow(findings, ["Type", "Detail"], 6);
+  setTableColumns(findings, [22, 104]);
+  banner(wb, findings, pack, "Strengths and recommendations", 2);
+  headerRow(findings, ["Type", "Detail"]);
   const groups: [string, string[]][] = [
     ["Strength", list(score.strengths)],
     ["Recommendation", list(score.improvements)],
-    ["Compliance finding", list(score.compliance_findings)],
   ];
   for (const [label, items] of groups) {
     if (!items.length) {
-      findings.addRow([label, "None identified"]);
+      addTableRow(findings, [label, "None identified"]);
       continue;
     }
-    items.forEach((item) => findings.addRow([label, item]));
+    items.forEach((item) => addTableRow(findings, [label, item]));
   }
-  styleBody(findings, 7);
+  styleBody(findings, XLSX_DATA_ROW, 2);
+  finishSheet(findings, 2);
+
+  const complianceRate = complianceFollowRateFromScore(score);
+  const compliance = wb.addWorksheet("Compliance", {
+    views: [{ showGridLines: false }],
+    pageSetup: landscape,
+  });
+  setTableColumns(compliance, [28, 22]);
+  banner(wb, compliance, pack, "Company compliance", 2);
+  headerRow(compliance, ["Metric", "Value"]);
+  addTableRow(compliance, [
+    "Followed",
+    complianceRate.followed_pct == null ? "—" : `${complianceRate.followed_pct}%`,
+  ]);
+  addTableRow(compliance, [
+    "Not followed",
+    complianceRate.not_followed_pct == null ? "—" : `${complianceRate.not_followed_pct}%`,
+  ]);
+  styleBody(compliance, XLSX_DATA_ROW, 2);
+  finishSheet(compliance, 2);
 
   // ---- Standards and references -------------------------------------------
   const sources = wb.addWorksheet("Standards", {
-    views: [{ showGridLines: false, state: "frozen", ySplit: 6 }],
+    views: [{ showGridLines: false }],
     pageSetup: landscape,
   });
-  sources.columns = [{ width: 20 }, { width: 34 }, { width: 62 }, { width: 16 }];
+  setTableColumns(sources, [20, 34, 62, 16]);
   banner(wb, sources, pack, "Standards and document references", 4);
-  headerRow(sources, ["Kind", "Title", "Criterion / file", "Result"], 6);
+  headerRow(sources, ["Kind", "Title", "Criterion / file", "Result"]);
   const standards = score.standards_used || [];
   const references = score.metric_evidence?.document_references || [];
   if (!standards.length && !references.length) {
-    sources.addRow(["—", "No standards used", "", ""]);
+    addTableRow(sources, ["—", "No standards used", "", ""]);
   }
-  standards.forEach((doc) => sources.addRow(["Standard", doc.title, doc.file_name, ""]));
-  references.forEach((row) => sources.addRow(["Reference", row.file_name, row.criterion, row.result]));
-  styleBody(sources, 7);
+  standards.forEach((doc) => addTableRow(sources, ["Standard", doc.title, doc.file_name, ""]));
+  references.forEach((row) => addTableRow(sources, ["Reference", row.file_name, row.criterion, row.result]));
+  styleBody(sources, XLSX_DATA_ROW, 4);
+  finishSheet(sources, 4);
 
   const out = await wb.xlsx.writeBuffer();
   return Buffer.from(out as ArrayBuffer);
@@ -181,6 +205,7 @@ const scoreColor = (raw: string) => scoreBand(Number.parseInt(raw, 10) || null).
 
 export function callAuditPdf(pack: AuditedCallExport): Buffer {
   const { call, score } = pack;
+  const complianceRate = complianceFollowRateFromScore(score);
   const doc = new PdfDoc({
     title: "Call audit report",
     subtitle: `Agent ${agentId(call)}`,
@@ -196,9 +221,12 @@ export function callAuditPdf(pack: AuditedCallExport): Buffer {
     { label: "Verdict", value: verdictCell(score.verdict), hint: "Audit outcome" },
     { label: "Handle time", value: formatDuration(call.duration_seconds), hint: "Recording length" },
     {
-      label: "Compliance",
-      value: String(list(score.compliance_findings).length),
-      hint: list(score.compliance_findings).length ? "Findings raised" : "Clean call",
+      label: "Compliance followed",
+      value: complianceRate.followed_pct == null ? "—" : `${complianceRate.followed_pct}%`,
+      hint:
+        complianceRate.not_followed_pct == null
+          ? "No company rules checked"
+          : `${complianceRate.not_followed_pct}% not followed`,
     },
   ]);
   doc.gap(6);
@@ -239,7 +267,6 @@ export function callAuditPdf(pack: AuditedCallExport): Buffer {
   const notes: [string, string[], string][] = [
     ["Strengths", list(score.strengths), "None identified."],
     ["Recommendations", list(score.improvements), "None identified."],
-    ["Compliance findings", list(score.compliance_findings), "No compliance findings."],
   ];
   for (const [title, items, empty] of notes) {
     doc.heading(title);

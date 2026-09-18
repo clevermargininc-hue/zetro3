@@ -43,6 +43,20 @@ export type DocumentReference = {
   result: MetricEvidenceVerdict;
 };
 
+export type ComplianceSeverity = "critical" | "major" | "minor";
+export type ComplianceResult = "pass" | "fail" | "n/a";
+
+/** One company-file rule checked on a call. */
+export type ComplianceCheck = {
+  rule: string;
+  file_name: string;
+  result: ComplianceResult;
+  severity: ComplianceSeverity;
+  note: string;
+  quote: string;
+  start_s?: number | null;
+};
+
 /** One scored line from the company's own scorecard / standards files. */
 export type ScoreParameter = {
   name: string;
@@ -85,6 +99,8 @@ export type CustomerVoiceInsight = {
 export type MetricEvidence = Partial<Record<ScoreDimension, MetricEvidenceItem>> & {
   holding?: MetricEvidenceItem;
   document_references?: DocumentReference[];
+  /** Checks against uploaded compliance files. */
+  compliance_checks?: ComplianceCheck[];
   /** Company-specific scorecard lines (any count). Preferred for the UI scorecard. */
   parameters?: ScoreParameter[];
   key_terms?: KeyTermFinding[];

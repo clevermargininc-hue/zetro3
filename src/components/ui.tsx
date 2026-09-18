@@ -31,7 +31,7 @@ export function KpiStrip({
   return (
     <div className="kpi-strip">
       {items.map((item) => (
-        <div key={item.label} className="kpi">
+        <div key={item.label} className="kpi" title={item.hint ? `${item.value} · ${item.hint}` : item.value}>
           <span className="kpi-label">{item.label}</span>
           <span className="kpi-value">{item.value}</span>
           {item.hint ? <span className="kpi-hint">{item.hint}</span> : null}

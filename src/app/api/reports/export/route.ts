@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
 import { loadQaReport } from "@/lib/load-qa-report";
 import { parseReportQuery } from "@/lib/reports";
-import { excelBuffer, exportFilename, pdfBuffer } from "@/lib/report-files";
+import { excelBuffer, exportFilename } from "@/lib/report-files";
 
 export const runtime = "nodejs";
 
@@ -21,21 +21,20 @@ export async function GET(request: Request) {
       { status: 400 },
     );
   }
-  if (format !== "xlsx" && format !== "pdf") {
-    return NextResponse.json({ error: "Format must be xlsx or pdf." }, { status: 400 });
+  if (format !== "xlsx") {
+    return NextResponse.json(
+      { error: "Download the spreadsheet, or print the briefing from Reports." },
+      { status: 400 },
+    );
   }
 
   try {
     const report = await loadQaReport(supabase, user.id, period, date, agentId);
-    const body = format === "xlsx" ? await excelBuffer(report) : pdfBuffer(report);
-    const filename = exportFilename(report, format);
-    const type =
-      format === "xlsx"
-        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        : "application/pdf";
+    const body = await excelBuffer(report);
+    const filename = exportFilename(report, "xlsx");
     return new NextResponse(new Uint8Array(body), {
       headers: {
-        "Content-Type": type,
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="${filename}"`,
         "Cache-Control": "no-store",
       },

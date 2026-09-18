@@ -1,7 +1,9 @@
+import { ZetroMark } from "@/components/logo";
 import { formatDuration, languageLabel, verdictLabel } from "@/lib/format";
 import { QA_KIND_LABELS } from "@/lib/qa-kinds";
 import { auditModeLabel, formatReportDate, scoreLabel } from "@/lib/reports";
 import { scorecardRows } from "@/lib/scorecard-rows";
+import { complianceFollowRateFromScore } from "@/lib/compliance-engine";
 import type { Call, CallScore } from "@/lib/types";
 
 function asList(value: string[] | null | undefined) {
@@ -21,18 +23,20 @@ export function AuditPrintDocument({
   const improvements = asList(score.improvements);
   const standards = score.standards_used || [];
   const parameterRows = scorecardRows(score);
+  const compliance = complianceFollowRateFromScore(score);
 
   return (
     <article className="audit-print hidden print:block bg-white text-ink text-[12px] font-sans">
-      <header className="mb-8 border-b-[3px] border-line pb-6 flex flex-col justify-between items-start gap-4">
-        <div className="flex items-center gap-3 text-blue font-extrabold text-2xl tracking-tight">
-          <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
-            <path d="M12 2L2 22h20L12 2zm0 3.8l6.3 12.6H5.7L12 5.8z" />
-          </svg>
-          ZETRO
+      <header className="mb-8 border-b border-line pb-0">
+        <div className="flex items-center gap-3 bg-navy px-5 py-5 text-white">
+          <ZetroMark className="h-10 w-10" />
+          <div>
+            <p className="text-[18px] font-bold tracking-tight">Zetro</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-soft">Call audit</p>
+          </div>
         </div>
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.2em] text-muted uppercase mb-1">Call Audit Report</p>
+        <div className="h-1 bg-blue" />
+        <div className="px-5 py-5">
           <h1 className="text-3xl font-extrabold text-ink">{call.title || "Untitled call"}</h1>
           <p className="mt-2 text-[13px] font-medium text-muted">
             Agent: <span className="text-ink">{agent}</span> &nbsp;&middot;&nbsp; Verdict: <span className="text-ink uppercase">{verdictLabel(score.verdict)}</span> &nbsp;&middot;&nbsp; Score: <span className="text-ink">{score.overall_score}/100</span>
@@ -107,6 +111,22 @@ export function AuditPrintDocument({
 
       <Notes title="Strengths" items={strengths} />
       <Notes title="Recommendations" items={improvements} />
+
+      <section className="mb-8">
+        <h2 className="text-[14px] font-bold uppercase tracking-widest text-muted border-b border-line/50 pb-2 mb-4">
+          Compliance
+        </h2>
+        <dl className="grid grid-cols-2 gap-x-8 gap-y-3">
+          <Item
+            label="Followed"
+            value={compliance.followed_pct != null ? `${compliance.followed_pct}%` : "—"}
+          />
+          <Item
+            label="Not followed"
+            value={compliance.not_followed_pct != null ? `${compliance.not_followed_pct}%` : "—"}
+          />
+        </dl>
+      </section>
 
       {standards.length ? (
         <section className="mb-8">

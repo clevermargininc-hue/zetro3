@@ -1,16 +1,27 @@
 import Link from "next/link";
+import { Metadata } from "next";
 import { Logo } from "@/components/logo";
 import { SalesForm } from "@/components/sales-form";
 
+export const metadata: Metadata = {
+  title: "Talk to sales | Zetro",
+  description: "Quote Zetro from your agent count, talk time, and how much you want audited.",
+};
 
-export default function TalkSalesPage() {
+export default async function TalkSalesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string; agents?: string; hours?: string; audit?: string }>;
+}) {
+  const { plan, agents, hours, audit } = await searchParams;
+
   return (
     <div className="min-h-screen bg-surface-2 flex flex-col">
       <header className="border-b border-line/40 bg-white/70 none-xl sticky top-0 z-50">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Logo />
-          <Link href="/" className="text-[14px] font-semibold text-muted hover:text-ink transition-colors">
-            Back to Home
+          <Link href="/pricing" className="text-[14px] font-semibold text-muted hover:text-ink transition-colors">
+            Back to pricing
           </Link>
         </div>
       </header>
@@ -21,37 +32,37 @@ export default function TalkSalesPage() {
           <div className="animate-in fade-in slide-in-from-left-8 duration-700">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-line/50 shadow-sm mb-6">
               <span className="flex h-2 w-2 rounded-full bg-blue animate-pulse"></span>
-              <span className="text-[12px] font-bold uppercase tracking-wider text-muted">Enterprise Solutions</span>
+              <span className="text-[12px] font-bold uppercase tracking-wider text-muted">Volume quote</span>
             </div>
             
             <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-ink mb-6 leading-tight">
-              Transform your <br />contact center QA.
+              Map your minutes <br />to a plan.
             </h1>
             
             <p className="text-[16px] leading-relaxed text-muted mb-8">
-              Zetro provides enterprise-grade quality intelligence. Talk to our team to discover how we can help you transcribe, analyze, and score every conversation automatically.
+              Sampling, Coverage, or Floor — we quote from agents, talk time, and how much you want scored. Invoices can be USD, TZS, or KES.
             </p>
             
             <div className="space-y-6">
               <div className="flex gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white border border-line/40 shadow-sm text-blue font-bold">1</div>
                 <div>
-                  <h3 className="font-semibold text-ink">Bilingual Mastery</h3>
-                  <p className="text-sm text-muted mt-1">Used in Tanzania for Kiswahili and English. English only elsewhere.</p>
+                  <h3 className="font-semibold text-ink">Audited minutes</h3>
+                  <p className="text-sm text-muted mt-1">You pay for prepare plus a documents score — not an unlimited $99 seat.</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white border border-line/40 shadow-sm text-blue font-bold">2</div>
                 <div>
-                  <h3 className="font-semibold text-ink">Custom Scorecards</h3>
-                  <p className="text-sm text-muted mt-1">Audit against your unique compliance rules and SOPs.</p>
+                  <h3 className="font-semibold text-ink">Your scorecard</h3>
+                  <p className="text-sm text-muted mt-1">Audits follow your SOP, scorecard, and compliance files.</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white border border-line/40 shadow-sm text-blue font-bold">3</div>
                 <div>
-                  <h3 className="font-semibold text-ink">Actionable Intelligence</h3>
-                  <p className="text-sm text-muted mt-1">Stop guessing and start coaching from real evidence.</p>
+                  <h3 className="font-semibold text-ink">Local invoices</h3>
+                  <p className="text-sm text-muted mt-1">List prices are USD. Paid plans can invoice in USD, TZS, or KES.</p>
                 </div>
               </div>
             </div>
@@ -59,10 +70,17 @@ export default function TalkSalesPage() {
           
           <div className="animate-in fade-in slide-in-from-right-8 duration-700 delay-150">
             <div className="bg-white rounded-3xl p-8 border border-line/40 shadow-sm shadow-blue/5">
-              <h2 className="text-2xl font-bold tracking-tight text-ink mb-2">Request a Demo</h2>
-              <p className="text-sm text-muted mb-8">Fill out the form below and our sales team will reach out shortly.</p>
+              <h2 className="text-2xl font-bold tracking-tight text-ink mb-2">Request a quote</h2>
+              <p className="text-sm text-muted mb-8">
+                Tell us the floor. We reply with audited-minute terms, not an unlimited seat price.
+              </p>
               
-              <SalesForm />
+              <SalesForm
+                initialPlan={plan}
+                initialAgents={agents}
+                initialHours={hours}
+                initialAudit={audit}
+              />
             </div>
           </div>
           

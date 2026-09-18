@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { KpiStrip, PageHeader, scoreChipClass } from "@/components/ui";
 import { requireUser } from "@/lib/supabase/server";
-import { agentIdFromFile } from "@/lib/format";
+import { agentLabel } from "@/lib/format";
 import type { CallScore } from "@/lib/types";
 import { getTeamScope } from "@/lib/workspaces";
 
@@ -14,16 +14,12 @@ const Icons = {
   ),
 };
 
-function agentLabel(call: { file_name?: string | null; title?: string | null }) {
-  return agentIdFromFile(call.file_name || call.title);
-}
-
 export default async function LeaderboardPage() {
   const { supabase, user } = await requireUser();
   await getTeamScope(user.id);
   const { data: calls } = await supabase
     .from("calls")
-    .select("id, file_name, title, status, call_scores(overall_score, verdict)")
+    .select("id, file_name, title, status, agents(name), call_scores(overall_score, verdict)")
     .order("created_at", { ascending: false });
 
   const groups = new Map<
@@ -79,13 +75,15 @@ export default async function LeaderboardPage() {
         items={[
           {
             label: "Top agent",
-            value: topFile ? topFile.name : "—",
-            hint: topFile ? `${topFile.avg_score}% · ${topFile.call_count} audits` : "No scored calls yet",
+            value: topFile ? `${topFile.avg_score}%` : "—",
+            hint: topFile
+              ? `${topFile.name} · ${topFile.call_count} audit${topFile.call_count === 1 ? "" : "s"}`
+              : "No scored calls yet",
           },
           {
             label: "Average score",
             value: teamAvgScore != null ? `${teamAvgScore}%` : "—",
-            hint: `${ranked.length} ranked agents`,
+            hint: `${ranked.length} ranked agent${ranked.length === 1 ? "" : "s"}`,
           },
           {
             label: "Audits",
@@ -128,8 +126,8 @@ export default async function LeaderboardPage() {
                     <td className="px-6 py-3.5 whitespace-nowrap tabular-nums text-muted">
                       {rank}
                     </td>
-                    <td className="px-6 py-3.5">
-                      <span className="font-medium text-ink tabular-nums">{row.name}</span>
+                    <td className="px-6 py-3.5 max-w-[16rem]">
+                      <span className="block font-medium text-ink tabular-nums break-all">{row.name}</span>
                     </td>
                     <td className="px-6 py-3.5 text-right whitespace-nowrap">
                       <span className={`${scoreChipClass(row.avg_score)} tabular-nums`}>

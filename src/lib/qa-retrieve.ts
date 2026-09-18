@@ -8,6 +8,7 @@ import {
   formatCompanyRuleChecklist,
   formatQaContext,
 } from "@/lib/qa-documents";
+import { extractCompanyComplianceRules, formatComplianceChecklist } from "@/lib/compliance-engine";
 
 type StoredChunk = {
   document_id: string;
@@ -67,7 +68,7 @@ async function extraRulesForCall(userId: string, callText: string) {
   if (error || !data?.length) return "";
 
   const query = await embedQuery(
-    `Find company scorecard criteria, compliance rules, and process steps that apply to this call.\n\n${callText.slice(0, 6000)}`,
+    `Find company scorecard criteria, compliance rules, required disclosures, consent, recording notices, and prohibited statements that apply to this call.\n\n${callText.slice(0, 6000)}`,
   );
 
   const ranked = (data as StoredChunk[])
@@ -117,6 +118,7 @@ export async function retrieveQaContext(
   const files = formatQaContext(docs);
   const scripts = formatCallScripts(docs);
   const extra = await extraRulesForCall(userId, callText).catch(() => "");
+  const complianceChecklist = formatComplianceChecklist(extractCompanyComplianceRules(docs));
 
   return [
     "COMPANY FILES — READ THESE RULES BEFORE ANY SCORE.",
@@ -124,6 +126,7 @@ export async function retrieveQaContext(
     "Do not invent a Zetro rubric. Do not skip scorecard lines. Do not invent criteria.",
     formatCompanyFileIndex(docs),
     checklist,
+    complianceChecklist,
     files,
     scripts,
     extra

@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { CountryRegionPicker } from "@/components/country-region-picker";
 import { useSettings } from "@/components/settings-provider";
+import { BILLING_HONESTY, COMMERCIAL_PLANS, formatMinutes, formatUsd } from "@/lib/billing";
 
 export function AccountSettings() {
   const { data, fullName, setFullName, username, setUsername, saving, patch } = useSettings();
@@ -113,7 +115,7 @@ export function WorkspaceSettings() {
               Organization profile and regional quality auditing parameters.
             </p>
           </div>
-          <span className="chip capitalize">Plan: {data.workspace.plan}</span>
+          <span className="chip capitalize">Access: {data.workspace.plan}</span>
         </div>
 
         <form
@@ -194,12 +196,34 @@ export function WorkspaceSettings() {
         </form>
       </div>
 
+      <div className="surface p-6 space-y-3">
+        <div>
+          <h3 className="text-[15px] font-bold text-ink">Commercial usage</h3>
+          <p className="text-[13px] text-muted mt-0.5">
+            Workspaces start on trial terms: {formatMinutes(COMMERCIAL_PLANS.trial.includedAuditedMinutes)} audited
+            per month and {COMMERCIAL_PLANS.trial.agentCap} named agents. Sampling is {formatUsd(COMMERCIAL_PLANS.sampling.monthlyUsd ?? 0)}
+            for {formatMinutes(COMMERCIAL_PLANS.sampling.includedAuditedMinutes)}; Coverage is {formatUsd(COMMERCIAL_PLANS.coverage.monthlyUsd ?? 0)}
+            for {formatMinutes(COMMERCIAL_PLANS.coverage.includedAuditedMinutes)}.
+          </p>
+        </div>
+        <p className="text-[12px] leading-relaxed text-muted">{BILLING_HONESTY}</p>
+        <div className="flex flex-wrap gap-2 pt-1">
+          <Link href="/pricing" className="btn btn-ghost text-[13px]">
+            View pricing
+          </Link>
+          <Link href="/talk-sales?plan=coverage" className="btn btn-blue text-[13px]">
+            Talk to sales
+          </Link>
+        </div>
+      </div>
+
       {isAdmin && isSolo && (
         <div className="surface p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h3 className="text-[15px] font-bold text-ink">Upgrade to Multi-User Team Workspace</h3>
             <p className="text-[13px] text-muted mt-0.5 max-w-lg">
               Enable multi-seat collaboration, teammate invitations, and role-based access while preserving existing calls and evaluation standards.
+              This is workspace access, not the Sampling / Coverage bill.
             </p>
           </div>
           <button

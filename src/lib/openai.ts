@@ -16,6 +16,17 @@ import type {
 import type { QaDocument } from "@/lib/qa-kinds";
 import { SCRIPT_KINDS } from "@/lib/qa-kinds";
 import { formatCompanyRuleChecklist } from "@/lib/qa-documents";
+import {
+  extractCompanyComplianceRules,
+  formatComplianceChecklist,
+  formatCompliancePlaybookBlock,
+  findingsFromChecks,
+  hasCriticalComplianceFail,
+  mergeComplianceChecks,
+  normalizeComplianceChecks,
+  normalizeComplianceSeverity,
+  type CompliancePlaybookEntry,
+} from "@/lib/compliance-engine";
 import { extractKeytermsFromDocuments, scriptsOf } from "@/lib/call-scripts";
 import { detectHoldEvents, formatHoldListenBlock } from "@/lib/detect-holds";
 import { cleanScoreLine, cleanScoreLines, cleanScoreQuote } from "@/lib/clean-score-text";
@@ -119,6 +130,23 @@ const ANALYSIS_SCHEMA = {
       type: "array",
       items: { type: "string" },
     },
+    compliance_checks: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          rule: { type: "string" },
+          file_name: { type: "string" },
+          result: { type: "string", enum: ["pass", "fail", "n/a"] },
+          severity: { type: "string", enum: ["critical", "major", "minor"] },
+          note: { type: "string" },
+          quote: { type: "string" },
+          utterance_index: { type: "integer" },
+        },
+        required: ["rule", "file_name", "result", "severity", "note", "quote", "utterance_index"],
+      },
+    },
     metric_evidence: {
       type: "object",
       additionalProperties: false,
@@ -199,6 +227,7 @@ const ANALYSIS_SCHEMA = {
     "strengths",
     "improvements",
     "compliance_findings",
+    "compliance_checks",
     "metric_evidence",
     "hold_detected",
     "hold_findings",
@@ -307,6 +336,18 @@ document_references: one row per criterion you actually scored from the uploaded
 - file_name: exact uploaded file name from FILE INDEX.
 - criterion: the rule / line / weight you used from that file.
 - result: hit, miss, or partial.
+
+COMPLIANCE ENGINE (required — separate from the scorecard):
+- Read COMPANY COMPLIANCE CHECKLIST and COMPANY COMPLIANCE PLAYBOOK. Those rules come only from uploaded compliance files (and related policy lines).
+- Output compliance_checks: ONE row per playbook / checklist rule, using the same rule names.
+- result: pass (followed), fail (breached), n/a (If applicable and the situation did not arise).
+- severity: copy critical / major / minor from the playbook.
+- file_name: exact uploaded file from FILE INDEX.
+- note: one English sentence vs THAT company rule only.
+- quote: short clean evidence, or "".
+- compliance_findings: ONLY failed checks, in English, citing the file. If none failed, ["None identified"].
+- Do not invent laws, regulators, or extra rules. Do not treat empathy / greeting / scorecard quality misses as compliance unless the company compliance file says so.
+- A critical or company auto-fail breach caps overall_score at 49 unless scorecard Auto-Zero already forces 0.
 
 metric_evidence (optional roll-up into 6 buckets for analytics only — not the scorecard UI):
 - If helpful, also map evidence into greeting / empathy / professionalism / resolution / communication / language_handling.
@@ -754,6 +795,128 @@ function formatParameterPlaybookBlock(entries: ParameterPlaybookEntry[]) {
     "Do not invent extra parameters. Do not mix deductions across lines.",
     ...lines,
   ].join("\n");
+}
+
+const COMPLIANCE_PLAYBOOK_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    rules: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          name: { type: "string" },
+          meaning: { type: "string" },
+          pass_requires: { type: "string" },
+          fail_when: { type: "string" },
+          file_name: { type: "string" },
+          severity: { type: "string", enum: ["critical", "major", "minor"] },
+          auto_fail: { type: "boolean" },
+          if_applicable: { type: "boolean" },
+        },
+        required: [
+          "name",
+          "meaning",
+          "pass_requires",
+          "fail_when",
+          "file_name",
+          "severity",
+          "auto_fail",
+          "if_applicable",
+        ],
+      },
+    },
+  },
+  required: ["rules"],
+} as const;
+
+/**
+ * Read uploaded compliance files first — explain each company rule before the call is audited.
+ */
+export async function understandCompanyCompliance(
+  docs: QaDocument[],
+  scoringSeed?: number,
+): Promise<CompliancePlaybookEntry[]> {
+  const extracted = extractCompanyComplianceRules(docs);
+  const complianceDocs = docs.filter(
+    (doc) =>
+      (doc.kind === "compliance" || doc.kind === "document") &&
+      (doc.extracted_text || "").trim(),
+  );
+  if (!extracted.length && !complianceDocs.some((doc) => doc.kind === "compliance")) {
+    return [];
+  }
+
+  const body = (complianceDocs.length ? complianceDocs : docs)
+    .filter((doc) => doc.kind === "compliance" || doc.kind === "document")
+    .map((doc) => `### ${doc.file_name}\n${(doc.extracted_text || "").trim()}`)
+    .join("\n\n");
+
+  try {
+    const parsed = (await completeJson(
+      `You are a contact-center compliance analyst.
+Your ONLY job is to READ the company's uploaded compliance files and build a clear playbook for each enforceable rule BEFORE any call is audited.
+
+Rules:
+- Use ONLY what is written in the company files. Do not invent GDPR, PCI, or other laws unless those files name them.
+- Do not turn scorecard quality metrics (greeting, empathy, professionalism) into compliance rules unless the compliance file itself says so.
+- For each rule, explain in plain English what the agent must do or must not do.
+- auto_fail is true only when the company file marks Auto-Fail / Auto-Zero / non-negotiable for that rule.
+- if_applicable is true only when the company wrote "if applicable".
+- severity: critical for auto-fail / prohibited / PII / passwords / consent / recording without notice; major for must/shall; minor for should.
+- Write all explanations in English.`,
+      [
+        formatComplianceChecklist(extracted) || "No checklist extracted — read the compliance file text carefully and list only rules that are actually written there.",
+        "COMPANY COMPLIANCE / POLICY TEXT:",
+        clipKeepStart(body, 22000),
+        "Return one playbook entry for every enforceable compliance rule in those files.",
+      ].join("\n\n"),
+      "company_compliance_playbook",
+      COMPLIANCE_PLAYBOOK_SCHEMA,
+      "reasoning",
+      { stable: true, seed: scoringSeed },
+    )) as { rules?: unknown[] };
+
+    const rows = Array.isArray(parsed.rules) ? parsed.rules : [];
+    const out: CompliancePlaybookEntry[] = [];
+    const seen = new Set<string>();
+    for (const row of rows) {
+      if (!row || typeof row !== "object") continue;
+      const item = row as Record<string, unknown>;
+      const name = cleanScoreLine(String(item.name || "")).slice(0, 180);
+      if (name.length < 8) continue;
+      const key = name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const extractedHit = extracted.find((rule) => rule.name.toLowerCase() === key);
+      out.push({
+        name,
+        file_name: cleanScoreLine(String(item.file_name || extractedHit?.file_name || "")).slice(0, 120),
+        meaning: cleanScoreLine(String(item.meaning || "")).slice(0, 320),
+        pass_requires: cleanScoreLine(String(item.pass_requires || "")).slice(0, 320),
+        fail_when: cleanScoreLine(String(item.fail_when || "")).slice(0, 320),
+        severity: normalizeComplianceSeverity(item.severity || extractedHit?.severity),
+        auto_fail: item.auto_fail === true || extractedHit?.auto_fail === true,
+        if_applicable: item.if_applicable === true || extractedHit?.if_applicable === true,
+      });
+      if (out.length >= 40) break;
+    }
+    return out.length ? out : extracted.map((rule) => ({
+      ...rule,
+      meaning: rule.name,
+      pass_requires: "Follow this company rule on the call.",
+      fail_when: "The agent broke this company rule.",
+    }));
+  } catch {
+    return extracted.map((rule) => ({
+      ...rule,
+      meaning: rule.name,
+      pass_requires: "Follow this company rule on the call.",
+      fail_when: "The agent broke this company rule.",
+    }));
+  }
 }
 
 function normalizeParamMatchKey(name: string) {
@@ -1244,14 +1407,16 @@ HUMAN-LIKE UNDERSTANDING + CONSISTENT COMPANY AUDIT:
 
 const STANDARDS_READING_BLOCK = `
 CAREFUL STANDARDS READING (required before any mark):
-- Read FILE INDEX, COMPANY RULE CHECKLIST, COMPANY PARAMETER PLAYBOOK, then the full SCORECARD text, then COMPLIANCE, then PROCESS DOCUMENTS and scripts.
+- Read FILE INDEX, COMPANY RULE CHECKLIST, COMPANY PARAMETER PLAYBOOK, COMPANY COMPLIANCE CHECKLIST, COMPANY COMPLIANCE PLAYBOOK, then the full SCORECARD text, then COMPLIANCE, then PROCESS DOCUMENTS and scripts.
 - The PARAMETER PLAYBOOK explains what each company line means in plain English — use it to understand awkward labels, Auto Zero, Auto 100, and If applicable.
+- The COMPLIANCE PLAYBOOK explains each uploaded compliance rule — check those separately from the scorecard.
 - Extract every criterion EXACTLY as written, with its EXACT weight % from the file (companies differ — some use 3%, 7%, 12%, 15%, etc.; never assume 5/10/20/25).
 - Extract Auto-Zero / Auto-100 / "if applicable" marks only as the company wrote them on each line.
 - Apply the company's own definitions and examples from their files; do not substitute a generic Zetro rubric.
 - Key terms, product names, and required phrases come only from those uploaded files.
 - When a rule is ambiguous, prefer the company's wording + playbook meaning, and stay consistent with prior audits of this recording.
-- Never transfer a deduction from one scorecard line to another.`;
+- Never transfer a deduction from one scorecard line to another.
+- Never invent a compliance finding that is not a breach of an uploaded company rule.`;
 
 const DOCUMENTS_PROMPT = `You are a bilingual (Kiswahili + English) call-center quality assurance analyst.
 
@@ -1269,7 +1434,7 @@ Your job:
 2. READ CALL UNDERSTANDING and the timed transcript so you clearly understand what happened on this call (like a human who listened).
 3. Decide which speaker label is the CALL CENTER AGENT and which is the CUSTOMER.
 4. AUDIT the agent against EVERY rule / criterion / weight line in the uploaded company SCORECARD (and COMPANY RULE CHECKLIST). Not a fixed 6-box Zetro rubric.
-5. Check every compliance rule from the uploaded files and list breaches.
+5. Check EVERY rule in the COMPANY COMPLIANCE PLAYBOOK / CHECKLIST (from uploaded compliance files) and return compliance_checks. List only real breaches in compliance_findings.
 6. Stay consistent with CONSISTENCY ANCHOR when present (±5) so repeated / multi-account audits of this recording agree.
 7. WRITE THE WHOLE AUDIT IN ENGLISH:
    - The call may be Kiswahili, English, or mixed. Understand it in its own language, then report on it in professional English. QA analysts read English only.
@@ -1323,10 +1488,11 @@ Numeric fields:
   This is for company dashboards — be honest even when the agent scored well.
 - greeting, empathy, professionalism, resolution, communication, language_handling: optional closest roll-ups for analytics only — do not replace the company parameter list
 - AUTO-ZERO / AUTO-100: Follow the company scorecard and PARAMETER PLAYBOOK. If a line marked Auto Zero / Auto-Fail is truly violated, set that parameter to 0 and set \`auto_zero_applied\` true when the company intends a call-level zero. If a line marked Auto 100 / Auto-Pass is fully met, score that parameter 100. Always calculate the normal weighted sum first and put it in BOTH \`overall_score\` and \`raw_score\`. The system then forces \`overall_score\` to 0 when Auto Zero applies, and keeps \`raw_score\` as the Favoured Score. Use extreme wisdom: only apply Auto Zero for a genuine, explicitly defined severe violation on that line. If no auto-zero occurred, set \`auto_zero_applied\` to false.
-- A serious compliance breach should cap overall_score at 49 unless the scorecard says otherwise
+- A serious compliance breach (critical / company auto-fail in the compliance playbook) should cap overall_score at 49 unless the scorecard Auto-Zero already forces 0
 
 Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–49.
-compliance_findings: specific breaches explained in clean professional language, or ["None identified"].
+compliance_checks: one row per company compliance playbook rule (pass / fail / n/a).
+compliance_findings: only failed compliance_checks, explained in clean professional English citing the file, or ["None identified"].
 Cite the company file by name in summary, strengths, and improvements.
 speaker_assignments must cover every speaker label.
 ${DOCUMENTS_EVIDENCE_BLOCK}`;
@@ -1347,7 +1513,7 @@ Your job:
 2. READ CALL UNDERSTANDING and the timed transcript so you clearly understand what happened on this call (like a human who listened).
 3. Decide which speaker label is the CALL CENTER AGENT and which is the CUSTOMER.
 4. AUDIT the agent against EVERY rule / criterion / weight line in the uploaded company SCORECARD (and COMPANY RULE CHECKLIST). Not a fixed 6-box Zetro rubric.
-5. Check every compliance rule from the uploaded files and list breaches.
+5. Check EVERY rule in the COMPANY COMPLIANCE PLAYBOOK / CHECKLIST (from uploaded compliance files) and return compliance_checks. List only real breaches in compliance_findings.
 6. Stay consistent with CONSISTENCY ANCHOR when present (±5) so repeated / multi-account audits of this recording agree.
 7. WRITE THE WHOLE AUDIT IN ENGLISH. Quotes may stay in the speaker's language with a short English gloss in square brackets. Never copy broken speech-to-text spellings into any scorecard field.
 8. Do NOT guess the Agent's name or the Company's name. Use the explicitly provided Agent Name from the prompt. For the Company Name and key terms, rely strictly on the provided company documents. Only use the Customer's name if clearly spoken.
@@ -1390,10 +1556,11 @@ Numeric fields:
   This is for company dashboards — be honest even when the agent scored well.
 - greeting, empathy, professionalism, resolution, communication, language_handling: optional closest roll-ups for analytics only — do not replace the company parameter list
 - AUTO-ZERO / AUTO-100: Follow the company scorecard and PARAMETER PLAYBOOK. If a line marked Auto Zero / Auto-Fail is truly violated, set that parameter to 0 and set \`auto_zero_applied\` true when the company intends a call-level zero. If a line marked Auto 100 / Auto-Pass is fully met, score that parameter 100. Always calculate the normal weighted sum first and put it in BOTH \`overall_score\` and \`raw_score\`. The system then forces \`overall_score\` to 0 when Auto Zero applies, and keeps \`raw_score\` as the Favoured Score. Use extreme wisdom: only apply Auto Zero for a genuine, explicitly defined severe violation on that line. If no auto-zero occurred, set \`auto_zero_applied\` to false.
-- A serious compliance breach should cap overall_score at 49 unless the scorecard says otherwise
+- A serious compliance breach (critical / company auto-fail in the compliance playbook) should cap overall_score at 49 unless the scorecard Auto-Zero already forces 0
 
 Verdict: excellent 85–100, good 70–84, needs_improvement 50–69, poor 0–49.
-compliance_findings: specific breaches with a short quote, or ["None identified"].
+compliance_checks: one row per company compliance playbook rule (pass / fail / n/a).
+compliance_findings: only failed compliance_checks, with a short quote and the company file name, or ["None identified"].
 Cite the company file by name in summary, strengths, and improvements.
 speaker_assignments must cover every speaker label.
 ${DOCUMENTS_EVIDENCE_BLOCK}`;
@@ -1412,14 +1579,18 @@ export async function analyzeCall(
 ): Promise<CallAnalysis> {
   const transcript = packTranscriptForAudit(utterances, 16000);
   const catalogForPlaybook = scriptDocs.length ? scriptDocs : standards;
-  const [understanding, parameterPlaybook] = await Promise.all([
+  const [understanding, parameterPlaybook, compliancePlaybook] = await Promise.all([
     understandCallBrief(utterances, bilingual, agentName, scoringSeed),
     mode === "documents"
       ? understandCompanyParameters(catalogForPlaybook, standardsText, scoringSeed)
       : Promise.resolve([] as ParameterPlaybookEntry[]),
+    mode === "documents"
+      ? understandCompanyCompliance(catalogForPlaybook, scoringSeed)
+      : Promise.resolve([] as CompliancePlaybookEntry[]),
   ]);
   const understandingBlock = formatCallUnderstandingBlock(understanding);
   const playbookBlock = formatParameterPlaybookBlock(parameterPlaybook);
+  const complianceBlock = formatCompliancePlaybookBlock(compliancePlaybook);
 
   const holdListen = detectHoldEvents(utterances);
   const holdingDocs = scriptsOf(scriptDocs, "holding");
@@ -1454,16 +1625,18 @@ export async function analyzeCall(
 
   const userPrompt = `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}READ THE CUSTOMER'S / WORKSPACE'S UPLOADED FILES FIRST.
 1) FILE INDEX — which files exist
-2) COMPANY RULE CHECKLIST — every rule to score (one parameters[] row each)
-3) COMPANY PARAMETER PLAYBOOK — plain-English meaning of each line, including Auto Zero / Auto 100 / If applicable
-4) SCORECARD / COMPLIANCE / PROCESS DOCUMENTS — full text behind those rules
-Score only from those files and the playbook. Do not invent a Zetro rubric, company name, or key term.
-If the checklist / playbook lists N rules, return about N parameters with matching names, exact weight_pct from the company file, a short note (why THIS parameter earned its score), a gap_note (why THIS parameter alone lost points — never blame another parameter), and a transcript quote for each (including 100% scores).
+2) COMPANY RULE CHECKLIST — every scorecard rule to score (one parameters[] row each)
+3) COMPANY PARAMETER PLAYBOOK — plain-English meaning of each scorecard line, including Auto Zero / Auto 100 / If applicable
+4) COMPANY COMPLIANCE CHECKLIST + PLAYBOOK — every compliance rule to check (one compliance_checks[] row each)
+5) SCORECARD / COMPLIANCE / PROCESS DOCUMENTS — full text behind those rules
+Score only from those files and the playbooks. Do not invent a Zetro rubric, company name, key term, or extra law.
+If the scorecard checklist lists N rules, return about N parameters with matching names.
+If the compliance playbook lists M rules, return M compliance_checks with matching names (pass / fail / n/a).
 
 Then UNDERSTAND the call (CALL UNDERSTANDING + timed transcript) before you assign marks — like a wise human QA who listened carefully.
-Read the company Standards and PARAMETER PLAYBOOK carefully. Score each parameter independently against its playbook meaning. Stay consistent with any CONSISTENCY ANCHOR (±5).
+Read the company Standards, PARAMETER PLAYBOOK, and COMPLIANCE PLAYBOOK carefully. Score each parameter independently. Check each compliance rule independently. Stay consistent with any CONSISTENCY ANCHOR (±5).
 ${rescoreBlock}
-${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${playbookBlock}\n\n${understandingBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript, meaning-repaired for clear understanding (opening + closing preserved). Audit against the company checklist, PARAMETER PLAYBOOK, scorecard, scripts, and key terms. Write the scorecard in English. Quotes may stay in the speaker's language with an English gloss. If a word is still broken, do not mention it:\n${transcript}`;
+${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${playbookBlock}\n\n${complianceBlock}\n\n${understandingBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript, meaning-repaired for clear understanding (opening + closing preserved). Audit against the company checklist, PARAMETER PLAYBOOK, COMPLIANCE PLAYBOOK, scorecard, scripts, and key terms. Write the scorecard in English. Quotes may stay in the speaker's language with an English gloss. If a word is still broken, do not mention it:\n${transcript}`;
 
   const parsed = (await completeJson(
     bilingual
@@ -1479,6 +1652,7 @@ ${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${playb
     auto_zero_applied?: boolean;
     speaker_assignments?: { speaker_label: string; role: SpeakerRole }[];
     compliance_findings?: string[];
+    compliance_checks?: unknown;
     metric_evidence?: unknown;
     hold_detected?: unknown;
     hold_findings?: unknown;
@@ -1579,6 +1753,15 @@ ${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${playb
   }
   delete metric_evidence.key_terms;
 
+  const complianceChecks = mergeComplianceChecks(
+    normalizeComplianceChecks(parsed.compliance_checks, catalogFiles, utterances),
+    compliancePlaybook,
+    catalogFiles,
+  );
+  if (complianceChecks.length) {
+    metric_evidence.compliance_checks = complianceChecks;
+  }
+
   const customerVoice = normalizeCustomerVoice(
     parsed.customer_voice,
     parsed.customer_sentiment,
@@ -1609,6 +1792,14 @@ ${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${playb
   } else {
     metric_evidence.auto_zero_applied = false;
     delete metric_evidence.raw_score;
+  }
+
+  if (
+    !applyAutoZero &&
+    hasCriticalComplianceFail(complianceChecks, compliancePlaybook) &&
+    final_overall_score > 49
+  ) {
+    final_overall_score = 49;
   }
 
   const greeting = rollupDimensionFromParameters(
@@ -1656,7 +1847,9 @@ ${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${playb
     summary: cleanScoreLine(parsed.summary || ""),
     strengths: cleanScoreLines(parsed.strengths),
     improvements: cleanScoreLines(parsed.improvements),
-    compliance_findings: cleanScoreLines(parsed.compliance_findings),
+    compliance_findings: complianceChecks.length
+      ? findingsFromChecks(complianceChecks)
+      : cleanScoreLines(parsed.compliance_findings),
     hold_findings: holdDetected && hasHoldingProcedure ? holdFindings : [],
     metric_evidence,
     standards_used: (() => {

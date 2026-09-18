@@ -1,5 +1,5 @@
 import { agentIdFromFile, verdictLabel } from "@/lib/format";
-import type { AuditMode, MetricEvidence, Verdict } from "@/lib/types";
+import type { AuditMode, ComplianceSeverity, MetricEvidence, Verdict } from "@/lib/types";
 import {
   customerVoiceFromScore,
   summarizeCustomerVoice,
@@ -7,11 +7,29 @@ import {
   type CustomerVoiceSummary,
   type CustomerVoiceThemeRow,
 } from "@/lib/customer-voice";
+import {
+  complianceFollowRateFromScore,
+  failedComplianceFromScore,
+  findingsFromChecks,
+  rollupComplianceRate,
+} from "@/lib/compliance-engine";
 
 export const REPORT_PERIODS = ["daily", "weekly", "monthly", "annually"] as const;
 export type ReportPeriod = (typeof REPORT_PERIODS)[number];
 
 export const REPORT_TZ = "Africa/Nairobi";
+
+export type ReportComplianceRow = {
+  call_id: string;
+  title: string;
+  agent_name: string;
+  audited_at: string;
+  finding: string;
+  rule: string;
+  file_name: string;
+  severity: ComplianceSeverity | "";
+  quote: string;
+};
 
 export type ReportCallRow = {
   call_id: string;
@@ -37,6 +55,11 @@ export type ReportCallRow = {
   audit_mode: AuditMode | string | null;
   summary: string | null;
   compliance_findings: string[];
+  compliance_flags: ReportComplianceRow[];
+  compliance_followed_pct: number | null;
+  compliance_not_followed_pct: number | null;
+  compliance_passed: number;
+  compliance_failed: number;
 };
 
 export type ReportAgentRow = {
@@ -52,14 +75,64 @@ export type ReportAgentRow = {
   poor: number;
   compliance_calls: number;
   compliance_findings: number;
+  compliance_followed_pct: number | null;
+  compliance_not_followed_pct: number | null;
 };
 
-export type ReportComplianceRow = {
+export type ReportDelta = {
+  current: number | null;
+  previous: number | null;
+  delta: number | null;
+};
+
+export type BriefingTheme = {
+  theme: string;
+  count: number;
+  kind: "satisfaction" | "frustration";
+  quote: string;
+  call_id: string;
+};
+
+export type BriefingCoachRow = {
+  agent_id: string | null;
+  agent_name: string;
+  avg_score: number | null;
+  call_count: number;
+  compliance_findings: number;
+  reason: string;
+};
+
+export type BriefingReviewRow = {
   call_id: string;
   title: string;
   agent_name: string;
-  audited_at: string;
-  finding: string;
+  overall_score: number;
+  reason: string;
+};
+
+export type QaBriefing = {
+  headline: string;
+  attention: string;
+  previous_period_label: string | null;
+  deltas: {
+    avg_overall: ReportDelta;
+    calls_audited: ReportDelta;
+    compliance_findings: ReportDelta;
+    compliance_followed: ReportDelta;
+    frustrated_pct: ReportDelta;
+  };
+  weakest_parameters: { name: string; avg: number }[];
+  coach_now: BriefingCoachRow[];
+  review_queue: BriefingReviewRow[];
+  customer_themes: BriefingTheme[];
+  compliance_rules: {
+    rule: string;
+    file_name: string;
+    count: number;
+    severity: ComplianceSeverity | "";
+    example: string;
+    call_id: string;
+  }[];
 };
 
 export type QaReport = {
@@ -70,6 +143,7 @@ export type QaReport = {
   range_end: string;
   agent_id: string | null;
   agent_label: string;
+  briefing?: QaBriefing;
   summary: {
     calls_audited: number;
     avg_overall: number | null;
@@ -87,6 +161,8 @@ export type QaReport = {
     poor: number;
     calls_with_compliance_issue: number;
     total_compliance_findings: number;
+    compliance_followed_pct: number | null;
+    compliance_not_followed_pct: number | null;
     documents_audits: number;
     customer_satisfied_pct: number | null;
     customer_frustrated_pct: number | null;
@@ -196,6 +272,15 @@ export function periodRange(period: ReportPeriod, date: string) {
   };
 }
 
+/** Anchor date that falls inside the previous daily/weekly/monthly/annual window. */
+export function previousPeriodDate(period: ReportPeriod, date: string) {
+  const range = periodRange(period, date);
+  const start = parseYmd(range.range_start);
+  if (!start) return date;
+  const prevLast = addCalendarDays(start.y, start.m, start.d, -1);
+  return ymdString(prevLast.y, prevLast.m, prevLast.d);
+}
+
 export function reportFileStem(report: QaReport) {
   const agent = report.agent_id
     ? report.agent_label.replace(/[^\w]+/g, "-").replace(/^-|-$/g, "")
@@ -274,7 +359,33 @@ export function buildQaReport(
         return null;
       }
       if (opts.agentId && call.agent_id !== opts.agentId) return null;
-      const findings = realComplianceFindings(score.compliance_findings);
+      const structured = Array.isArray(
+        (score.metric_evidence as MetricEvidence | null | undefined)?.compliance_checks,
+      )
+        ? ((score.metric_evidence as MetricEvidence).compliance_checks || [])
+        : null;
+      const findings = structured
+        ? structured.filter((row) => row.result === "fail")
+        : failedComplianceFromScore({
+            compliance_findings: score.compliance_findings,
+            metric_evidence: (score.metric_evidence as MetricEvidence | null | undefined) || null,
+          });
+      const flags: ReportComplianceRow[] = findings.map((check) => ({
+        call_id: call.id,
+        title: agentIdFromFile(call.file_name || call.title),
+        agent_name: agentNameOf(call),
+        audited_at: auditedAt,
+        finding: findingsFromChecks([check])[0] || check.note || check.rule,
+        rule: check.rule,
+        file_name: check.file_name,
+        severity: check.severity,
+        quote: check.quote,
+      }));
+      const findingLines = flags.map((flag) => flag.finding);
+      const rate = complianceFollowRateFromScore({
+        compliance_findings: score.compliance_findings,
+        metric_evidence: (score.metric_evidence as MetricEvidence | null | undefined) || null,
+      });
       const durationRaw = Number(call.duration_seconds);
       const duration_seconds =
         Number.isFinite(durationRaw) && durationRaw > 0 ? Math.round(durationRaw) : null;
@@ -308,21 +419,18 @@ export function buildQaReport(
         customer_quote: voice.quote,
         audit_mode: score.audit_mode ? String(score.audit_mode) : null,
         summary: score.summary ? String(score.summary) : null,
-        compliance_findings: findings,
+        compliance_findings: findingLines,
+        compliance_flags: flags,
+        compliance_followed_pct: rate.followed_pct,
+        compliance_not_followed_pct: rate.not_followed_pct,
+        compliance_passed: rate.passed,
+        compliance_failed: rate.failed,
       };
     })
     .filter((row): row is ReportCallRow => row != null)
     .sort((a, b) => b.audited_at.localeCompare(a.audited_at));
 
-  const compliance: ReportComplianceRow[] = rows.flatMap((row) =>
-    row.compliance_findings.map((finding) => ({
-      call_id: row.call_id,
-      title: row.title,
-      agent_name: row.agent_name,
-      audited_at: row.audited_at,
-      finding,
-    })),
-  );
+  const compliance: ReportComplianceRow[] = rows.flatMap((row) => row.compliance_flags);
 
   const byAgent = new Map<string, ReportCallRow[]>();
   for (const row of rows) {
@@ -335,6 +443,9 @@ export function buildQaReport(
   const agents: ReportAgentRow[] = [...byAgent.entries()]
     .map(([key, list]) => {
       const handling = ahtFromDurations(list.map((r) => r.duration_seconds));
+      const complianceRate = rollupComplianceRate(
+        list.map((r) => ({ passed: r.compliance_passed, failed: r.compliance_failed })),
+      );
       return {
         agent_id: key === "unassigned" ? null : key,
         agent_name: list[0]?.agent_name || "Unassigned",
@@ -348,6 +459,8 @@ export function buildQaReport(
         poor: list.filter((r) => r.verdict === "poor").length,
         compliance_calls: list.filter((r) => r.compliance_findings.length > 0).length,
         compliance_findings: list.reduce((sum, r) => sum + r.compliance_findings.length, 0),
+        compliance_followed_pct: complianceRate.followed_pct,
+        compliance_not_followed_pct: complianceRate.not_followed_pct,
       };
     })
     .sort((a, b) => (b.avg_score ?? -1) - (a.avg_score ?? -1));
@@ -413,6 +526,10 @@ export function buildQaReport(
       summary: row.summary,
     }));
 
+  const complianceRate = rollupComplianceRate(
+    rows.map((r) => ({ passed: r.compliance_passed, failed: r.compliance_failed })),
+  );
+
   return {
     generated_at: new Date().toISOString(),
     period: opts.period,
@@ -437,6 +554,8 @@ export function buildQaReport(
       poor: rows.filter((r) => r.verdict === "poor").length,
       calls_with_compliance_issue: rows.filter((r) => r.compliance_findings.length > 0).length,
       total_compliance_findings: compliance.length,
+      compliance_followed_pct: complianceRate.followed_pct,
+      compliance_not_followed_pct: complianceRate.not_followed_pct,
       documents_audits: rows.filter((r) => r.audit_mode === "documents").length,
       customer_satisfied_pct: voiceSummary.satisfied_pct,
       customer_frustrated_pct: voiceSummary.frustrated_pct,

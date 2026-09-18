@@ -19,7 +19,7 @@ const ROLES = [
     title: "QA managers",
     kicker: "Stop sampling. Start coaching.",
     body: "Spend less time hunting for the 1% of calls to review, and more time helping agents improve. Zetro flags non-compliant calls and shows where the conversation went wrong.",
-    points: ["100% audit coverage", "Targeted coaching recommendations", "Automated scorecard filling"],
+    points: ["Coverage you choose — sample or ingest", "Targeted coaching recommendations", "Automated scorecard filling"],
     featured: false,
   },
   {

@@ -1,4 +1,4 @@
-import { BRAND, logoPath, pdfColor, type Rgb } from "@/lib/brand";
+import { BRAND, logoStrokePath, logoStrokeWidth, pdfColor, type Rgb } from "@/lib/brand";
 
 /** Helvetica advance widths (units/1000) for the printable ASCII range. */
 const REGULAR = "278 278 355 556 556 889 667 191 333 333 389 584 278 333 278 278 556 556 556 556 556 556 556 556 556 556 278 278 584 584 584 556 1015 667 667 722 722 667 611 778 722 278 500 667 556 833 722 778 667 778 722 667 611 722 667 944 667 667 611 278 278 278 469 556 333 556 556 500 556 556 278 556 556 222 222 500 222 833 556 556 556 556 333 500 278 556 500 722 500 500 500 334 260 334 584"
@@ -115,10 +115,11 @@ export class PdfDoc {
   private pageHeader() {
     const { title, subtitle } = this.options;
     this.rect(0, this.height - 78, this.width, 78, BRAND.navy);
-    this.logo(this.margin, this.height - 60, 26, BRAND.blue);
-    this.write(this.margin + 36, this.height - 46, 20, "ZETRO", { bold: true, color: BRAND.white });
-    this.write(this.margin + 36, this.height - 62, 8, "CONTACT CENTER QUALITY", {
-      color: { r: 148, g: 163, b: 184 },
+    this.rect(0, this.height - 82, this.width, 4, BRAND.blue);
+    this.logo(this.margin, this.height - 62, 28);
+    this.write(this.margin + 40, this.height - 44, 18, "Zetro", { bold: true, color: BRAND.white });
+    this.write(this.margin + 40, this.height - 60, 8, "CALL QUALITY", {
+      color: { r: 191, g: 219, b: 254 },
     });
     this.write(this.width - this.margin, this.height - 46, 12, title || "", {
       bold: true,
@@ -155,8 +156,10 @@ export class PdfDoc {
     this.body += `${pdfColor(color)} RG 0.7 w ${x.toFixed(2)} ${y.toFixed(2)} m ${(x + w).toFixed(2)} ${y.toFixed(2)} l S\n`;
   }
 
-  logo(x: number, y: number, size: number, color: Rgb = BRAND.blue) {
-    this.body += `${pdfColor(color)} rg ${logoPath(x, y, size)} f*\n`;
+  logo(x: number, y: number, size: number, color: Rgb = BRAND.mark) {
+    this.rect(x, y, size, size, color);
+    const width = logoStrokeWidth(size);
+    this.body += `1 1 1 RG 1 J 1 j ${width.toFixed(2)} w ${logoStrokePath(x, y, size)} S\n`;
   }
 
   write(x: number, y: number, size: number, value: string, style: TextStyle = {}) {

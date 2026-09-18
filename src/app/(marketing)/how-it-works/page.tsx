@@ -19,7 +19,7 @@ const STEPS = [
     number: "02",
     title: "Ingest audio",
     description:
-      "Connect Zetro to your existing PBX or cloud telephony system via API, or upload audio and video files (mp3, wav, mp4) to the dashboard. Processing starts right away so the call is ready to transcribe and score.",
+      "Upload audio and video files (mp3, wav, mp4) to the dashboard. Processing starts so the call is ready to transcribe and score. PBX or cloud telephony ingest is quoted on Floor contracts — it is not a self-serve switch today.",
   },
   {
     number: "03",
