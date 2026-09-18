@@ -21,12 +21,12 @@ export default async function MarketingLayout({ children }: { children: React.Re
 
       <main className="flex flex-1 flex-col">{children}</main>
 
-      <footer className="mt-auto border-t border-line bg-bg py-12">
-        <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 sm:flex-row sm:items-start sm:justify-between">
+      <footer className="mt-auto border-t border-line bg-cream py-16">
+        <div className="mx-auto flex max-w-7xl flex-col gap-10 px-6 sm:flex-row sm:items-start sm:justify-between lg:px-8">
           <div className="max-w-sm space-y-3">
             <Logo size="sm" />
             <p className="text-[13px] leading-relaxed text-muted">
-              Company-document call QA for bilingual contact centers — your scorecard, not a generic rubric.
+              Bilingual contact-center QA — scored from your scorecard, not a generic rubric.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-8 text-[13px] sm:grid-cols-3">

@@ -11,7 +11,7 @@ const LINKS = [
 export function MarketingNav({ signedIn }: { signedIn: boolean }) {
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-white/95 backdrop-blur-sm">
-      <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3.5">
+      <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
         <Logo size="sm" />
         <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-6 md:flex">
           {LINKS.map((link) => (

@@ -24,6 +24,7 @@
   --warn: #c27803;
   --navy: #1f2937;
   --navy-2: #111827;
+  --cream: #f3f0ea;
   --font-outfit: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-syne: "Syne", ui-sans-serif, system-ui, sans-serif;
 }
@@ -49,6 +50,7 @@
   --color-warn: var(--warn);
   --color-navy: var(--navy);
   --color-navy-2: var(--navy-2);
+  --color-cream: var(--cream);
   --font-sans: var(--font-outfit);
   --font-serif: var(--font-syne);
   --font-display: var(--font-syne);
@@ -471,14 +473,6 @@ textarea {
   color: var(--text);
 }
 
-.hero-mesh {
-  background-color: #f7f8fb;
-  background-image:
-    radial-gradient(ellipse 80% 55% at 72% 12%, rgba(26, 86, 219, 0.14), transparent 55%),
-    radial-gradient(ellipse 50% 40% at 8% 88%, rgba(15, 118, 110, 0.1), transparent 50%),
-    linear-gradient(180deg, #ffffff 0%, #f3f5f9 100%);
-}
-
 .reveal {
   animation: zetro-rise 0.7s ease both;
 }
@@ -531,6 +525,189 @@ textarea {
   opacity: 0.5;
   transform-origin: center bottom;
   animation: zetro-wave 1.55s ease-in-out infinite;
+}
+
+.marketing-shell .btn {
+  border-radius: 999px;
+}
+
+.marketing-shell .btn-lg {
+  padding: 0.9rem 1.55rem;
+  font-size: 15px;
+}
+
+.hero-mesh {
+  background-color: var(--cream);
+  background-image:
+    radial-gradient(ellipse 70% 50% at 88% 8%, rgba(26, 86, 219, 0.16), transparent 58%),
+    radial-gradient(ellipse 45% 40% at 6% 92%, rgba(15, 118, 110, 0.1), transparent 52%),
+    linear-gradient(180deg, #fbfaf6 0%, var(--cream) 100%);
+}
+
+.hero-art {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 2.5rem;
+}
+
+.hero-blob {
+  position: absolute;
+  right: 2%;
+  top: 6%;
+  z-index: 0;
+  height: 72%;
+  width: 72%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, rgba(26, 86, 219, 0.32), rgba(26, 86, 219, 0.05) 72%);
+}
+
+.photo-circle,
+.photo-oval,
+.photo-soft {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #d7dde8;
+}
+
+.photo-circle {
+  border-radius: 50%;
+  aspect-ratio: 1;
+}
+
+.photo-oval {
+  border-radius: 50%;
+  aspect-ratio: 3 / 4;
+}
+
+.photo-soft {
+  border-radius: 2.5rem;
+}
+
+@media (min-width: 768px) {
+  .photo-soft {
+    border-radius: 3.25rem;
+  }
+}
+
+.photo-hero {
+  z-index: 1;
+  width: min(100%, 26rem);
+  box-shadow: 0 28px 60px rgba(17, 24, 39, 0.14);
+}
+
+.photo-float {
+  position: absolute;
+  z-index: 2;
+  width: 8.75rem;
+  bottom: 0.5rem;
+  left: max(0.25rem, 6%);
+  border: 6px solid var(--cream);
+  box-shadow: 0 14px 36px rgba(17, 24, 39, 0.16);
+}
+
+.photo-lg {
+  width: min(100%, 30rem);
+  margin-inline: auto;
+  box-shadow: 0 24px 50px rgba(17, 24, 39, 0.12);
+}
+
+.photo-circle img,
+.photo-oval img,
+.photo-soft img {
+  transition: transform 0.7s ease;
+}
+
+.photo-circle:hover img,
+.photo-oval:hover img,
+.photo-soft:hover img {
+  transform: scale(1.05);
+}
+
+.hero-art-caption {
+  position: relative;
+  z-index: 1;
+  margin-top: 1.25rem;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.art-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(26, 86, 219, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.35rem 0.8rem;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--blue);
+}
+
+.art-solution {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  border-radius: 28px;
+  padding: 1.75rem 1.6rem 1.5rem;
+}
+
+.art-solution-a {
+  background: var(--blue-soft);
+}
+
+.art-solution-b {
+  background: #ebe7de;
+}
+
+.people-collage {
+  display: grid;
+  gap: 2.25rem 2.5rem;
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .people-collage {
+    grid-template-columns: 1.05fr 0.95fr;
+  }
+  .people-collage-wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.people-story h3 {
+  font-family: var(--font-syne), var(--font-outfit), sans-serif;
+}
+
+.art-proof {
+  background: var(--navy-2);
+  color: #fff;
+}
+
+.close-ring {
+  width: min(100%, 22rem);
+  margin-inline: auto;
+  padding: 0.65rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.close-ring .photo-circle {
+  width: 100%;
+}
+
+.bg-navy-2 .btn-ghost {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: transparent;
+  color: #fff;
+}
+
+.bg-navy-2 .btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .audit-pipeline {
