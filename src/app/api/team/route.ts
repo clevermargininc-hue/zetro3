@@ -32,7 +32,12 @@ async function loadProfiles(
     .from("profiles")
     .select("id, email, full_name, username")
     .in("id", ids);
-  let rows: any[] | null = withUsername.data;
+  let rows: Array<{
+    id: string;
+    email?: string | null;
+    full_name?: string | null;
+    username?: string | null;
+  }> | null = withUsername.data;
   if (withUsername.error && /username/i.test(withUsername.error.message)) {
     const fallback = await supabase.from("profiles").select("id, email, full_name").in("id", ids);
     if (fallback.error) throw new Error(fallback.error.message);

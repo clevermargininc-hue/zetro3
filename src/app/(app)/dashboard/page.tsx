@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
-import { agentIdFromFile, formatAht, formatDate, formatDuration, languageLabel } from "@/lib/format";
+import { agentLabel, formatAht, formatDate, formatDuration, languageLabel } from "@/lib/format";
 import { getTeamScope } from "@/lib/workspaces";
 import type { Call, CallScore } from "@/lib/types";
 import { summarizeCustomerVoice } from "@/lib/customer-voice";
@@ -30,10 +30,11 @@ function formatTotalTime(seconds: number) {
 
 export default async function DashboardPage() {
   const { supabase, user } = await requireUser();
-  await getTeamScope(user.id);
+  const teamScope = await getTeamScope(user.id);
   const { data: calls } = await supabase
     .from("calls")
     .select("*, agents(name), call_scores(*)")
+    .in("user_id", teamScope)
     .order("created_at", { ascending: false });
 
   const allCalls = calls || [];
@@ -318,10 +319,9 @@ export default async function DashboardPage() {
             <thead>
               <tr className="border-b border-line bg-bg text-[11px] font-medium uppercase tracking-wider text-muted">
                 <th className="px-6 py-3">Agent ID</th>
-
                 <th className="px-6 py-3">Date & Time</th>
                 <th className="px-6 py-3">Language</th>
-                    <th className="px-6 py-3 text-right">Followed</th>
+                <th className="px-6 py-3 text-right">Followed</th>
                 <th className="px-6 py-3 text-right">QA Score</th>
                 <th className="px-6 py-3 text-right">Action</th>
               </tr>
@@ -333,29 +333,20 @@ export default async function DashboardPage() {
 
                 return (
                   <tr key={call.id} className="hover:bg-surface-2 transition-colors">
-                    {/* Agent ID & Duration */}
                     <td className="px-6 py-3.5">
                       <div className="font-semibold text-ink tabular-nums">{agentLabel(call)}</div>
                       <div className="text-[11px] text-muted flex items-center gap-1.5 mt-0.5">
                         <span>Duration: {formatDuration(call.duration_seconds)}</span>
                       </div>
                     </td>
-
-
-
-                    {/* Date */}
                     <td className="px-6 py-3.5 text-muted whitespace-nowrap text-[12px]">
                       {formatDate(call.created_at)}
                     </td>
-
-                    {/* Language */}
                     <td className="px-6 py-3.5 whitespace-nowrap">
                       <span className="chip">
                         {languageLabel(call.detected_language || call.language_mode)}
                       </span>
                     </td>
-
-                    {/* Compliance */}
                     <td className="px-6 py-3.5 whitespace-nowrap text-right">
                       {rate?.followed_pct != null ? (
                         <span className={`${scoreChipClass(rate.followed_pct)} tabular-nums`}>
@@ -365,8 +356,6 @@ export default async function DashboardPage() {
                         <span className="text-muted text-[11px]">—</span>
                       )}
                     </td>
-
-                    {/* QA Score */}
                     <td className="px-6 py-3.5 text-right whitespace-nowrap">
                       {score?.overall_score != null ? (
                         <span className={`${scoreChipClass(score.overall_score)} tabular-nums`}>
@@ -378,8 +367,6 @@ export default async function DashboardPage() {
                         </span>
                       )}
                     </td>
-
-                    {/* Action */}
                     <td className="px-6 py-3.5 text-right whitespace-nowrap">
                       <Link
                         href={score ? `/upload/score/${call.id}` : `/upload/prepare/${call.id}`}
@@ -411,10 +398,6 @@ export default async function DashboardPage() {
       </section>
     </div>
   );
-}
-
-function agentLabel(call: { file_name?: string | null; title?: string | null }) {
-  return agentIdFromFile(call.file_name || call.title);
 }
 
 function rankByAgentId(

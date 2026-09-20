@@ -277,7 +277,7 @@ export async function POST(request: Request) {
         if (insertError) throw new Error(insertError.message);
       }
 
-      // Admins review requests on /team. Transactional email is not wired yet.
+      // Admins review requests on /settings/team. Transactional email is not wired yet.
       await listWorkspaceAdmins(workspaceId);
 
       return NextResponse.json({

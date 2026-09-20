@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getTeamScope } from "@/lib/workspaces";
 import { buildQaBriefing } from "@/lib/qa-briefing";
 import {
@@ -9,7 +10,7 @@ import {
 } from "@/lib/reports";
 
 export async function loadQaReport(
-  supabase: { from: (table: string) => any },
+  supabase: SupabaseClient,
   userId: string,
   period: ReportPeriod,
   date: string,

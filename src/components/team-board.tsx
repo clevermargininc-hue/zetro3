@@ -37,7 +37,7 @@ function getInitials(name: string) {
     .substring(0, 2);
 }
 
-export function TeamBoard({ embedded = false }: { embedded?: boolean }) {
+export function TeamBoard() {
   const [data, setData] = useState<TeamData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);

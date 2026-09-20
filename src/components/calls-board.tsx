@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { DeleteCallButton } from "@/components/delete-call-button";
 import { CallDownloads } from "@/components/call-downloads";
 import {
-  agentIdFromFile,
+  agentLabel,
   formatDate,
   formatDuration,
   isCallAudited,
@@ -143,7 +143,7 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                     {/* Agent ID & Date */}
                     <td className="px-6 py-3.5">
                       <div className="font-semibold text-ink tabular-nums">
-                        {agentIdFromFile(call.file_name || call.title)}
+                        {agentLabel(call)}
                       </div>
                       <div className="text-[11px] text-muted flex items-center gap-1.5 mt-0.5">
                         <span>{formatDate(call.created_at)}</span>

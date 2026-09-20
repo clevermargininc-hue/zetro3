@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Logo } from "@/components/logo";
 import { createClient } from "@/lib/supabase/client";
 import { clearWorkspaceCookie } from "@/lib/workspace-cookie";
@@ -126,11 +126,6 @@ export function AppNav({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [navReady, setNavReady] = useState(false);
-
-  useEffect(() => {
-    setNavReady(true);
-  }, []);
 
   const personLabel = username
     ? `@${username}`
@@ -195,7 +190,7 @@ export function AppNav({
                 )}
                 <div className="space-y-0.5">
                   {group.items.map((item) => {
-                    const active = navReady && linkActive(item.href, pathname);
+                    const active = linkActive(item.href, pathname);
                     return (
                       <Link
                         key={item.href}
@@ -235,6 +230,7 @@ export function AppNav({
                 <div className="min-w-0">
                   <p className="text-[12px] font-medium text-ink truncate leading-tight">{personLabel}</p>
                   <p className="text-[11px] text-muted truncate leading-tight mt-0.5">
+                    {plan === "solo" ? "Solo · " : plan === "team" ? "Team · " : ""}
                     {workspaceName || "Zetro"}
                   </p>
                 </div>
@@ -307,7 +303,7 @@ export function AppNav({
                     </span>
                     <div className="space-y-1.5">
                       {group.items.map((item) => {
-                        const active = navReady && linkActive(item.href, pathname);
+                        const active = linkActive(item.href, pathname);
                         return (
                           <Link
                             key={item.href}

@@ -16,10 +16,11 @@ const Icons = {
 
 export default async function LeaderboardPage() {
   const { supabase, user } = await requireUser();
-  await getTeamScope(user.id);
+  const teamScope = await getTeamScope(user.id);
   const { data: calls } = await supabase
     .from("calls")
     .select("id, file_name, title, status, agents(name), call_scores(overall_score, verdict)")
+    .in("user_id", teamScope)
     .order("created_at", { ascending: false });
 
   const groups = new Map<
@@ -141,7 +142,7 @@ export default async function LeaderboardPage() {
                       {row.excellent}
                     </td>
                     <td className="px-6 py-3.5 text-right font-medium tabular-nums text-ink">
-                      {row.poor}
+                      {row.poor + row.needs_improvement}
                     </td>
                     <td className="px-6 py-3.5 text-right whitespace-nowrap">
                       <span className="chip">

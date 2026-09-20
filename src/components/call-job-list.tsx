@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { authFetch } from "@/lib/auth-fetch";
 import {
+  agentLabel,
   formatDate,
   languageLabel,
   statusLabel,
@@ -114,7 +115,7 @@ export function CallJobList({
                       </Link>
                       <p className="mt-1 text-[12px] text-muted">{formatDate(call.created_at)}</p>
                     </td>
-                    <td className="text-[14px] font-medium text-ink">{call.agents?.name || "—"}</td>
+                    <td className="text-[14px] font-medium text-ink">{agentLabel(call)}</td>
                     <td className="text-[13px] text-ink">
                       {languageLabel(call.detected_language || call.language_mode)}
                     </td>

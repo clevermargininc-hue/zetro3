@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SettingsProvider, useSettings } from "@/components/settings-provider";
@@ -68,7 +67,7 @@ function SettingsPanel() {
     return (
       <div className="space-y-6">
         <TeamSettings />
-        <TeamBoard embedded />
+        <TeamBoard />
       </div>
     );
   }
@@ -133,7 +132,7 @@ function SettingsChrome() {
   );
 }
 
-export function SettingsShell({ children: _children }: { children?: ReactNode }) {
+export function SettingsShell() {
   return (
     <SettingsProvider>
       <SettingsChrome />
