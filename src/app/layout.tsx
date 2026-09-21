@@ -14,9 +14,9 @@ const syne = Syne({
 });
 
 export const metadata: Metadata = {
-  title: "Zetro — Contact center quality intelligence",
+  title: "Zetro — Score calls against your scorecard",
   description:
-    "Enterprise call QA for bilingual contact centers. Transcribe, diarize, and audit agent performance in Kiswahili and English.",
+    "Zetro scores contact-center calls against the scorecard you already use. English, Kiswahili, or both — with notes coaches can take to the huddle.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

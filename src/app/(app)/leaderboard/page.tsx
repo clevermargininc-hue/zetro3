@@ -69,7 +69,7 @@ export default async function LeaderboardPage() {
     <div className="space-y-6 pb-10">
       <PageHeader
         title="Leaderboard"
-        description="Average scores and audit volume by agent ID."
+        description="Average scores and how many calls each agent has been marked on."
       />
 
       <KpiStrip
@@ -78,7 +78,7 @@ export default async function LeaderboardPage() {
             label: "Top agent",
             value: topFile ? `${topFile.avg_score}%` : "—",
             hint: topFile
-              ? `${topFile.name} · ${topFile.call_count} audit${topFile.call_count === 1 ? "" : "s"}`
+              ? `${topFile.name} · ${topFile.call_count} scored call${topFile.call_count === 1 ? "" : "s"}`
               : "No scored calls yet",
           },
           {
@@ -87,14 +87,14 @@ export default async function LeaderboardPage() {
             hint: `${ranked.length} ranked agent${ranked.length === 1 ? "" : "s"}`,
           },
           {
-            label: "Audits",
+            label: "Scored calls",
             value: String(totalAudits),
             hint: "Completed evaluations",
           },
           {
             label: "Agents",
             value: String(ranked.length),
-            hint: "Unique agent IDs",
+            hint: "Unique agents",
           },
         ]}
       />
@@ -110,12 +110,12 @@ export default async function LeaderboardPage() {
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                 <th className="px-6 py-3 w-16">Rank</th>
-                <th className="px-6 py-3">Agent ID</th>
-                <th className="px-6 py-3 text-right">Avg QA Score</th>
-                <th className="px-6 py-3 text-right">Audited Calls</th>
+                <th className="px-6 py-3">Agent</th>
+                <th className="px-6 py-3 text-right">Avg score</th>
+                <th className="px-6 py-3 text-right">Scored calls</th>
                 <th className="px-6 py-3 text-right">Excellent (&gt;85%)</th>
                 <th className="px-6 py-3 text-right">Needs Review</th>
-                <th className="px-6 py-3 text-right">Performance Band</th>
+                <th className="px-6 py-3 text-right">Band</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-[13px]">
@@ -166,10 +166,10 @@ export default async function LeaderboardPage() {
               <div className="inline-flex p-4 rounded-full bg-slate-50 mb-3">{Icons.emptyBox}</div>
               <h3 className="text-[15px] font-bold text-ink">No rankings yet</h3>
               <p className="mt-1 text-[13px] text-muted max-w-sm mx-auto">
-                Upload recordings and complete a documents audit to rank agent IDs by QA score.
+                Upload and score calls to rank agents.
               </p>
               <Link href="/upload" className="mt-5 btn btn-blue text-[13px] px-5 py-2 inline-flex font-semibold">
-                Upload Call Recording
+                Upload a call
               </Link>
             </div>
           )}

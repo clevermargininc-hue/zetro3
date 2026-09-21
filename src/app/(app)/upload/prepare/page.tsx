@@ -22,7 +22,7 @@ export default async function UploadPreparePage() {
       <PageHeader
         kicker="Step 2 of 3"
         title="Prepare recordings"
-        description="Open a file, listen, and wait until it is ready. Scoring is the next step. Audited calls are in Call inventory."
+        description="Open a file and wait until you can read who spoke. Scoring is next. Finished calls live in Calls."
       />
       <CallJobList
         action="transcribe"

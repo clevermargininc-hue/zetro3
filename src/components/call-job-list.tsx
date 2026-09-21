@@ -79,7 +79,7 @@ export function CallJobList({
             : `${calls.length} in this step`}
         </p>
         <Link href="/calls" className="text-[12px] font-semibold text-blue hover:underline">
-          Call inventory
+          Calls
         </Link>
       </div>
       <div className="surface overflow-hidden">
@@ -171,7 +171,7 @@ export function CallJobList({
             </p>
             <p className="mt-2 text-[13px] text-muted max-w-sm mx-auto leading-relaxed">
               {isScore
-                ? "Finish Prepare first. After a score is saved, the call moves to Call inventory."
+                ? "Finish Prepare first. After a score is saved, the call moves to Calls."
                 : "New uploads appear here. Open a recording to prepare it, then continue to Score."}
             </p>
             <Link

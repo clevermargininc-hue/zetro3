@@ -239,7 +239,7 @@ export function TranscribeWorkspace({
         <div>
           <h2 className="text-[15px] font-semibold text-ink">Listen to the recording</h2>
           <p className="text-[12px] text-muted mt-0.5">
-            Transcripts stay internal. You score on the next step, from company files.
+            Transcripts stay in the workspace. You score on the next step, from your scorecard.
           </p>
         </div>
         <div className="border border-line bg-slate-50 p-3">
@@ -293,7 +293,7 @@ export function TranscribeWorkspace({
             <span className="chip chip-ok">Ready for Step 3</span>
             <h2 className="mt-2 text-[15px] font-semibold text-ink">Go to Score</h2>
             <p className="text-[12px] text-muted mt-0.5">
-              Listen here if you need to. Scoring reads your Standards files, not a generic rubric.
+              Listen here if you need to. Scoring reads your scorecard, not a generic list.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { CountryRegionPicker } from "@/components/country-region-picker";
 import { useSettings } from "@/components/settings-provider";
-import { BILLING_HONESTY, COMMERCIAL_PLANS, formatMinutes, formatUsd } from "@/lib/billing";
+import { BILLING_HONESTY } from "@/lib/billing";
 
 export function AccountSettings() {
   const { data, fullName, setFullName, username, setUsername, saving, patch } = useSettings();
@@ -198,12 +198,10 @@ export function WorkspaceSettings() {
 
       <div className="surface p-6 space-y-3">
         <div>
-          <h3 className="text-[15px] font-bold text-ink">Commercial usage</h3>
+          <h3 className="text-[15px] font-bold text-ink">Billing</h3>
           <p className="text-[13px] text-muted mt-0.5">
-            Workspaces start on trial terms: {formatMinutes(COMMERCIAL_PLANS.trial.includedAuditedMinutes)} audited
-            per month and {COMMERCIAL_PLANS.trial.agentCap} named agents. Sampling is {formatUsd(COMMERCIAL_PLANS.sampling.monthlyUsd ?? 0)}
-            for {formatMinutes(COMMERCIAL_PLANS.sampling.includedAuditedMinutes)}; Coverage is {formatUsd(COMMERCIAL_PLANS.coverage.monthlyUsd ?? 0)}
-            for {formatMinutes(COMMERCIAL_PLANS.coverage.includedAuditedMinutes)}.
+            Invoices are a coaching pack: scored calls per live agent. Open Pricing, then talk to
+            sales. Solo vs Team is who can log in, not this bill.
           </p>
         </div>
         <p className="text-[12px] leading-relaxed text-muted">{BILLING_HONESTY}</p>
@@ -211,7 +209,7 @@ export function WorkspaceSettings() {
           <Link href="/pricing" className="btn btn-ghost text-[13px]">
             View pricing
           </Link>
-          <Link href="/talk-sales?plan=coverage" className="btn btn-blue text-[13px]">
+          <Link href="/talk-sales" className="btn btn-blue text-[13px]">
             Talk to sales
           </Link>
         </div>
@@ -220,10 +218,10 @@ export function WorkspaceSettings() {
       {isAdmin && isSolo && (
         <div className="surface p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h3 className="text-[15px] font-bold text-ink">Upgrade to Multi-User Team Workspace</h3>
+            <h3 className="text-[15px] font-bold text-ink">Let teammates in</h3>
             <p className="text-[13px] text-muted mt-0.5 max-w-lg">
-              Enable multi-seat collaboration, teammate invitations, and role-based access while preserving existing calls and evaluation standards.
-              This is workspace access, not the Sampling / Coverage bill.
+              Invite people and set roles. Your calls and scorecard stay. This is who can log in, not
+              the monthly bill.
             </p>
           </div>
           <button
@@ -232,7 +230,7 @@ export function WorkspaceSettings() {
             onClick={() => void patch({ plan: "team" }, "plan", "This workspace is now on the team plan.")}
             className="btn bg-slate-900 hover:bg-slate-800 text-white text-[13px] px-4 py-2 font-semibold shrink-0"
           >
-            {saving === "plan" ? "Upgrading…" : "Enable Team Plan"}
+            {saving === "plan" ? "Updating…" : "Turn on team access"}
           </button>
         </div>
       )}

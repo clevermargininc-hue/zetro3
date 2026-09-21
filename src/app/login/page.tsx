@@ -23,12 +23,12 @@ export default async function LoginPage({
       <div className="hidden flex-col justify-between bg-blue p-10 text-white lg:flex">
         <Logo invert />
         <div>
-          <p className="text-sm font-medium text-white/70">Enterprise call QA</p>
+          <p className="text-sm font-medium text-white/70">Call quality</p>
           <h1 className="mt-3 max-w-md text-3xl font-semibold leading-snug">
-            Quality intelligence for bilingual contact centers.
+            Score calls against the scorecard you already use.
           </h1>
         </div>
-        <p className="text-sm text-white/70">Used in Tanzania · Kiswahili & English · English only elsewhere</p>
+        <p className="text-sm text-white/70">Tanzania · English & Kiswahili · English only elsewhere</p>
       </div>
       <div className="grid place-items-center bg-white px-5 py-16">
         <div className="w-full max-w-md">
@@ -41,7 +41,7 @@ export default async function LoginPage({
           <p className="mt-2 text-sm text-muted">
             {invited
               ? "Use the email this invitation was sent to. You will join that workspace automatically."
-              : "Access your workspace to review calls and agent scores."}
+              : "Open your workspace to review calls and scores."}
           </p>
           {oauthError ? <p className="alert-error mt-4">{oauthError}</p> : null}
           <div className="mt-8">

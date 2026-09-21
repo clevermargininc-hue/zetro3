@@ -5,15 +5,15 @@ import { SalesForm } from "@/components/sales-form";
 
 export const metadata: Metadata = {
   title: "Talk to sales | Zetro",
-  description: "Quote Zetro from your agent count, talk time, and how much you want audited.",
+  description: "Tell us your floor. We reply with a coaching-pack estimate — not a seat price.",
 };
 
 export default async function TalkSalesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ plan?: string; agents?: string; hours?: string; audit?: string }>;
+  searchParams: Promise<{ calls?: string; aht?: string; agents?: string }>;
 }) {
-  const { plan, agents, hours, audit } = await searchParams;
+  const { calls, aht, agents } = await searchParams;
 
   return (
     <div className="min-h-screen bg-surface-2 flex flex-col">
@@ -32,37 +32,37 @@ export default async function TalkSalesPage({
           <div className="animate-in fade-in slide-in-from-left-8 duration-700">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-line/50 shadow-sm mb-6">
               <span className="flex h-2 w-2 rounded-full bg-blue animate-pulse"></span>
-              <span className="text-[12px] font-bold uppercase tracking-wider text-muted">Volume quote</span>
+              <span className="text-[12px] font-bold uppercase tracking-wider text-muted">Talk to us</span>
             </div>
             
             <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-ink mb-6 leading-tight">
-              Map your minutes <br />to a plan.
+              Tell us the floor. <br />We will quote the pack.
             </h1>
             
             <p className="text-[16px] leading-relaxed text-muted mb-8">
-              Sampling, Coverage, or Floor — we quote from agents, talk time, and how much you want scored. Invoices can be USD, TZS, or KES.
+              Daily calls, talk time, and live agents. We score two conversations per agent per day. Invoices in USD, TZS, or KES.
             </p>
             
             <div className="space-y-6">
               <div className="flex gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white border border-line/40 shadow-sm text-blue font-bold">1</div>
                 <div>
-                  <h3 className="font-semibold text-ink">Audited minutes</h3>
-                  <p className="text-sm text-muted mt-1">You pay for prepare plus a documents score — not an unlimited $99 seat.</p>
+                  <h3 className="font-semibold text-ink">You pay for scored minutes</h3>
+                  <p className="text-sm text-muted mt-1">Speech to text, who spoke, and a mark on your scorecard — not an unlimited cheap seat.</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white border border-line/40 shadow-sm text-blue font-bold">2</div>
                 <div>
                   <h3 className="font-semibold text-ink">Your scorecard</h3>
-                  <p className="text-sm text-muted mt-1">Audits follow your SOP, scorecard, and compliance files.</p>
+                  <p className="text-sm text-muted mt-1">We mark calls the way you already judge quality.</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white border border-line/40 shadow-sm text-blue font-bold">3</div>
                 <div>
                   <h3 className="font-semibold text-ink">Local invoices</h3>
-                  <p className="text-sm text-muted mt-1">List prices are USD. Paid plans can invoice in USD, TZS, or KES.</p>
+                  <p className="text-sm text-muted mt-1">List prices are USD. We can invoice in USD, TZS, or KES.</p>
                 </div>
               </div>
             </div>
@@ -70,16 +70,15 @@ export default async function TalkSalesPage({
           
           <div className="animate-in fade-in slide-in-from-right-8 duration-700 delay-150">
             <div className="bg-white rounded-3xl p-8 border border-line/40 shadow-sm shadow-blue/5">
-              <h2 className="text-2xl font-bold tracking-tight text-ink mb-2">Request a quote</h2>
+              <h2 className="text-2xl font-bold tracking-tight text-ink mb-2">Ask for a quote</h2>
               <p className="text-sm text-muted mb-8">
-                Tell us the floor. We reply with audited-minute terms, not an unlimited seat price.
+                Tell us the floor. We reply with coaching-pack terms. This form does not charge you.
               </p>
               
               <SalesForm
-                initialPlan={plan}
+                initialCalls={calls}
+                initialAht={aht}
                 initialAgents={agents}
-                initialHours={hours}
-                initialAudit={audit}
               />
             </div>
           </div>

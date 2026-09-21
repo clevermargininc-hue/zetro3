@@ -3,227 +3,162 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
-  COMMERCIAL_PLANS,
+  COACHING_CALLS_PER_AGENT_PER_DAY,
+  DEFAULT_AHT_MINUTES,
   DEFAULT_AGENT_COUNT,
-  DEFAULT_AUDIT_PERCENT,
-  DEFAULT_TALK_HOURS_PER_DAY,
+  DEFAULT_CALLS_PER_DAY,
+  QUOTE_MINIMUM_USD,
+  WORKING_DAYS_PER_MONTH,
+  estimateLiveAgents,
   formatMinutes,
   formatUsd,
-  quoteVolume,
-  type CommercialPlanId,
+  formatUsdRate,
+  quoteCallVolume,
 } from "@/lib/billing";
 
-const AUDIT_PRESETS = [
-  { label: "5% sample", value: 5 },
-  { label: "25%", value: 25 },
-  { label: "70% queue", value: 70 },
-  { label: "100% floor", value: 100 },
-] as const;
-
-function planHref(planId: CommercialPlanId, quote: ReturnType<typeof quoteVolume>) {
+function salesHref(calls: number, aht: number, agents: number) {
   const params = new URLSearchParams({
-    plan: planId,
-    agents: String(quote.agents),
-    hours: String(quote.talkHoursPerDay),
-    audit: String(quote.auditPercent),
+    calls: String(calls),
+    aht: String(aht),
+    agents: String(agents),
   });
   return `/talk-sales?${params.toString()}`;
 }
 
 export function PricingQuote() {
+  const [calls, setCalls] = useState(DEFAULT_CALLS_PER_DAY);
+  const [aht, setAht] = useState(DEFAULT_AHT_MINUTES);
   const [agents, setAgents] = useState(DEFAULT_AGENT_COUNT);
-  const [hours, setHours] = useState(DEFAULT_TALK_HOURS_PER_DAY);
-  const [percent, setPercent] = useState(DEFAULT_AUDIT_PERCENT);
+  const [agentsTouched, setAgentsTouched] = useState(false);
+
+  function applyCalls(nextCalls: number) {
+    setCalls(nextCalls);
+    if (!agentsTouched) setAgents(estimateLiveAgents(nextCalls, aht));
+  }
+
+  function applyAht(nextAht: number) {
+    setAht(nextAht);
+    if (!agentsTouched) setAgents(estimateLiveAgents(calls, nextAht));
+  }
 
   const quote = useMemo(
     () =>
-      quoteVolume({
+      quoteCallVolume({
+        callsPerDay: calls,
+        ahtMinutes: aht,
         agents,
-        talkHoursPerDay: hours,
-        auditPercent: percent,
       }),
-    [agents, hours, percent],
+    [calls, aht, agents],
   );
 
-  const paidRows = quote.quotes.filter((row) => row.plan.id !== "trial");
-  const recommendedId = quote.recommended.plan.id;
-
   return (
-    <section className="mt-10 border border-line bg-white">
-      <div className="border-b border-line px-6 py-5">
-        <h2 className="font-display text-[18px] font-semibold text-ink">Estimate from your floor</h2>
-        <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-muted">
-          Talk minutes are agents × hours on the phone per day × 22 working days. You only pay for the
-          share you send to Zetro to audit — sampling 5% is a different bill from scoring everything.
-        </p>
-      </div>
-
-      <div className="grid gap-6 border-b border-line px-6 py-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-        <div className="space-y-4">
+    <section className="border border-line bg-white">
+      <form className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" onSubmit={(event) => event.preventDefault()}>
+        <div className="space-y-5 border-b border-line px-6 py-6 lg:border-b-0 lg:border-r">
           <label className="block">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
-              Named agents
+              Calls per day
             </span>
-            <div className="mt-1.5 flex items-center gap-3">
-              <input
-                type="range"
-                min={1}
-                max={80}
-                value={agents}
-                onChange={(event) => setAgents(Number(event.target.value))}
-                className="w-full accent-blue"
-              />
-              <input
-                type="number"
-                min={1}
-                max={200}
-                value={agents}
-                onChange={(event) =>
-                  setAgents(Math.min(200, Math.max(1, Number(event.target.value) || 1)))
-                }
-                className="field w-20 text-right tabular-nums"
-              />
-            </div>
+            <input
+              type="number"
+              min={1}
+              max={500000}
+              step={1}
+              value={calls}
+              onChange={(event) =>
+                applyCalls(Math.min(500000, Math.max(1, Math.round(Number(event.target.value) || 1))))
+              }
+              className="field mt-1.5 tabular-nums"
+            />
+            <span className="mt-1 block text-[12px] text-muted">How many calls the floor takes in a day.</span>
           </label>
 
           <label className="block">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
-              Talk hours per agent per day
+              Average handling time (minutes)
             </span>
-            <div className="mt-1.5 flex items-center gap-3">
-              <input
-                type="range"
-                min={1}
-                max={8}
-                step={0.5}
-                value={hours}
-                onChange={(event) => setHours(Number(event.target.value))}
-                className="w-full accent-blue"
-              />
-              <input
-                type="number"
-                min={1}
-                max={10}
-                step={0.5}
-                value={hours}
-                onChange={(event) =>
-                  setHours(Math.min(10, Math.max(1, Number(event.target.value) || 1)))
-                }
-                className="field w-20 text-right tabular-nums"
-              />
-            </div>
+            <input
+              type="number"
+              min={0.5}
+              max={60}
+              step={0.5}
+              value={aht}
+              onChange={(event) =>
+                applyAht(Math.min(60, Math.max(0.5, Number(event.target.value) || 0.5)))
+              }
+              className="field mt-1.5 tabular-nums"
+            />
+            <span className="mt-1 block text-[12px] text-muted">How long a typical call lasts. That is the audio we work on.</span>
           </label>
 
-          <div>
+          <label className="block">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
-              Share of talk to audit
+              Live agents
             </span>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {AUDIT_PRESETS.map((preset) => (
-                <button
-                  key={preset.value}
-                  type="button"
-                  onClick={() => setPercent(preset.value)}
-                  className={`btn px-3 py-1.5 text-[12px] ${
-                    percent === preset.value ? "btn-blue" : "btn-ghost"
-                  }`}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-            <label className="mt-3 flex items-center gap-3">
-              <input
-                type="range"
-                min={1}
-                max={100}
-                value={percent}
-                onChange={(event) => setPercent(Number(event.target.value))}
-                className="w-full accent-blue"
-              />
-              <span className="w-14 text-right text-[13px] tabular-nums text-ink">{percent}%</span>
-            </label>
-          </div>
+            <input
+              type="number"
+              min={1}
+              max={20000}
+              step={1}
+              value={agents}
+              onChange={(event) => {
+                setAgentsTouched(true);
+                setAgents(Math.min(20000, Math.max(1, Math.round(Number(event.target.value) || 1))));
+              }}
+              className="field mt-1.5 tabular-nums"
+            />
+            <span className="mt-1 block text-[12px] text-muted">
+              People on the headset. Talk time like this is about {quote.estimatedAgents.toLocaleString("en-US")}{" "}
+              live agents.
+            </span>
+          </label>
         </div>
 
-        <div className="border border-line bg-bg px-5 py-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">This mix</p>
-          <dl className="mt-3 space-y-2 text-[13px]">
+        <div className="bg-bg px-6 py-6">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">Coaching pack / month</p>
+          <p className="mt-2 text-[40px] font-semibold tracking-tight text-ink tabular-nums">
+            {formatUsd(quote.monthlyUsd)}
+          </p>
+          <p className="text-[13px] text-muted">
+            USD / month · {COACHING_CALLS_PER_AGENT_PER_DAY} scored calls per agent per day · {WORKING_DAYS_PER_MONTH}{" "}
+            working days
+          </p>
+
+          <dl className="mt-5 space-y-2 border-t border-line pt-4 text-[13px]">
             <div className="flex justify-between gap-4">
-              <dt className="text-muted">Talk time / month</dt>
-              <dd className="tabular-nums font-medium text-ink">{formatMinutes(quote.talkMinutes)}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted">Minutes sent to audit</dt>
-              <dd className="tabular-nums font-medium text-ink">{formatMinutes(quote.auditedMinutes)}</dd>
-            </div>
-            <div className="flex justify-between gap-4 border-t border-line pt-2">
-              <dt className="text-muted">Best list price</dt>
-              <dd className="text-right">
-                <p className="font-semibold text-ink">{quote.recommended.plan.name}</p>
-                <p className="tabular-nums text-ink">
-                  {Number.isFinite(quote.recommended.totalUsd)
-                    ? `${formatUsd(quote.recommended.totalUsd)} / mo`
-                    : "Talk to sales"}
-                </p>
+              <dt className="text-muted">Scored calls / day</dt>
+              <dd className="tabular-nums font-medium text-ink">
+                {Math.round(quote.scoredCallsPerDay).toLocaleString("en-US")}
               </dd>
             </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted">Audited minutes / month</dt>
+              <dd className="tabular-nums font-medium text-ink">{formatMinutes(quote.auditedMinutes)}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted">Rate per audited minute</dt>
+              <dd className="tabular-nums font-medium text-ink">{formatUsdRate(quote.ratePerMinuteUsd)}</dd>
+            </div>
           </dl>
-          <p className="mt-3 text-[12px] leading-relaxed text-muted">
-            {recommendedId === "trial"
-              ? "This volume fits the trial. After 120 audited minutes, Sampling is the next paid step."
-              : recommendedId === "floor"
-                ? "At this volume a Floor commit is cheaper than list overage. Sales will quote from your minutes."
-                : `Includes the ${quote.recommended.plan.name} platform fee${
-                    quote.recommended.auditedOverageMinutes > 0
-                      ? ` plus ${formatMinutes(quote.recommended.auditedOverageMinutes)} overage`
-                      : ", with room inside the included bucket"
-                  }.`}
+
+          <p className="mt-4 text-[12px] leading-relaxed text-muted">
+            You are not buying a slice of every inbound call. We score{" "}
+            {COACHING_CALLS_PER_AGENT_PER_DAY} conversations per live agent each working day — enough
+            to brief the floor. You pay for those minutes: speech to text, who spoke, and a mark
+            against your scorecard.
+            {quote.cappedToFloor
+              ? " On this mix, that already covers every call the floor takes."
+              : ""}
+            {quote.minimumApplied
+              ? ` Small floors still quote ${formatUsd(QUOTE_MINIMUM_USD)} so the workspace is covered.`
+              : ""}
           </p>
-          <Link href={planHref(recommendedId, quote)} className="btn btn-blue mt-4 w-full">
-            Send this mix to sales
+
+          <Link href={salesHref(calls, aht, agents)} className="btn btn-blue mt-5 w-full">
+            Send this estimate to sales
           </Link>
         </div>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Plan</th>
-              <th className="text-right">Platform</th>
-              <th className="text-right">Overage</th>
-              <th className="text-right">Est. monthly</th>
-              <th className="text-right">Per audited min</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paidRows.map((row) => {
-              const active = row.plan.id === recommendedId;
-              return (
-                <tr key={row.plan.id} className={active ? "bg-blue-soft" : undefined}>
-                  <td className="font-medium text-ink">
-                    {row.plan.name}
-                    {active ? <span className="ml-2 text-[11px] font-medium text-blue">Best fit</span> : null}
-                  </td>
-                  <td className="text-right tabular-nums text-ink">
-                    {row.plan.monthlyUsd == null ? COMMERCIAL_PLANS.floor.periodLabel : formatUsd(row.platformUsd)}
-                  </td>
-                  <td className="text-right tabular-nums text-muted">
-                    {row.auditedOverageMinutes > 0 ? formatMinutes(row.auditedOverageMinutes) : "—"}
-                  </td>
-                  <td className="text-right tabular-nums font-medium text-ink">{formatUsd(row.totalUsd)}</td>
-                  <td className="text-right tabular-nums text-muted">
-                    {row.blendedPerAuditedMinuteUsd != null
-                      ? `${formatUsd(row.blendedPerAuditedMinuteUsd)} / min`
-                      : "—"}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      </form>
     </section>
   );
 }

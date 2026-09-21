@@ -16,8 +16,8 @@ export default async function CallsPage() {
   return (
     <div className="space-y-6 pb-10">
       <PageHeader
-        title="Call inventory"
-        description="Every recording, with whether it is already audited or not yet."
+        title="Calls"
+        description="Every recording — whether it is scored yet or still waiting."
       />
 
       <CallsBoard

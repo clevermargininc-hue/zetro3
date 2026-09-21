@@ -20,8 +20,8 @@ export default async function UploadScorePage() {
     <div className="space-y-6">
       <PageHeader
         kicker="Step 3 of 3"
-        title="Score against company files"
-        description="Open a prepared call and start the audit. The model reads your scorecard, compliance, and process files first. It does not use a generic rubric."
+        title="Score against your scorecard"
+        description="Open a prepared call and start the score. Zetro reads your scorecard first. It does not use a generic list."
       />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] items-start">
         <CallJobList

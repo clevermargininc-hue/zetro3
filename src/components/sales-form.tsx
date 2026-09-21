@@ -1,41 +1,24 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import {
-  COMMERCIAL_PLANS,
-  DEFAULT_AGENT_COUNT,
-  DEFAULT_AUDIT_PERCENT,
-  DEFAULT_TALK_HOURS_PER_DAY,
-  isCommercialPlanId,
-  type CommercialPlanId,
-} from "@/lib/billing";
-
-const PLAN_OPTIONS: { id: CommercialPlanId; label: string }[] = [
-  { id: "trial", label: COMMERCIAL_PLANS.trial.name },
-  { id: "sampling", label: `${COMMERCIAL_PLANS.sampling.name} · ${COMMERCIAL_PLANS.sampling.priceLabel}/mo` },
-  { id: "coverage", label: `${COMMERCIAL_PLANS.coverage.name} · ${COMMERCIAL_PLANS.coverage.priceLabel}/mo` },
-  { id: "floor", label: `${COMMERCIAL_PLANS.floor.name} · custom commit` },
-];
+import { DEFAULT_AHT_MINUTES, DEFAULT_AGENT_COUNT, DEFAULT_CALLS_PER_DAY } from "@/lib/billing";
 
 export function SalesForm({
-  initialPlan,
+  initialCalls,
+  initialAht,
   initialAgents,
-  initialHours,
-  initialAudit,
 }: {
-  initialPlan?: string | null;
+  initialCalls?: string | null;
+  initialAht?: string | null;
   initialAgents?: string | null;
-  initialHours?: string | null;
-  initialAudit?: string | null;
 }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const defaultPlan = isCommercialPlanId(initialPlan) ? initialPlan : "coverage";
-  const defaultAgents = Number(initialAgents);
-  const defaultHours = Number(initialHours);
-  const defaultAudit = Number(initialAudit);
+  const parsedCalls = Number(initialCalls);
+  const parsedAht = Number(initialAht);
+  const parsedAgents = Number(initialAgents);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -48,10 +31,9 @@ export function SalesForm({
       workEmail: formData.get("workEmail") as string,
       companyName: formData.get("companyName") as string,
       message: formData.get("message") as string,
-      plan: formData.get("plan") as string,
+      callsPerDay: formData.get("callsPerDay") as string,
+      ahtMinutes: formData.get("ahtMinutes") as string,
       agents: formData.get("agents") as string,
-      talkHoursPerDay: formData.get("talkHoursPerDay") as string,
-      auditPercent: formData.get("auditPercent") as string,
     };
 
     try {
@@ -84,7 +66,7 @@ export function SalesForm({
         </div>
         <h3 className="mb-2 text-xl font-bold text-ink">Request received</h3>
         <p className="text-[14px] text-muted">
-          We will map your minutes to Sampling, Coverage, or Floor and reply with a quote.
+          We will match this coaching pack to audited minutes and reply with a quote.
         </p>
       </div>
     );
@@ -109,49 +91,38 @@ export function SalesForm({
         <input name="workEmail" required type="email" className="field" placeholder="jane@acmecorp.com" />
       </label>
 
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-ink">Plan of interest</span>
-        <select name="plan" defaultValue={defaultPlan} className="field">
-          {PLAN_OPTIONS.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-ink">Agents</span>
+          <span className="font-medium text-ink">Calls per day</span>
+          <input
+            name="callsPerDay"
+            type="number"
+            min={1}
+            max={500000}
+            defaultValue={Number.isFinite(parsedCalls) && parsedCalls > 0 ? Math.round(parsedCalls) : DEFAULT_CALLS_PER_DAY}
+            className="field"
+          />
+        </label>
+        <label className="flex flex-col gap-1.5 text-sm">
+          <span className="font-medium text-ink">AHT (minutes)</span>
+          <input
+            name="ahtMinutes"
+            type="number"
+            min={0.5}
+            max={60}
+            step={0.5}
+            defaultValue={Number.isFinite(parsedAht) && parsedAht > 0 ? parsedAht : DEFAULT_AHT_MINUTES}
+            className="field"
+          />
+        </label>
+        <label className="flex flex-col gap-1.5 text-sm">
+          <span className="font-medium text-ink">Live agents</span>
           <input
             name="agents"
             type="number"
             min={1}
-            max={500}
-            defaultValue={Number.isFinite(defaultAgents) && defaultAgents > 0 ? defaultAgents : DEFAULT_AGENT_COUNT}
-            className="field"
-          />
-        </label>
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-ink">Talk hours / day</span>
-          <input
-            name="talkHoursPerDay"
-            type="number"
-            min={1}
-            max={12}
-            step={0.5}
-            defaultValue={Number.isFinite(defaultHours) && defaultHours > 0 ? defaultHours : DEFAULT_TALK_HOURS_PER_DAY}
-            className="field"
-          />
-        </label>
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-ink">% to audit</span>
-          <input
-            name="auditPercent"
-            type="number"
-            min={1}
-            max={100}
-            defaultValue={Number.isFinite(defaultAudit) && defaultAudit > 0 ? defaultAudit : DEFAULT_AUDIT_PERCENT}
+            max={20000}
+            defaultValue={Number.isFinite(parsedAgents) && parsedAgents > 0 ? Math.round(parsedAgents) : DEFAULT_AGENT_COUNT}
             className="field"
           />
         </label>
@@ -174,7 +145,7 @@ export function SalesForm({
       </button>
 
       <p className="mt-2 text-center text-[12px] text-muted">
-        Volume is used to quote audited minutes. Billing is not charged from this form.
+        Quoted as a coaching pack (scored calls per agent). This form does not charge you.
       </p>
     </form>
   );

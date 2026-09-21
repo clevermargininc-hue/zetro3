@@ -95,11 +95,11 @@ export function isModelAccessError(error: unknown) {
 
 export function describeAiError(error: unknown) {
   if (isConnectionError(error)) {
-    return "Could not reach OpenAI to score this call. Try the audit again in a moment.";
+    return "Could not reach OpenAI to score this call. Try scoring again in a moment.";
   }
   const message = error instanceof Error ? error.message : "";
   if (/timed?\s*out|timeout/i.test(message)) {
-    return "The audit timed out while reading your company files. Tap Retry documents audit — large scorecards can take a couple of minutes.";
+    return "Scoring timed out while reading your scorecard. Tap Try scoring again — large scorecards can take a couple of minutes.";
   }
   if (
     message.toLowerCase().includes("empty response") ||

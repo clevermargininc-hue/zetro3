@@ -121,7 +121,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
         <div className="no-print">
           <PageHeader
             title="QA briefing"
-            description="What changed, who to coach, and what customers said. Print this for the huddle. Download the spreadsheet when someone needs the raw rows."
+            description="What changed, who to coach, and what customers said. Print this for the huddle. Download the spreadsheet if someone needs the raw rows."
             actions={
               <div className="flex flex-wrap items-center gap-2">
                 <button

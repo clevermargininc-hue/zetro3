@@ -18,10 +18,10 @@ export default async function SignupPage({
         <div>
           <p className="text-sm font-medium text-white/70">Get started</p>
           <h1 className="mt-3 max-w-md text-3xl font-semibold leading-snug">
-            Stand up a QA workspace in minutes.
+            Open a workspace. Score one call today.
           </h1>
         </div>
-        <p className="text-sm text-white/70">Upload, transcribe, audit, and rank agents.</p>
+        <p className="text-sm text-white/70">Upload, prepare, score — then take notes to the huddle.</p>
       </div>
       <div className="grid place-items-center bg-white px-5 py-16">
         <div className="w-full max-w-md">
@@ -34,7 +34,7 @@ export default async function SignupPage({
           <p className="mt-2 text-sm text-muted">
             {invited
               ? "Use the email this invitation was sent to. After you sign in you will join that workspace automatically."
-              : "Use your work email. After sign-up you can join a team or start solo."}
+              : "Use your work email. After sign-up you can join a team or start on your own."}
           </p>
           <div className="mt-8">
             <AuthForm mode="signup" next={dest} email={email} />

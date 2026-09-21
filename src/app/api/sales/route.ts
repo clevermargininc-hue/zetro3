@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import {
-  formatMinutes,
-  formatUsd,
-  isCommercialPlanId,
-  quoteVolume,
-} from "@/lib/billing";
+import { formatMinutes, formatUsd, quoteCallVolume } from "@/lib/billing";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
@@ -19,7 +14,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { fullName, workEmail, companyName, message, plan, agents, talkHoursPerDay, auditPercent } = body;
+    const { fullName, workEmail, companyName, message, callsPerDay, ahtMinutes, agents } = body;
 
     if (!fullName || !workEmail || !companyName) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -30,28 +25,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Enter a valid work email." }, { status: 400 });
     }
 
-    const planId = isCommercialPlanId(String(plan || "")) ? String(plan) : null;
+    const calls = Number(callsPerDay);
+    const aht = Number(ahtMinutes);
     const agentCount = Number(agents);
-    const hours = Number(talkHoursPerDay);
-    const percent = Number(auditPercent);
-    const hasVolume = Number.isFinite(agentCount) && agentCount > 0;
+    const hasVolume = Number.isFinite(calls) && calls > 0;
 
     const quote = hasVolume
-      ? quoteVolume({
-          agents: agentCount,
-          talkHoursPerDay: Number.isFinite(hours) && hours > 0 ? hours : 5,
-          auditPercent: Number.isFinite(percent) && percent > 0 ? percent : 5,
+      ? quoteCallVolume({
+          callsPerDay: calls,
+          ahtMinutes: Number.isFinite(aht) && aht > 0 ? aht : 4,
+          agents: Number.isFinite(agentCount) && agentCount > 0 ? agentCount : 8,
         })
       : null;
 
     const notes = [
       message ? String(message).trim().slice(0, 4000) : "",
-      planId ? `Plan of interest: ${planId}` : "",
       quote
         ? [
-            `Volume: ${quote.agents} agents · ${quote.talkHoursPerDay} talk-hours/day · ${quote.auditPercent}% audited`,
-            `Talk minutes: ${formatMinutes(quote.talkMinutes)} · Audited: ${formatMinutes(quote.auditedMinutes)}`,
-            `List recommendation: ${quote.recommended.plan.name} · ${formatUsd(quote.recommended.totalUsd)} / mo`,
+            `Volume: ${quote.callsPerDay} calls/day · ${quote.ahtMinutes} min AHT · ${quote.agents} live agents`,
+            `Coaching pack: ${quote.coachingCallsPerAgentPerDay} scored calls/agent/day · ${Math.round(quote.scoredCallsPerDay)} scored calls/day`,
+            `Audited minutes: ${formatMinutes(quote.auditedMinutes)} · Rate: ${formatUsd(quote.ratePerMinuteUsd)}/min`,
+            `List estimate: ${formatUsd(quote.monthlyUsd)} / mo`,
           ].join("\n")
         : "",
     ]

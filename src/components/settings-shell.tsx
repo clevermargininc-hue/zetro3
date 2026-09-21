@@ -45,15 +45,15 @@ const Icons = {
 
 const NAV = [
   {
-    label: "Personal Profile",
-    items: [{ href: "/settings/account", label: "My Account", icon: Icons.user }],
+    label: "You",
+    items: [{ href: "/settings/account", label: "Account", icon: Icons.user }],
   },
   {
-    label: "Organization & Workspace",
+    label: "Workspace",
     items: [
-      { href: "/settings/workspace", label: "General Workspace", icon: Icons.workspace },
-      { href: "/settings/team", label: "Team & Access", icon: Icons.team },
-      { href: "/settings/auditing", label: "Auditing & Rules", icon: Icons.auditing },
+      { href: "/settings/workspace", label: "Workspace", icon: Icons.workspace },
+      { href: "/settings/team", label: "Team", icon: Icons.team },
+      { href: "/settings/auditing", label: "Scoring", icon: Icons.auditing },
     ],
   },
 ];
@@ -82,8 +82,8 @@ function SettingsChrome() {
   return (
     <div className="space-y-6 pb-10">
       <PageHeader
-        title="Organization Settings"
-        description="Manage personal credentials, workspace preferences, team member permissions, and scoring rules."
+        title="Settings"
+        description="Your account, workspace, team access, and scoring rules."
       />
 
       <div className="grid gap-8 lg:grid-cols-12">

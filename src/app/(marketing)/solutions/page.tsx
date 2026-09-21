@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Solutions | Zetro",
-  description: "Zetro AI solutions tailored for QA Managers, Operations Directors, and specific industries.",
+  title: "Who Zetro is for | Zetro",
+  description: "Zetro helps QA leads, operations, and agents score calls fairly — against the scorecard you already use.",
 };
 
 function Check() {
@@ -16,44 +16,44 @@ function Check() {
 
 const ROLES = [
   {
-    title: "QA managers",
-    kicker: "Stop sampling. Start coaching.",
-    body: "Spend less time hunting for the 1% of calls to review, and more time helping agents improve. Zetro flags non-compliant calls and shows where the conversation went wrong.",
-    points: ["Coverage you choose — sample or ingest", "Targeted coaching recommendations", "Automated scorecard filling"],
+    title: "QA leads",
+    kicker: "Stop hunting for tapes. Start coaching.",
+    body: "You should not spend the day picking which 1% of calls to hear. Zetro scores a coaching pack every day, flags weak calls, and shows the moment that went wrong.",
+    points: ["Two scored calls per agent per day", "Notes you can take to the huddle", "Marks against your scorecard"],
     featured: false,
   },
   {
-    title: "Operations directors",
-    kicker: "Mitigate risk. Maximize ROI.",
-    body: "Confirm that standard operating procedures are followed across the floor. Identify compliance risk, fraud attempts, or negative sentiment before they escalate.",
-    points: ["Real-time compliance alerts", "Macro trend analysis", "Agent performance rankings"],
+    title: "Operations",
+    kicker: "See if the floor is following the rules.",
+    body: "Know whether agents greet, resolve, and stay inside policy — without waiting for a monthly sample. Spot risk while you can still coach it.",
+    points: ["Clear pass and fail on the scorecard", "Who is strong this week", "What customers keep repeating"],
     featured: true,
   },
   {
     title: "Agents",
-    kicker: "Fair, consistent evaluations.",
-    body: "Agents should not be judged on one bad call that happened to be sampled. Zetro evaluates every interaction so people are graded on typical performance, not a single worst moment.",
-    points: ["Objective AI scoring", "Clear feedback loop", "Recognition for top performers"],
+    kicker: "Fair scores. Clear feedback.",
+    body: "Nobody should be judged on one bad call that happened to be listened to. Zetro scores enough of each person’s work that the mark is typical, not unlucky.",
+    points: ["The same rules for everyone", "Quotes from the actual call", "Praise when the call was good"],
     featured: false,
   },
 ] as const;
 
 const INDUSTRIES = [
   {
-    title: "Telecommunications",
-    body: "Ensure sales agents correctly disclose terms when upselling data packages or mobile money services in both English and Swahili.",
+    title: "Telecom",
+    body: "Check that sales agents say the real terms when they sell data or mobile money — in English and Kiswahili.",
   },
   {
-    title: "Financial services",
-    body: "Audit debt collection calls for empathy and regulatory compliance. Detect fraudulent patterns from the transcript.",
+    title: "Banks and finance",
+    body: "Score collections and service calls for empathy and the rules you must follow.",
   },
   {
-    title: "BPO & outsourcing",
-    body: "Prove SLA adherence to clients with concrete data. Share a transparent dashboard of campaign QA scores.",
+    title: "BPO and outsourcing",
+    body: "Show clients the scores, not a promise. Share a simple view of campaign quality.",
   },
   {
     title: "E-commerce",
-    body: "Track product mentions, delivery complaints, and resolution rates without manual sampling.",
+    body: "Catch delivery complaints and weak resolutions without listening to every tape by hand.",
   },
 ] as const;
 
@@ -61,12 +61,13 @@ export default function SolutionsPage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-16 lg:py-24">
       <header className="max-w-2xl">
-        <p className="page-kicker">Solutions</p>
+        <p className="page-kicker">Who it is for</p>
         <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
           Built for the whole floor
         </h1>
         <p className="mt-4 text-[16px] leading-relaxed text-muted">
-          From the frontline agent to the director of operations, Zetro turns conversations into evidence you can act on.
+          From the person on the headset to the person who owns the SLA. Same calls. Same scorecard.
+          Evidence you can act on.
         </p>
       </header>
 
@@ -97,8 +98,8 @@ export default function SolutionsPage() {
       </div>
 
       <section className="mt-10">
-        <h2 className="text-[15px] font-semibold text-ink">Industries</h2>
-        <p className="mt-1 text-[13px] text-muted">The same audit workflow, applied to regulated and high-volume service lines.</p>
+        <h2 className="text-[15px] font-semibold text-ink">Where it fits</h2>
+        <p className="mt-1 text-[13px] text-muted">The same three steps — upload, prepare, score — on busy service lines.</p>
         <div className="mt-4 grid border border-line bg-white sm:grid-cols-2">
           {INDUSTRIES.map((item, index) => (
             <article
@@ -116,8 +117,8 @@ export default function SolutionsPage() {
 
       <div className="mt-10 flex flex-col items-center justify-between gap-4 border border-line bg-white px-6 py-6 sm:flex-row">
         <div>
-          <p className="text-[15px] font-semibold text-ink">Discuss your use case</p>
-          <p className="mt-1 text-[13px] text-muted">We’ll map Zetro to your QA process, languages, and volume.</p>
+          <p className="text-[15px] font-semibold text-ink">Not sure it fits your floor?</p>
+          <p className="mt-1 text-[13px] text-muted">Tell us the languages, the volume, and how you score today.</p>
         </div>
         <Link href="/talk-sales" className="btn btn-blue shrink-0">
           Talk to sales

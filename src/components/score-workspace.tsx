@@ -68,7 +68,7 @@ export function ScoreWorkspace({
               {bucket === "audited" ? (
                 <span className="chip chip-ok">Audited</span>
               ) : busy ? (
-                <span className="chip chip-wait">Reading company files…</span>
+                <span className="chip chip-wait">Reading your scorecard…</span>
               ) : (
                 <span className="chip">Ready to score</span>
               )}
@@ -112,9 +112,9 @@ export function ScoreWorkspace({
                 <div className="flex items-start gap-4">
                   <div className="h-6 w-6 rounded-full border-2 border-blue/30 border-t-blue animate-spin shrink-0 mt-0.5" />
                   <div>
-                    <h2 className="text-[16px] font-semibold text-ink">Reading company files, then scoring</h2>
+                    <h2 className="text-[16px] font-semibold text-ink">Reading your scorecard, then scoring</h2>
                     <p className="mt-1 text-[13px] text-muted leading-relaxed">
-                      The model loads your scorecard, compliance, and process documents first, then marks the call against those files only.
+                      We load your scorecard first, then mark the call against those rules only.
                     </p>
                   </div>
                 </div>
@@ -130,9 +130,9 @@ export function ScoreWorkspace({
             ) : (
               <>
                 <div>
-                  <h2 className="text-[16px] font-semibold text-ink">Start the documents audit</h2>
+                  <h2 className="text-[16px] font-semibold text-ink">Score this call</h2>
                   <p className="mt-1 text-[13px] text-muted leading-relaxed max-w-xl">
-                    Confirm the files on the right are readable. Scoring does not begin until you start it, and it will not invent criteria that are not in those files.
+                    Check the files on the right are the right ones. Scoring does not start until you tap it, and it will not invent rules that are not in those files.
                   </p>
                 </div>
                 <AuditActions
@@ -156,7 +156,7 @@ export function ScoreWorkspace({
             <ScoreCard score={score} />
             <div className="flex flex-wrap gap-2">
               <Link href="/calls" className="btn btn-blue text-[13px]">
-                Open in Call inventory
+                Open in Calls
               </Link>
               <Link href="/upload/score" className="btn btn-ghost text-[13px]">
                 Score next recording

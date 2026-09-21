@@ -132,7 +132,7 @@ function headline(report: QaReport, _previous: QaReport | null, scoreDelta: numb
 
 function attention(report: QaReport, coach: QaBriefing["coach_now"], review: QaBriefing["review_queue"]) {
   if (!report.summary.calls_audited) {
-    return "Run documents audits on prepared calls, then come back — this briefing fills from scored calls only.";
+    return "Score prepared calls, then come back — this briefing fills from scored calls only.";
   }
   if (coach.length) {
     const names = coach.slice(0, 3).map((row) => row.agent_name);

@@ -87,7 +87,7 @@ export default async function DashboardPage() {
     <div className="space-y-6 pb-10">
       <PageHeader
         title="Overview"
-        description="Call quality, customer voice, compliance, and handling time across this workspace."
+        description="Call quality, customer voice, and handling time in this workspace."
       />
 
       <JoinRequestBanner />
@@ -220,7 +220,7 @@ export default async function DashboardPage() {
         <div className="px-5 py-3.5 border-b border-line flex items-center justify-between gap-3">
           <div>
             <h2 className="text-[14px] font-semibold text-ink">Leaderboard</h2>
-            <p className="text-[12px] text-muted mt-0.5">Average QA score by agent ID</p>
+            <p className="text-[12px] text-muted mt-0.5">Average score by agent</p>
           </div>
           <Link href="/leaderboard" className="btn btn-ghost text-[12px]">
             View all
@@ -230,7 +230,7 @@ export default async function DashboardPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-line bg-slate-50 text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                <th className="px-6 py-3">Agent ID</th>
+                <th className="px-6 py-3">Agent</th>
                 <th className="px-6 py-3 text-right">Audits</th>
                 <th className="px-6 py-3 text-right">Avg score</th>
               </tr>
@@ -252,7 +252,7 @@ export default async function DashboardPage() {
             </tbody>
           </table>
           {!agentLeaderboard.length ? (
-            <p className="px-6 py-8 text-[13px] text-muted">Upload and score recordings to populate the leaderboard.</p>
+            <p className="px-6 py-8 text-[13px] text-muted">Upload and score calls to fill the leaderboard.</p>
           ) : null}
         </div>
       </section>
@@ -260,8 +260,8 @@ export default async function DashboardPage() {
       <section className="surface overflow-hidden">
         <div className="px-5 py-3.5 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-[14px] font-semibold text-ink">Recent audits</h2>
-            <p className="text-[12px] text-muted mt-0.5">Latest recordings and scores</p>
+            <h2 className="text-[14px] font-semibold text-ink">Recent scores</h2>
+            <p className="text-[12px] text-muted mt-0.5">Latest recordings and marks</p>
           </div>
           <Link href="/calls" className="btn btn-ghost text-[12px]">
             View all
@@ -318,7 +318,7 @@ export default async function DashboardPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-line bg-bg text-[11px] font-medium uppercase tracking-wider text-muted">
-                <th className="px-6 py-3">Agent ID</th>
+                <th className="px-6 py-3">Agent</th>
                 <th className="px-6 py-3">Date & Time</th>
                 <th className="px-6 py-3">Language</th>
                 <th className="px-6 py-3 text-right">Followed</th>
@@ -385,9 +385,9 @@ export default async function DashboardPage() {
           {!allCalls.length && (
             <div className="py-16 text-center">
               <div className="inline-flex p-3 mb-3 text-muted">{Icons.emptyBox}</div>
-              <h3 className="text-[14px] font-semibold text-ink">No call records</h3>
+              <h3 className="text-[14px] font-semibold text-ink">No calls yet</h3>
               <p className="mt-1 text-[13px] text-muted max-w-sm mx-auto">
-                Upload recordings to start quality auditing.
+                Upload a recording to start scoring.
               </p>
               <Link href="/upload" className="mt-4 btn btn-blue text-[13px] inline-flex">
                 Upload calls

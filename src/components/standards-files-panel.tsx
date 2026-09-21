@@ -53,12 +53,12 @@ export function StandardsFilesPanel({
         <p className="text-[12px] text-rose leading-relaxed">{blockedMessage}</p>
       ) : readiness?.ready ? (
         <p className="text-[12px] text-good leading-relaxed">
-          Ready. Score will cite these file names in the audit.
+          Ready. The score will name these files.
         </p>
       ) : null}
 
       <Link href="/standards" className="btn btn-ghost w-full text-[13px]">
-        {blocked ? "Upload company files" : "Review Standards"}
+        {blocked ? "Add your scorecard" : "Review scorecard"}
       </Link>
     </aside>
   );

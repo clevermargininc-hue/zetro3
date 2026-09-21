@@ -13,10 +13,29 @@ export const WORKING_DAYS_PER_MONTH = 22;
 export const DEFAULT_TALK_HOURS_PER_DAY = 5;
 export const DEFAULT_AUDIT_PERCENT = 5;
 export const DEFAULT_AGENT_COUNT = 8;
+export const DEFAULT_CALLS_PER_DAY = 400;
+export const DEFAULT_AHT_MINUTES = 4;
 export const FLOOR_MONTHLY_MINIMUM_USD = 1_200;
 
+/** Fully loaded processing cost (speech-to-text + documents score). Not shown as a line item. */
+export const AUDIT_COST_PER_MINUTE_USD = 0.03;
+/** List rate must stay at or above this so gross margin stays near 65%. */
+export const MIN_LIST_RATE_PER_MINUTE_USD = 0.086;
+export const SMALL_VOLUME_RATE_PER_MINUTE_USD = 0.12;
+/** Minutes at which the list rate reaches the 65% margin floor. */
+export const RATE_VOLUME_SPAN_MINUTES = 25_000;
+/** Smallest paid quote so a tiny floor still covers the product around the audit. */
+export const QUOTE_MINIMUM_USD = 99;
+/** Talk minutes one live agent typically handles in a working day (6 hours on the headset). */
+export const TALK_MINUTES_PER_AGENT_PER_DAY = 360;
+/**
+ * Coaching pack: scored calls per live agent per working day.
+ * This is the commercial unit — not a percent of inbound volume.
+ */
+export const COACHING_CALLS_PER_AGENT_PER_DAY = 2;
+
 export const BILLING_HONESTY =
-  "Signup is open so you can try a workspace. Invoices and overage metering are activated with sales — not auto-charged in the app yet.";
+  "You can open a workspace and try it. Invoices are sent with sales — the app does not charge your card by itself.";
 
 export type CommercialPlanId = "trial" | "sampling" | "coverage" | "floor";
 
@@ -135,6 +154,90 @@ export function isCommercialPlanId(value: string | null | undefined): value is C
   return value === "trial" || value === "sampling" || value === "coverage" || value === "floor";
 }
 
+export function clampSamplePercent(value: number) {
+  if (!Number.isFinite(value)) return DEFAULT_AUDIT_PERCENT;
+  return Math.min(100, Math.max(1, Math.round(value)));
+}
+
+export function estimateLiveAgents(callsPerDay: number, ahtMinutes: number) {
+  const talkMinutes = Math.max(0, callsPerDay) * Math.max(0, ahtMinutes);
+  return Math.max(1, Math.round(talkMinutes / TALK_MINUTES_PER_AGENT_PER_DAY));
+}
+
+export function monthlyAuditedMinutesFromCalls(input: {
+  callsPerDay: number;
+  ahtMinutes: number;
+  samplePercent: number;
+}) {
+  const calls = Math.max(0, input.callsPerDay);
+  const aht = Math.max(0, input.ahtMinutes);
+  const sample = clampSamplePercent(input.samplePercent) / 100;
+  return Math.round(calls * aht * sample * WORKING_DAYS_PER_MONTH);
+}
+
+/**
+ * Volume-scaled list rate. Small floors stay near $0.12. Large floors move toward
+ * $0.086 — still enough to cover ~$0.03 processing cost at ~65% gross margin.
+ */
+export function listRatePerAuditedMinute(auditedMinutes: number) {
+  const minutes = Math.max(0, auditedMinutes);
+  const high = SMALL_VOLUME_RATE_PER_MINUTE_USD;
+  const low = MIN_LIST_RATE_PER_MINUTE_USD;
+  const t = Math.min(1, minutes / RATE_VOLUME_SPAN_MINUTES);
+  return Math.round((high - (high - low) * t) * 1000) / 1000;
+}
+
+export type CallVolumeQuote = {
+  callsPerDay: number;
+  ahtMinutes: number;
+  agents: number;
+  estimatedAgents: number;
+  coachingCallsPerAgentPerDay: number;
+  scoredCallsPerDay: number;
+  cappedToFloor: boolean;
+  talkMinutesPerDay: number;
+  auditedMinutes: number;
+  ratePerMinuteUsd: number;
+  processingUsd: number;
+  monthlyUsd: number;
+  minimumApplied: boolean;
+  costCoveredUsd: number;
+};
+
+export function quoteCallVolume(input: {
+  callsPerDay: number;
+  ahtMinutes: number;
+  agents: number;
+}): CallVolumeQuote {
+  const callsPerDay = Math.max(0, Number.isFinite(input.callsPerDay) ? input.callsPerDay : 0);
+  const ahtMinutes = Math.max(0, Number.isFinite(input.ahtMinutes) ? input.ahtMinutes : 0);
+  const estimatedAgents = estimateLiveAgents(callsPerDay, ahtMinutes);
+  const agents = Math.max(1, Math.round(Number.isFinite(input.agents) && input.agents > 0 ? input.agents : estimatedAgents));
+  const packCalls = agents * COACHING_CALLS_PER_AGENT_PER_DAY;
+  const scoredCallsPerDay = Math.min(callsPerDay, packCalls);
+  const talkMinutesPerDay = callsPerDay * ahtMinutes;
+  const auditedMinutes = Math.round(scoredCallsPerDay * ahtMinutes * WORKING_DAYS_PER_MONTH);
+  const ratePerMinuteUsd = listRatePerAuditedMinute(auditedMinutes);
+  const processingUsd = auditedMinutes * ratePerMinuteUsd;
+  const monthlyUsd = Math.max(QUOTE_MINIMUM_USD, processingUsd);
+  return {
+    callsPerDay,
+    ahtMinutes,
+    agents,
+    estimatedAgents,
+    coachingCallsPerAgentPerDay: COACHING_CALLS_PER_AGENT_PER_DAY,
+    scoredCallsPerDay,
+    cappedToFloor: packCalls >= callsPerDay && callsPerDay > 0,
+    talkMinutesPerDay,
+    auditedMinutes,
+    ratePerMinuteUsd,
+    processingUsd,
+    monthlyUsd,
+    minimumApplied: processingUsd < QUOTE_MINIMUM_USD,
+    costCoveredUsd: auditedMinutes * AUDIT_COST_PER_MINUTE_USD,
+  };
+}
+
 export function monthlyTalkMinutes(agents: number, talkHoursPerDay: number) {
   const seats = Math.max(0, agents);
   const hours = Math.max(0, talkHoursPerDay);
@@ -155,6 +258,15 @@ export function formatUsd(amount: number) {
     maximumFractionDigits: rounded % 1 === 0 ? 0 : 2,
   }).format(rounded);
   return formatted;
+}
+
+export function formatUsdRate(amount: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
+  }).format(amount);
 }
 
 export function formatMinutes(minutes: number) {

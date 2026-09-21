@@ -55,7 +55,7 @@ export function readinessErrorMessage(
     return "Run supabase/qa-standards.sql in the Supabase SQL Editor, then go to Standards and upload a process document, scorecard, and compliance file.";
   }
   if (!missing.length) return "";
-  return `Documents scoring reads your company files first. Go to Standards and upload a ${missing
+  return `Scoring reads your scorecard first. Go to Scorecard and add a ${missing
     .map((kind) => QA_KIND_LABELS[kind])
-    .join(", ")} before using that path.`;
+    .join(", ")} before you score.`;
 }

@@ -61,7 +61,7 @@ export function ScoreCard({ score }: { score: CallScore }) {
         </div>
         <div className="flex-1 min-w-0 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="chip">Scored from company files</span>
+            <span className="chip">Scored from your scorecard</span>
             {autoZero ? <span className="chip">Auto Zero</span> : null}
             {customerVoice.stance !== "unknown" ? (
               <span className="chip capitalize">
@@ -131,9 +131,9 @@ export function ScoreCard({ score }: { score: CallScore }) {
       {score.standards_used?.length ? (
         <section className="surface p-5 space-y-3">
           <div>
-            <h4 className="text-[14px] font-semibold text-ink">Company files read</h4>
+            <h4 className="text-[14px] font-semibold text-ink">Files we read</h4>
             <p className="text-[12px] text-muted mt-0.5">
-              Marks come from these uploaded files, not from a generic rubric.
+              Marks come from these files, not from a generic list.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -212,7 +212,7 @@ export function ScoreCard({ score }: { score: CallScore }) {
                     <p className="text-[13px] leading-relaxed text-slate-700">
                       <span className="font-medium text-ink">Why {cut}% was cut: </span>
                       {row.gap_note ||
-                        "Re-run the documents audit to explain the points held back."}
+                        "Score the call again to explain the points held back."}
                     </p>
                   ) : row.gap_note ? (
                     <p className="text-[13px] leading-relaxed text-slate-700">
@@ -222,7 +222,7 @@ export function ScoreCard({ score }: { score: CallScore }) {
                   ) : null}
                   {!row.note && !row.gap_note ? (
                     <p className="text-[13px] text-muted">
-                      Re-run the documents audit for a full breakdown of this parameter.
+                      Score this call again for a full breakdown of this mark.
                     </p>
                   ) : null}
                 </li>
@@ -231,8 +231,7 @@ export function ScoreCard({ score }: { score: CallScore }) {
           </ul>
         ) : (
           <p className="text-[13px] text-muted border-t border-line pt-4">
-            Re-run the documents audit to see why each parameter scored as it did and why
-            any points were cut.
+            Score this call again to see why each mark landed as it did and why any points were cut.
           </p>
         )}
       </section>

@@ -212,8 +212,8 @@ export function OnboardingFlow() {
               Where do you operate?
             </h1>
             <p className="mt-2 text-sm text-muted">
-              Same style as choosing your team — pick a region first. You can change this later in
-              Settings. Tanzania uses Kiswahili and English; other countries audit in English only.
+              Pick Tanzania or another country. You can change this later in Settings. Tanzania scores
+              in Kiswahili and English. Other countries score in English only.
             </p>
           </div>
           <CountryRegionPicker
@@ -245,7 +245,7 @@ export function OnboardingFlow() {
           <div>
             <p className="page-kicker">Workspace</p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-              How are you planning to use Zetro?
+              How will you use Zetro?
             </h1>
             <p className="mt-2 text-sm text-muted">
               This sets up the right workspace. You can change it later.
@@ -282,7 +282,7 @@ export function OnboardingFlow() {
               <span>
                 <span className="block text-[15px] font-semibold text-ink">With my team</span>
                 <span className="mt-1 block text-sm text-muted">
-                  Shared QA workspace for your contact center.
+                  A shared workspace for your contact center.
                 </span>
               </span>
             </button>
@@ -419,7 +419,7 @@ export function OnboardingFlow() {
           <div>
             <p className="page-kicker">Teammates</p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight">Invite teammates</h1>
-            <p className="mt-2 text-sm text-muted">Optional. We’ll email them a link to join. You can also do this later from Settings → Team.</p>
+            <p className="mt-2 text-sm text-muted">Optional. We will email them a link. You can also do this later in Settings → Team.</p>
           </div>
           <form
             className="flex flex-col gap-4"

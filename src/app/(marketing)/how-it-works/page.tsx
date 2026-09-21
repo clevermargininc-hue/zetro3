@@ -3,41 +3,41 @@ import { Metadata } from "next";
 import { TanzaniaFlagIcon, WorldFlagIcon } from "@/components/country-region-picker";
 
 export const metadata: Metadata = {
-  title: "How it Works | Zetro",
+  title: "How it works | Zetro",
   description:
-    "Choose your region, upload calls, transcribe, and audit. Tanzania: Kiswahili and English. Other countries: English only.",
+    "Add a call, read who spoke, score it against your scorecard. Tanzania: English and Kiswahili. Other countries: English.",
 };
 
 const STEPS = [
   {
     number: "01",
-    title: "Choose where you operate",
+    title: "Choose where you work",
     description:
-      "At signup you pick Tanzania or another country or region — the same style of choice as picking team or solo. Tanzania workspaces audit in Kiswahili and English. Everywhere else runs English-only. Admins can change this later in Settings → Workspace.",
+      "At signup, pick Tanzania or another country. Tanzania scores in Kiswahili and English. Everywhere else scores in English. You can change this later in Settings.",
   },
   {
     number: "02",
-    title: "Ingest audio",
+    title: "Add the recording",
     description:
-      "Upload audio and video files (mp3, wav, mp4) to the dashboard. Processing starts so the call is ready to transcribe and score. PBX or cloud telephony ingest is quoted on Floor contracts — it is not a self-serve switch today.",
+      "Upload audio or video (mp3, wav, mp4). We get the file ready to read and score. If your phone system already records, sales can set up auto-send — that is not a switch in the app today.",
   },
   {
     number: "03",
-    title: "Transcribe and separate speakers",
+    title: "Read who spoke",
     description:
-      "Zetro turns speech into text and separates agent vs customer. In Tanzania it follows Kiswahili, English, or mixed calls. For other countries it stays on English-only — so teams outside Tanzania do not see a Swahili language picker.",
+      "Zetro writes the call as text and splits agent from customer. In Tanzania it follows Kiswahili, English, or mixed talk. Other countries stay on English.",
   },
   {
     number: "04",
-    title: "Audit against your SOPs",
+    title: "Score against your scorecard",
     description:
-      "Upload your company's SOPs, manuals, and scorecards. Zetro reads those documents and uses them as the standard to evaluate every call — your rules, not a generic checklist.",
+      "Add the scorecard you already use. Zetro marks the call with those rules — greeting, resolution, compliance — not a generic list.",
   },
   {
     number: "05",
-    title: "Score and coach",
+    title: "Coach the floor",
     description:
-      "Each call gets a score on your metrics (empathy, resolution, greetings, compliance, and more). The dashboard shows where the agent succeeded or missed, with coaching tips tied to the transcript.",
+      "Each call gets a score, notes, and quotes. Take them to the huddle. The dashboard shows who is strong and who needs a conversation.",
   },
 ] as const;
 
@@ -47,10 +47,10 @@ export default function HowItWorksPage() {
       <header className="max-w-2xl">
         <p className="page-kicker">How it works</p>
         <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
-          From region and audio to a scored call
+          From a recording to a score you can coach with
         </h1>
         <p className="mt-4 text-[16px] leading-relaxed text-muted">
-          Used in Tanzania for Kiswahili and English — and English only elsewhere.
+          Five steps. No new way of judging quality — your scorecard stays in charge.
         </p>
       </header>
 
@@ -61,7 +61,7 @@ export default function HowItWorksPage() {
           </span>
           <div>
             <p className="text-[15px] font-semibold text-ink">Tanzania</p>
-            <p className="mt-1 text-[13px] text-muted">Kiswahili and English auditing</p>
+            <p className="mt-1 text-[13px] text-muted">Kiswahili and English on the same call</p>
           </div>
         </div>
         <div className="flex items-start gap-4 p-6">
@@ -69,7 +69,7 @@ export default function HowItWorksPage() {
             <WorldFlagIcon className="h-7 w-7" />
           </span>
           <div>
-            <p className="text-[15px] font-semibold text-ink">Another country / region</p>
+            <p className="text-[15px] font-semibold text-ink">Another country</p>
             <p className="mt-1 text-[13px] text-muted">English only — type yours at signup</p>
           </div>
         </div>
@@ -94,13 +94,13 @@ export default function HowItWorksPage() {
 
       <div className="mt-10 flex flex-col items-center justify-between gap-4 border border-line bg-white px-6 py-6 sm:flex-row">
         <div>
-          <p className="text-[15px] font-semibold text-ink">See an audit on your own data</p>
+          <p className="text-[15px] font-semibold text-ink">Want to see it on your own calls?</p>
           <p className="mt-1 text-[13px] text-muted">
-            Upload a sample call and your company scorecard. We will show the automated audit Zetro produces.
+            Bring one recording and your scorecard. We will walk you through the score.
           </p>
         </div>
         <Link href="/talk-sales" className="btn btn-blue shrink-0">
-          Book a live demo
+          Talk to sales
         </Link>
       </div>
     </div>

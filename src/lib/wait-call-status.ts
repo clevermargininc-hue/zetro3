@@ -42,7 +42,7 @@ export async function waitForCallStatus(
         ) {
           throw new Error(
             friendlyPrepareError(data?.error_message) ||
-              "Audit stopped before finishing. Tap Retry documents audit.",
+              "Scoring stopped before finishing. Tap Try scoring again.",
           );
         }
 

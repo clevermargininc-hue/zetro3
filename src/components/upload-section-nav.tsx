@@ -20,14 +20,14 @@ const STEPS = [
     href: "/upload/prepare",
     n: "2",
     title: "Prepare",
-    hint: "Make audio ready to score",
+    hint: "Make the call ready to score",
   },
   {
     id: "score" as const,
     href: "/upload/score",
     n: "3",
     title: "Score",
-    hint: "Audit against company files",
+    hint: "Mark it against your scorecard",
   },
 ];
 
@@ -71,7 +71,7 @@ function detailNote(pathname: string) {
     return "Preparing one recording. Listen here, then continue to Score.";
   }
   if (parts[0] === "upload" && parts[1] === "score" && parts[2]) {
-    return "Scoring one recording. The model reads your company files before it assigns any mark.";
+    return "Scoring one recording. Zetro reads your scorecard before it gives any mark.";
   }
   return null;
 }
@@ -116,14 +116,14 @@ export function UploadSectionNav({
   }, [teamScope]);
 
   return (
-    <nav aria-label="Quality audit steps" className="audit-pipeline no-print">
+    <nav aria-label="Score call steps" className="audit-pipeline no-print">
       <div className="audit-pipeline-head">
         <div>
-          <p className="page-kicker">Quality audit</p>
+          <p className="page-kicker">Score calls</p>
           <p className="mt-0.5 text-[13px] font-semibold text-ink">Upload → Prepare → Score</p>
         </div>
         <Link href="/standards" className="text-[12px] font-semibold text-blue hover:underline">
-          Company files
+          Your scorecard
         </Link>
       </div>
       <div className="audit-steps">

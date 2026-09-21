@@ -103,7 +103,7 @@ export const PREPARE_QUEUE_STATUSES: CallStatus[] = [
   "failed",
 ];
 
-/** Calls waiting on Score. Audited calls live in Call inventory. */
+/** Calls waiting on Score. Finished calls live in Calls. */
 export const SCORE_QUEUE_STATUSES: CallStatus[] = ["transcribed", "analyzing"];
 
 export function pipelineQueueCounts(statuses: Array<CallStatus | string>) {

@@ -89,7 +89,7 @@ export function AuditActions({
             onClick={() => void start("documents")}
             className="btn bg-blue hover:bg-blue-2 text-white text-[12px] px-3 py-1.5 font-medium relative z-10"
           >
-            {pending === "documents" || status === "analyzing" ? "Reading files…" : force ? "Retry documents audit" : "Score from company files"}
+            {pending === "documents" || status === "analyzing" ? "Reading files…" : force ? "Try scoring again" : "Score this call"}
           </button>
       </div>
     );
@@ -100,15 +100,15 @@ export function AuditActions({
       <div className="grid gap-4 sm:grid-cols-1 max-w-lg">
         <div className="space-y-4">
           <div>
-            <h3 className="text-[14px] font-semibold text-ink">Score from company files</h3>
+            <h3 className="text-[14px] font-semibold text-ink">Score this call</h3>
             <p className="mt-1 text-[12px] text-muted leading-relaxed">
-              Uses only the scorecard, compliance, and process files in Standards. Required phrases and product names come from those files, not from a generic rubric.
+              Uses only the scorecard files you uploaded. Required phrases and product names come from those files, not from a generic list.
             </p>
           </div>
           {busy ? (
             <div className="flex items-center gap-2.5 text-ink text-[13px] font-medium border border-line px-4 py-3">
               <div className="h-4 w-4 rounded-full border-2 border-blue/30 border-t-blue animate-spin shrink-0" />
-              <span>Reading company files, then scoring…</span>
+              <span>Reading your scorecard, then scoring…</span>
             </div>
           ) : null}
           <button
@@ -121,8 +121,8 @@ export function AuditActions({
               {busy
                 ? "Scoring…"
                 : force || status === "analyzing"
-                  ? "Retry documents audit"
-                  : "Start documents audit"}
+                  ? "Try scoring again"
+                  : "Start scoring"}
             </span>
             {!busy ? Icons.arrowRight : null}
           </button>

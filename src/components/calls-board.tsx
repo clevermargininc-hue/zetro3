@@ -257,13 +257,13 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
             <div className="py-16 text-center">
               <div className="inline-flex p-4 rounded-full bg-slate-50 mb-3">{Icons.emptyBox}</div>
               <h3 className="text-[15px] font-bold text-ink">
-                {calls.length ? "No recordings matching this filter" : "Call inventory is empty"}
+                {calls.length ? "No recordings match this filter" : "No calls yet"}
               </h3>
               <p className="mt-1 text-[13px] text-muted max-w-sm mx-auto">
-                Upload customer recordings, prepare a clean transcript, then start a documents audit when you are ready.
+                Upload a recording, prepare it, then score it when you are ready.
               </p>
               <Link href="/upload" className="mt-5 btn btn-blue text-[13px] px-5 py-2 inline-flex font-semibold">
-                Upload Call Recordings
+                Upload calls
               </Link>
             </div>
           )}

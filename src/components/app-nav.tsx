@@ -75,24 +75,24 @@ const Icons = {
 
 const NAV = [
   {
-    label: "Operations",
+    label: "Work",
     items: [
       { href: "/dashboard", label: "Overview", icon: Icons.overview },
-      { href: "/upload", label: "Quality audit", icon: Icons.upload },
-      { href: "/calls", label: "Call inventory", icon: Icons.audits },
+      { href: "/upload", label: "Score calls", icon: Icons.upload },
+      { href: "/calls", label: "Calls", icon: Icons.audits },
     ],
   },
   {
-    label: "Quality Intelligence",
+    label: "Quality",
     items: [
       { href: "/leaderboard", label: "Leaderboard", icon: Icons.ranking },
       { href: "/reports", label: "Reports", icon: Icons.reports },
     ],
   },
   {
-    label: "Governance",
+    label: "Workspace",
     items: [
-      { href: "/standards", label: "Audit Standards", icon: Icons.standards },
+      { href: "/standards", label: "Scorecard", icon: Icons.standards },
       { href: "/settings", label: "Settings", icon: Icons.settings },
     ],
   },

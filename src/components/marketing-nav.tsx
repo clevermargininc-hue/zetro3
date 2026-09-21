@@ -18,7 +18,7 @@ export function MarketingNav({ signedIn }: { signedIn: boolean }) {
             <Link
               key={link.href}
               href={link.href}
-              className="text-[13px] font-medium text-muted hover:text-ink"
+              className="text-[13px] font-semibold text-muted hover:text-ink"
             >
               {link.label}
             </Link>
@@ -27,7 +27,7 @@ export function MarketingNav({ signedIn }: { signedIn: boolean }) {
         <div className="flex items-center gap-3">
           <Link
             href="/talk-sales"
-            className="hidden text-[13px] font-medium text-muted hover:text-ink sm:block"
+            className="hidden text-[13px] font-semibold text-muted hover:text-ink sm:block"
           >
             Talk to sales
           </Link>
@@ -39,7 +39,7 @@ export function MarketingNav({ signedIn }: { signedIn: boolean }) {
             <>
               <Link
                 href="/login"
-                className="hidden text-[13px] font-medium text-muted hover:text-ink sm:block"
+                className="hidden text-[13px] font-semibold text-muted hover:text-ink sm:block"
               >
                 Sign in
               </Link>
