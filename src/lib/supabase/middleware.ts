@@ -14,6 +14,7 @@ const PUBLIC_PATHS = new Set([
   "/pricing",
   "/forgot-password",
   "/reset-password",
+  "/not-available",
 ]);
 
 function isSafeNext(value: string | null) {

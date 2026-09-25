@@ -18,8 +18,8 @@ const ROLES = [
   {
     title: "QA leads",
     kicker: "Stop hunting for tapes. Start coaching.",
-    body: "You should not spend the day picking which 1% of calls to hear. Zetro scores a coaching pack every day, flags weak calls, and shows the moment that went wrong.",
-    points: ["Two scored calls per agent per day", "Notes you can take to the huddle", "Marks against your scorecard"],
+    body: "You should not spend the day picking which 1% of calls to hear. Zetro scores the calls you choose every day, flags weak calls, and shows the moment that went wrong.",
+    points: ["Score as many calls as you choose", "Notes you can take to the huddle", "Marks against your scorecard"],
     featured: false,
   },
   {

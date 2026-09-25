@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CountryRegionPicker } from "@/components/country-region-picker";
 import { useSettings } from "@/components/settings-provider";
 import { BILLING_HONESTY } from "@/lib/billing";
+import { SALES_EMAIL } from "@/lib/contact";
 
 export function AccountSettings() {
   const { data, fullName, setFullName, username, setUsername, saving, patch } = useSettings();
@@ -40,7 +41,8 @@ export function AccountSettings() {
                 maxLength={24}
                 value={username}
                 onChange={(event) => setUsername(event.target.value.replace(/^@+/, ""))}
-                className="field pl-8 bg-slate-50/70 border-slate-200 text-ink text-[13px]"
+                className="field bg-slate-50/70 border-slate-200 text-ink text-[13px]"
+                style={{ paddingLeft: "2rem" }}
                 autoComplete="username"
                 placeholder="optional username"
               />
@@ -200,8 +202,8 @@ export function WorkspaceSettings() {
         <div>
           <h3 className="text-[15px] font-bold text-ink">Billing</h3>
           <p className="text-[13px] text-muted mt-0.5">
-            Invoices are a coaching pack: scored calls per live agent. Open Pricing, then talk to
-            sales. Solo vs Team is who can log in, not this bill.
+            You pay per scored call, in TZS, by call length and monthly volume. For contracts and
+            payment, email {SALES_EMAIL}. Solo vs Team is who can log in, not this bill.
           </p>
         </div>
         <p className="text-[12px] leading-relaxed text-muted">{BILLING_HONESTY}</p>

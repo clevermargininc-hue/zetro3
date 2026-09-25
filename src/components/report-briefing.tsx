@@ -33,23 +33,23 @@ export function ReportBriefing({
 
   return (
     <article className="qa-briefing surface overflow-hidden">
-      <header className="border-b border-line bg-navy px-6 py-6 text-white">
+      <header className="border-b border-line bg-blue-soft px-6 py-6">
         <div className="flex items-center gap-3">
           <ZetroMark className="h-10 w-10" />
           <div>
-            <p className="text-[18px] font-bold tracking-tight">Zetro</p>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-soft">QA briefing</p>
+            <p className="text-[18px] font-bold tracking-tight text-ink">Zetro</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue">QA briefing</p>
           </div>
         </div>
-        <h2 className="mt-5 font-display text-[22px] font-semibold tracking-tight">
+        <h2 className="mt-5 font-display text-[22px] font-semibold tracking-tight text-ink">
           {report.period_label}
         </h2>
-        <p className="mt-1 text-[13px] text-slate-300">
+        <p className="mt-1 text-[13px] text-muted">
           {report.agent_label} · {report.range_start} to {report.range_end}
           {briefing.previous_period_label ? ` · vs ${briefing.previous_period_label}` : ""}
         </p>
-        <p className="mt-4 max-w-3xl text-[15px] leading-relaxed text-white">{briefing.headline}</p>
-        <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-slate-300">{briefing.attention}</p>
+        <p className="mt-4 max-w-3xl text-[15px] leading-relaxed text-ink">{briefing.headline}</p>
+        <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-muted">{briefing.attention}</p>
       </header>
       <div className="h-1 bg-blue" />
 

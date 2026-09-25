@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { MarketingNav } from "@/components/marketing-nav";
+import { SALES_EMAIL, salesMailto } from "@/lib/contact";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function MarketingLayout({ children }: { children: React.ReactNode }) {
@@ -50,6 +51,12 @@ export default async function MarketingLayout({ children }: { children: React.Re
               <Link href="/talk-sales" className="block font-semibold text-ink hover:text-blue">
                 Talk to sales
               </Link>
+              <a
+                href={salesMailto("Zetro — contract or sales deal")}
+                className="block break-all font-semibold text-ink hover:text-blue"
+              >
+                {SALES_EMAIL}
+              </a>
             </div>
             <div className="space-y-2">
               <p className="font-semibold text-ink">Account</p>

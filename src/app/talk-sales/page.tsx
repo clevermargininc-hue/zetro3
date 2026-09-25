@@ -2,18 +2,19 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { Logo } from "@/components/logo";
 import { SalesForm } from "@/components/sales-form";
+import { SALES_EMAIL, salesMailto } from "@/lib/contact";
 
 export const metadata: Metadata = {
   title: "Talk to sales | Zetro",
-  description: "Tell us your floor. We reply with a coaching-pack estimate — not a seat price.",
+  description: "Tell us how many calls you score and how long they last. We reply with a quote in TZS.",
 };
 
 export default async function TalkSalesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ calls?: string; aht?: string; agents?: string }>;
+  searchParams: Promise<{ calls?: string; minutes?: string; billing?: string }>;
 }) {
-  const { calls, aht, agents } = await searchParams;
+  const { calls, minutes, billing } = await searchParams;
 
   return (
     <div className="min-h-screen bg-surface-2 flex flex-col">
@@ -36,19 +37,19 @@ export default async function TalkSalesPage({
             </div>
             
             <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-ink mb-6 leading-tight">
-              Tell us the floor. <br />We will quote the pack.
+              Tell us your calls. <br />We will send a quote.
             </h1>
             
             <p className="text-[16px] leading-relaxed text-muted mb-8">
-              Daily calls, talk time, and live agents. We score two conversations per agent per day. Invoices in USD, TZS, or KES.
+              How many calls you want scored each month and how long they last. That sets the price per call. Invoices are in TZS.
             </p>
             
             <div className="space-y-6">
               <div className="flex gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white border border-line/40 shadow-sm text-blue font-bold">1</div>
                 <div>
-                  <h3 className="font-semibold text-ink">You pay for scored minutes</h3>
-                  <p className="text-sm text-muted mt-1">Speech to text, who spoke, and a mark on your scorecard — not an unlimited cheap seat.</p>
+                  <h3 className="font-semibold text-ink">You pay per scored call</h3>
+                  <p className="text-sm text-muted mt-1">Priced by call length and monthly volume. Failed uploads are free.</p>
                 </div>
               </div>
               <div className="flex gap-4">
@@ -61,8 +62,14 @@ export default async function TalkSalesPage({
               <div className="flex gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white border border-line/40 shadow-sm text-blue font-bold">3</div>
                 <div>
-                  <h3 className="font-semibold text-ink">Local invoices</h3>
-                  <p className="text-sm text-muted mt-1">List prices are USD. We can invoice in USD, TZS, or KES.</p>
+                  <h3 className="font-semibold text-ink">Invoices by email, in TZS</h3>
+                  <p className="text-sm text-muted mt-1">
+                    No online payment yet. For contracts, payment, and deals, email{" "}
+                    <a href={salesMailto("Zetro — contract or sales deal")} className="font-semibold text-blue hover:underline">
+                      {SALES_EMAIL}
+                    </a>
+                    .
+                  </p>
                 </div>
               </div>
             </div>
@@ -72,13 +79,13 @@ export default async function TalkSalesPage({
             <div className="bg-white rounded-3xl p-8 border border-line/40 shadow-sm shadow-blue/5">
               <h2 className="text-2xl font-bold tracking-tight text-ink mb-2">Ask for a quote</h2>
               <p className="text-sm text-muted mb-8">
-                Tell us the floor. We reply with coaching-pack terms. This form does not charge you.
+                Tell us your volume. We reply with a price per call in TZS. This form does not charge you.
               </p>
               
               <SalesForm
                 initialCalls={calls}
-                initialAht={aht}
-                initialAgents={agents}
+                initialMinutes={minutes}
+                initialBilling={billing}
               />
             </div>
           </div>

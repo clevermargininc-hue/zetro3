@@ -1,6 +1,10 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { AuthForm } from "@/components/auth-form";
+import { SignupCountryGate } from "@/components/country-waitlist";
 import { Logo } from "@/components/logo";
+import { countryOptions } from "@/lib/countries";
+import { allowedCountries, countryFromHeaders } from "@/lib/geo";
 
 export default async function SignupPage({
   searchParams,
@@ -10,6 +14,8 @@ export default async function SignupPage({
   const { next, email } = await searchParams;
   const dest = next && next.startsWith("/") && !next.startsWith("//") ? next : undefined;
   const invited = dest?.startsWith("/invite/");
+  const allowed = [...allowedCountries()];
+  const initialCountry = countryFromHeaders(await headers());
 
   return (
     <div className="grid min-h-screen bg-white lg:grid-cols-2">
@@ -37,7 +43,9 @@ export default async function SignupPage({
               : "Use your work email. After sign-up you can join a team or start on your own."}
           </p>
           <div className="mt-8">
-            <AuthForm mode="signup" next={dest} email={email} />
+            <SignupCountryGate countries={countryOptions()} allowed={allowed} initialCountry={initialCountry}>
+              <AuthForm mode="signup" next={dest} email={email} />
+            </SignupCountryGate>
           </div>
           <p className="mt-6 text-sm text-muted">
             Already have a workspace?{" "}

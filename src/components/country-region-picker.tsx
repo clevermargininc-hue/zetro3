@@ -171,7 +171,8 @@ export function CountryRegionPicker({
                 disabled={disabled}
                 onChange={(event) => onOtherCountryChange(event.target.value)}
                 placeholder="e.g. Kenya, Nigeria, United Kingdom"
-                className="field pl-10"
+                className="field"
+                style={{ paddingLeft: "2.5rem" }}
               />
             </div>
           </label>

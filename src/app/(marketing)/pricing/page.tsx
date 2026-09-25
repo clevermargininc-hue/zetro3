@@ -1,67 +1,90 @@
 import Link from "next/link";
 import { Metadata } from "next";
-import { PricingQuote } from "@/components/pricing-quote";
-import { BILLING_HONESTY, COACHING_CALLS_PER_AGENT_PER_DAY, WORKING_DAYS_PER_MONTH } from "@/lib/billing";
+import { PricingPlans } from "@/components/pricing-quote";
+import { SALES_EMAIL, salesMailto } from "@/lib/contact";
+import { MAX_TALK_MINUTES, TRIAL_CALLS } from "@/lib/billing";
 
 export const metadata: Metadata = {
   title: "Pricing | Zetro",
   description:
-    "See what a Zetro coaching pack costs. Type daily calls, talk time, and how many agents are live.",
+    "Pay per scored call, in Tanzanian shillings. Price set by call length and monthly volume, billed monthly or annually.",
 };
+
+const RULES = [
+  {
+    title: "Each call is billed by its own length.",
+    body: "Zetro measures the recording, so you never pay for wrap-up time that is not in the audio.",
+  },
+  {
+    title: "Only scored calls are billed.",
+    body: "Failed or unscored uploads are free.",
+  },
+  {
+    title: "Your volume level is set in the contract.",
+    body: "You commit to a monthly number of calls. Calls above it are billed at the same rate.",
+  },
+  {
+    title: `Calls over ${MAX_TALK_MINUTES} minutes are quoted separately.`,
+    body: "Tell us if your floor has many long calls and we will price them with you.",
+  },
+  {
+    title: "Invoices are in TZS, payable within 30 days.",
+    body: "Prices are reviewed every 6 months, or sooner if the shilling moves more than 10% against the US dollar.",
+  },
+];
 
 export default function PricingPage() {
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-16 lg:py-24">
-      <header className="text-center">
+      <header className="mx-auto max-w-3xl text-center">
         <p className="page-kicker">Pricing</p>
         <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
-          Price coaching, not every inbound call
+          Pay per scored call
         </h1>
         <p className="mt-4 text-[16px] leading-relaxed text-muted">
-          Type how many calls you take, how long they last, and how many agents are live. We score{" "}
-          {COACHING_CALLS_PER_AGENT_PER_DAY} calls per agent each working day, across {WORKING_DAYS_PER_MONTH}{" "}
-          days. That is the monthly estimate.
+          One price per call, set by how long your calls are and how many you score each month. Prices
+          are in Tanzanian shillings, with US dollars as a guide. Start with {TRIAL_CALLS} free calls on
+          your own scorecard.
         </p>
       </header>
 
       <div className="mt-10">
-        <PricingQuote />
+        <PricingPlans />
       </div>
 
-      <section className="mt-8 border border-line bg-white px-6 py-5">
-        <h2 className="text-[15px] font-semibold text-ink">What you are paying for</h2>
-        <ul className="mt-3 space-y-2 text-[13px] leading-relaxed text-muted">
-          <li>
-            <span className="font-medium text-ink">A coaching pack. </span>
-            Two scored calls per live agent per day. Human QA usually hears a handful per agent per
-            month. This is daily proof for the huddle.
-          </li>
-          <li>
-            <span className="font-medium text-ink">The work on each minute. </span>
-            Turning speech into text, splitting speakers, and marking the call against your scorecard.
-            The rate stays high enough to cover that work.
-          </li>
-          <li>
-            <span className="font-medium text-ink">Notes coaches can use. </span>
-            Scores, quotes, briefing, and a spreadsheet. Prices are in USD. VAT extra where it
-            applies.
-          </li>
+      <section className="mt-12 border border-line bg-white px-6 py-8 lg:px-8">
+        <h2 className="text-[18px] font-semibold text-ink">How billing works</h2>
+        <ul className="mt-4 grid gap-x-10 gap-y-4 text-[14px] leading-relaxed text-muted md:grid-cols-2">
+          {RULES.map((rule) => (
+            <li key={rule.title}>
+              <span className="font-medium text-ink">{rule.title} </span>
+              {rule.body}
+            </li>
+          ))}
         </ul>
-        <p className="mt-4 text-[13px] leading-relaxed text-muted">{BILLING_HONESTY}</p>
       </section>
 
-      <div className="mt-8 flex flex-col items-center justify-between gap-4 border border-line bg-white px-6 py-6 sm:flex-row">
-        <div>
-          <p className="text-[15px] font-semibold text-ink">Need every call scored?</p>
-          <p className="mt-1 text-[13px] text-muted">
-            That is a bigger invoice from the same minutes. Sales will quote it. The app does not
-            charge your card.
+      <section className="mt-8 flex flex-col gap-6 border border-blue/20 bg-blue-soft px-6 py-8 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+        <div className="max-w-xl">
+          <h2 className="text-[20px] font-semibold text-ink">Ready to sign, pay, or talk terms?</h2>
+          <p className="mt-2 text-[14px] leading-relaxed text-muted">
+            We do not take online payments yet. Email{" "}
+            <a href={salesMailto("Zetro — contract or sales deal")} className="font-semibold text-blue hover:underline">
+              {SALES_EMAIL}
+            </a>{" "}
+            for contracts, invoices, and sales deals. We send the invoice in TZS — the app never
+            charges your card.
           </p>
         </div>
-        <Link href="/talk-sales" className="btn btn-blue shrink-0">
-          Talk to sales
-        </Link>
-      </div>
+        <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+          <a href={salesMailto("Zetro — contract or sales deal")} className="btn btn-lg btn-blue">
+            Email sales
+          </a>
+          <Link href="/signup" className="text-[13px] font-semibold text-blue hover:underline">
+            Or start the free trial →
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

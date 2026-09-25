@@ -1,24 +1,31 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { DEFAULT_AHT_MINUTES, DEFAULT_AGENT_COUNT, DEFAULT_CALLS_PER_DAY } from "@/lib/billing";
+import { SALES_EMAIL, salesMailto } from "@/lib/contact";
+import {
+  DEFAULT_CALLS_PER_MONTH,
+  DEFAULT_TALK_MINUTES,
+  MAX_CALLS_PER_MONTH,
+  isBillingCycle,
+  type BillingCycle,
+} from "@/lib/billing";
 
 export function SalesForm({
   initialCalls,
-  initialAht,
-  initialAgents,
+  initialMinutes,
+  initialBilling,
 }: {
   initialCalls?: string | null;
-  initialAht?: string | null;
-  initialAgents?: string | null;
+  initialMinutes?: string | null;
+  initialBilling?: string | null;
 }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const parsedCalls = Number(initialCalls);
-  const parsedAht = Number(initialAht);
-  const parsedAgents = Number(initialAgents);
+  const parsedMinutes = Number(initialMinutes);
+  const billing: BillingCycle = isBillingCycle(initialBilling) ? initialBilling : "monthly";
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -31,9 +38,9 @@ export function SalesForm({
       workEmail: formData.get("workEmail") as string,
       companyName: formData.get("companyName") as string,
       message: formData.get("message") as string,
-      callsPerDay: formData.get("callsPerDay") as string,
-      ahtMinutes: formData.get("ahtMinutes") as string,
-      agents: formData.get("agents") as string,
+      callsPerMonth: formData.get("callsPerMonth") as string,
+      talkMinutes: formData.get("talkMinutes") as string,
+      billing: formData.get("billing") as string,
     };
 
     try {
@@ -66,7 +73,11 @@ export function SalesForm({
         </div>
         <h3 className="mb-2 text-xl font-bold text-ink">Request received</h3>
         <p className="text-[14px] text-muted">
-          We will match this coaching pack to audited minutes and reply with a quote.
+          We will reply by email with a quote in TZS. To move faster, write to{" "}
+          <a href={salesMailto("Zetro — contract or sales deal")} className="font-semibold text-blue hover:underline">
+            {SALES_EMAIL}
+          </a>
+          .
         </p>
       </div>
     );
@@ -93,38 +104,36 @@ export function SalesForm({
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-ink">Calls per day</span>
+          <span className="font-medium text-ink">Scored calls / month</span>
           <input
-            name="callsPerDay"
+            name="callsPerMonth"
             type="number"
             min={1}
-            max={500000}
-            defaultValue={Number.isFinite(parsedCalls) && parsedCalls > 0 ? Math.round(parsedCalls) : DEFAULT_CALLS_PER_DAY}
+            max={MAX_CALLS_PER_MONTH}
+            defaultValue={
+              Number.isFinite(parsedCalls) && parsedCalls > 0 ? Math.round(parsedCalls) : DEFAULT_CALLS_PER_MONTH
+            }
             className="field"
           />
         </label>
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-ink">AHT (minutes)</span>
+          <span className="font-medium text-ink">Talk time (min)</span>
           <input
-            name="ahtMinutes"
+            name="talkMinutes"
             type="number"
             min={0.5}
             max={60}
             step={0.5}
-            defaultValue={Number.isFinite(parsedAht) && parsedAht > 0 ? parsedAht : DEFAULT_AHT_MINUTES}
+            defaultValue={Number.isFinite(parsedMinutes) && parsedMinutes > 0 ? parsedMinutes : DEFAULT_TALK_MINUTES}
             className="field"
           />
         </label>
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-ink">Live agents</span>
-          <input
-            name="agents"
-            type="number"
-            min={1}
-            max={20000}
-            defaultValue={Number.isFinite(parsedAgents) && parsedAgents > 0 ? Math.round(parsedAgents) : DEFAULT_AGENT_COUNT}
-            className="field"
-          />
+          <span className="font-medium text-ink">Billing</span>
+          <select name="billing" defaultValue={billing} className="field">
+            <option value="monthly">Monthly</option>
+            <option value="annual">Annual</option>
+          </select>
         </label>
       </div>
 
@@ -134,7 +143,7 @@ export function SalesForm({
           name="message"
           rows={3}
           className="field resize-none"
-          placeholder="Languages, PBX, invoice currency (USD / TZS / KES)…"
+          placeholder="Languages, phone system, number of agents, start date…"
         />
       </label>
 
@@ -145,7 +154,7 @@ export function SalesForm({
       </button>
 
       <p className="mt-2 text-center text-[12px] text-muted">
-        Quoted as a coaching pack (scored calls per agent). This form does not charge you.
+        Priced per scored call, in TZS, excluding VAT. This form does not charge you.
       </p>
     </form>
   );

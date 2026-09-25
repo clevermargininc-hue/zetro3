@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { formatMinutes, formatUsd, quoteCallVolume } from "@/lib/billing";
+import { bandLabel, formatTzs, formatUsdFromTzs, isBillingCycle, quotePrice } from "@/lib/billing";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { notifyTeam } from "@/lib/team-notify";
 
 export async function POST(request: Request) {
   try {
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { fullName, workEmail, companyName, message, callsPerDay, ahtMinutes, agents } = body;
+    const { fullName, workEmail, companyName, message, callsPerMonth, talkMinutes, billing } = body;
 
     if (!fullName || !workEmail || !companyName) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -25,28 +26,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Enter a valid work email." }, { status: 400 });
     }
 
-    const calls = Number(callsPerDay);
-    const aht = Number(ahtMinutes);
-    const agentCount = Number(agents);
+    const calls = Number(callsPerMonth);
+    const minutes = Number(talkMinutes);
+    const cycle = isBillingCycle(billing) ? billing : "monthly";
     const hasVolume = Number.isFinite(calls) && calls > 0;
 
     const quote = hasVolume
-      ? quoteCallVolume({
-          callsPerDay: calls,
-          ahtMinutes: Number.isFinite(aht) && aht > 0 ? aht : 4,
-          agents: Number.isFinite(agentCount) && agentCount > 0 ? agentCount : 8,
+      ? quotePrice({
+          callsPerMonth: calls,
+          talkMinutes: Number.isFinite(minutes) && minutes > 0 ? minutes : 4,
+          cycle,
         })
       : null;
 
     const notes = [
-      message ? String(message).trim().slice(0, 4000) : "",
+      message ? String(message).trim().slice(0, 3000) : "",
       quote
         ? [
-            `Volume: ${quote.callsPerDay} calls/day · ${quote.ahtMinutes} min AHT · ${quote.agents} live agents`,
-            `Coaching pack: ${quote.coachingCallsPerAgentPerDay} scored calls/agent/day · ${Math.round(quote.scoredCallsPerDay)} scored calls/day`,
-            `Audited minutes: ${formatMinutes(quote.auditedMinutes)} · Rate: ${formatUsd(quote.ratePerMinuteUsd)}/min`,
-            `List estimate: ${formatUsd(quote.monthlyUsd)} / mo`,
-          ].join("\n")
+            `Volume: ${quote.callsPerMonth.toLocaleString("en-US")} scored calls/month · ${quote.talkMinutes} min talk time`,
+            `Band: ${bandLabel(quote.band)} · Level: ${quote.tier.label} · ${formatTzs(quote.pricePerCallTzs)}/call`,
+            `Billing: ${cycle} · Estimate: ${formatTzs(quote.monthlyTzs)}/month (${formatUsdFromTzs(quote.monthlyTzs)}) excl. VAT`,
+            `Setup: ${quote.setupTzs ? formatTzs(quote.setupTzs) : "waived"} · First year: ${formatTzs(quote.firstYearTzs)}`,
+            quote.overLength ? "Calls over 15 min — quote separately." : "",
+            quote.largeVolume ? "Over 100,000 calls — custom rate." : "",
+          ]
+            .filter(Boolean)
+            .join("\n")
         : "",
     ]
       .filter(Boolean)
@@ -54,11 +59,13 @@ export async function POST(request: Request) {
       .slice(0, 4000);
 
     const supabase = createAdminClient();
+    const name = String(fullName).trim().slice(0, 200);
+    const company = String(companyName).trim().slice(0, 200);
 
     const { error } = await supabase.from("sales_requests").insert({
-      full_name: String(fullName).trim().slice(0, 200),
+      full_name: name,
       work_email: email.slice(0, 320),
-      company_name: String(companyName).trim().slice(0, 200),
+      company_name: company,
       message: notes || null,
     });
 
@@ -74,6 +81,10 @@ export async function POST(request: Request) {
         { status: 500 },
       );
     }
+
+    after(() =>
+      notifyTeam(`Sales request — ${company}`, [`Name: ${name}`, `Email: ${email}`, `Company: ${company}`, "", notes]),
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {
