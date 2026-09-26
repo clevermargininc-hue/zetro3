@@ -44,19 +44,20 @@ export function TeamBoard() {
   const [busy, setBusy] = useState<string | null>(null);
   const [inviteDraft, setInviteDraft] = useState("");
 
-  async function load() {
-    try {
-      const response = await authFetch("/api/team");
-      const json = (await response.json()) as TeamData;
-      if (!response.ok) {
-        setError(json.error || "Could not load team.");
-        return;
-      }
-      setData(json);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load team.");
-    }
+  function load() {
+    return authFetch("/api/team")
+      .then(async (response) => {
+        const json = (await response.json()) as TeamData;
+        if (!response.ok) {
+          setError(json.error || "Could not load team.");
+          return;
+        }
+        setData(json);
+        setError(null);
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Could not load team.");
+      });
   }
 
   useEffect(() => {

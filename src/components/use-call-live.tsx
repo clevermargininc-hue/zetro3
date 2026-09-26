@@ -20,14 +20,17 @@ export function useCallLive(
   const [score, setScore] = useState(initialScore);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const hasTranscriptRef = useRef(initialHasTranscript);
-  hasTranscriptRef.current = hasTranscript;
-
-  useEffect(() => {
+  const [seenCallId, setSeenCallId] = useState(initialCall.id);
+  if (seenCallId !== initialCall.id) {
+    setSeenCallId(initialCall.id);
     setCall(initialCall);
     setScore(initialScore);
     setHasTranscript(initialHasTranscript);
-    hasTranscriptRef.current = initialHasTranscript;
-  }, [initialCall.id]);
+  }
+
+  useEffect(() => {
+    hasTranscriptRef.current = hasTranscript;
+  }, [hasTranscript]);
 
   useEffect(() => {
     const supabase = createClient();

@@ -2,9 +2,87 @@
 
 import Link from "next/link";
 import { CountryRegionPicker } from "@/components/country-region-picker";
-import { useSettings } from "@/components/settings-provider";
-import { BILLING_HONESTY } from "@/lib/billing";
+import { useSettings, type SettingsData } from "@/components/settings-provider";
+import { BILLING_HONESTY, formatTzs, formatUsdFromTzs } from "@/lib/billing";
 import { SALES_EMAIL } from "@/lib/contact";
+
+function UsageTile({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <div className="border border-line bg-surface px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</p>
+      <p className="mt-1 text-[20px] font-bold text-ink tabular-nums">{value}</p>
+      <p className="mt-0.5 text-[12px] text-muted">{hint}</p>
+    </div>
+  );
+}
+
+function UsagePanel({
+  billing,
+  usage,
+}: {
+  billing: NonNullable<SettingsData["billing"]>;
+  usage: NonNullable<SettingsData["usage"]>;
+}) {
+  const count = (n: number) => n.toLocaleString("en-US");
+  const isTrial = billing.plan === "trial";
+  const isPaused = billing.plan === "paused";
+
+  let remainingValue: string;
+  let remainingHint: string;
+  if (isTrial) {
+    remainingValue = `${count(billing.trialRemaining ?? 0)} calls`;
+    remainingHint = `Left of ${count(billing.trialCalls)} free calls`;
+  } else if (isPaused) {
+    remainingValue = "0 calls";
+    remainingHint = "Scoring is paused";
+  } else if (usage.committedRemaining != null && billing.committedCalls) {
+    remainingValue = `${count(usage.committedRemaining)} calls`;
+    remainingHint = `Left of ${count(billing.committedCalls)} in your contract this month`;
+  } else {
+    remainingValue = "No limit";
+    remainingHint = "Every scored call is billed";
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h4 className="text-[13px] font-bold text-ink">Usage · {usage.monthLabel}</h4>
+        <p className="text-[12px] text-muted">Prices exclude VAT</p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <UsageTile
+          label="Calls scored this month"
+          value={count(usage.scoredThisMonth)}
+          hint={
+            usage.rescoredThisMonth
+              ? `Plus ${count(usage.rescoredThisMonth)} re-scored at half price`
+              : "No re-scores this month"
+          }
+        />
+        <UsageTile label="Calls scored in total" value={count(billing.scoredCalls)} hint="Since you joined" />
+        <UsageTile
+          label="Spent this month"
+          value={formatTzs(usage.spentTzs)}
+          hint={isTrial ? "Free trial, nothing to pay" : `${formatUsdFromTzs(usage.spentTzs)} for scored calls`}
+        />
+        <UsageTile label="What remains" value={remainingValue} hint={remainingHint} />
+      </div>
+      <p className="text-[12px] text-muted">
+        Short {count(usage.byBand.short)} · Medium {count(usage.byBand.medium)} · Long {count(usage.byBand.long)}
+        {usage.tierLabel ? ` · Priced at the ${usage.tierLabel} calls a month rate` : ""}
+      </p>
+      {!isTrial && !isPaused ? (
+        <p className="text-[13px] text-ink">
+          Bill so far this month: <span className="font-semibold">{formatTzs(usage.invoiceTzs)}</span>{" "}
+          <span className="text-muted">
+            ({formatUsdFromTzs(usage.invoiceTzs)})
+            {usage.minimumApplied ? " · the monthly minimum applies" : ""}
+          </span>
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 export function AccountSettings() {
   const { data, fullName, setFullName, username, setUsername, saving, patch } = useSettings();
@@ -206,6 +284,29 @@ export function WorkspaceSettings() {
             payment, email {SALES_EMAIL}. Solo vs Team is who can log in, not this bill.
           </p>
         </div>
+        {data.billing ? (
+          <div className="border border-line bg-bg px-4 py-3 text-[13px]">
+            <p className="font-semibold text-ink">
+              Your plan: {data.billing.label}
+              {!data.billing.canScore ? <span className="chip chip-bad ml-2">Scoring stopped</span> : null}
+            </p>
+            <p className="mt-1 text-muted">
+              {data.billing.plan === "trial"
+                ? `${data.billing.scoredCalls} of ${data.billing.trialCalls} free calls scored · ${data.billing.trialRemaining ?? 0} left.`
+                : data.billing.plan === "paused"
+                  ? `Scoring is paused. Email ${SALES_EMAIL} to restart.`
+                  : [
+                      data.billing.committedCalls
+                        ? `${data.billing.committedCalls.toLocaleString("en-US")} calls a month in your contract`
+                        : null,
+                      data.billing.contractEnd ? `contract ends ${data.billing.contractEnd}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "Active."}
+            </p>
+          </div>
+        ) : null}
+        {data.billing && data.usage ? <UsagePanel billing={data.billing} usage={data.usage} /> : null}
         <p className="text-[12px] leading-relaxed text-muted">{BILLING_HONESTY}</p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Link href="/pricing" className="btn btn-ghost text-[13px]">

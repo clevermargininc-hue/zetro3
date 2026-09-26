@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Outfit, Syne } from "next/font/google";
+import { Outfit, Syne, Unbounded } from "next/font/google";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -13,6 +13,12 @@ const syne = Syne({
   weight: ["500", "600", "700", "800"],
 });
 
+const unbounded = Unbounded({
+  variable: "--font-unbounded",
+  subsets: ["latin"],
+  weight: ["700"],
+});
+
 export const metadata: Metadata = {
   title: "Zetro — Score calls against your scorecard",
   description:
@@ -21,7 +27,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${outfit.variable} ${syne.variable} h-full antialiased`}>
+    <html lang="en" className={`${outfit.variable} ${syne.variable} ${unbounded.variable} h-full antialiased`}>
       <body className="min-h-full bg-white font-sans text-ink antialiased">{children}</body>
     </html>
   );

@@ -88,11 +88,12 @@ export function UploadSectionNav({
   const pathname = usePathname();
   const active = currentStep(pathname);
   const [counts, setCounts] = useState({ prepare: prepareCount, score: scoreCount });
-  const note = detailNote(pathname);
-
-  useEffect(() => {
+  const [seenCounts, setSeenCounts] = useState({ prepare: prepareCount, score: scoreCount });
+  if (seenCounts.prepare !== prepareCount || seenCounts.score !== scoreCount) {
+    setSeenCounts({ prepare: prepareCount, score: scoreCount });
     setCounts({ prepare: prepareCount, score: scoreCount });
-  }, [prepareCount, scoreCount]);
+  }
+  const note = detailNote(pathname);
 
   useEffect(() => {
     let cancelled = false;

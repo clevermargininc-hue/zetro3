@@ -54,6 +54,7 @@
   --font-sans: var(--font-outfit);
   --font-serif: var(--font-syne);
   --font-display: var(--font-syne);
+  --font-brand: var(--font-unbounded), var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
 }
 
 * {

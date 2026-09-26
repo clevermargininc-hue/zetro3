@@ -20,7 +20,7 @@ export function AuthForm({
   next?: string;
   email?: string;
 }) {
-  const dest = safeNext(next, mode === "signup" ? "/onboarding" : "/dashboard");
+  const dest = safeNext(next, "/auth/continue");
   const [email, setEmail] = useState(emailPrefill || "");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");

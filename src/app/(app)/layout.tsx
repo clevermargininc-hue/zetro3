@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
 import { AppNav } from "@/components/app-nav";
+import { PlanBanner } from "@/components/plan-banner";
+import { isPlatformAdmin } from "@/lib/platform-admin";
+import { getPlanStatus, type PlanStatus } from "@/lib/plans";
 import { requireUser } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -29,14 +32,15 @@ export default async function AppLayout({
   let plan: string | null = null;
   let username: string | null = null;
   let displayName: string | null = null;
+  let planStatus: PlanStatus | null = null;
   if (memberRow?.workspace_id) {
-    const { data: workspace } = await supabase
-      .from("workspaces")
-      .select("name, plan")
-      .eq("id", memberRow.workspace_id)
-      .maybeSingle();
+    const [{ data: workspace }, status] = await Promise.all([
+      supabase.from("workspaces").select("name, plan").eq("id", memberRow.workspace_id).maybeSingle(),
+      getPlanStatus(memberRow.workspace_id as string).catch(() => null),
+    ]);
     workspaceName = (workspace?.name as string) || null;
     plan = (workspace?.plan as string) || null;
+    planStatus = status;
   }
   if (profileRes.error && /username/i.test(profileRes.error.message)) {
     const fallback = await supabase
@@ -67,9 +71,11 @@ export default async function AppLayout({
         displayName={displayName}
         workspaceName={workspaceName}
         plan={plan}
+        isPlatformAdmin={isPlatformAdmin(user.email)}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <main className="mx-auto w-full max-w-[1180px] flex-1 px-5 py-7 print:max-w-none print:px-0 print:py-0 lg:px-8">
+          <PlanBanner status={planStatus} />
           {children}
         </main>
       </div>

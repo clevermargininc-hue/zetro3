@@ -64,6 +64,13 @@ const Icons = {
       <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.5 1.1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
     </svg>
   ),
+  admin: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <line x1="3" y1="9" x2="21" y2="9" />
+      <line x1="8" y1="14" x2="16" y2="14" />
+    </svg>
+  ),
   logout: (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -98,6 +105,11 @@ const NAV = [
   },
 ];
 
+const ADMIN_GROUP = {
+  label: "Zetro team",
+  items: [{ href: "/admin", label: "Admin dashboard", icon: Icons.admin }],
+};
+
 function linkActive(href: string, pathname: string) {
   if (href === "/upload") {
     return pathname === "/upload" || pathname.startsWith("/upload/");
@@ -115,13 +127,16 @@ export function AppNav({
   displayName,
   workspaceName,
   plan,
+  isPlatformAdmin = false,
 }: {
   email?: string | null;
   username?: string | null;
   displayName?: string | null;
   workspaceName?: string | null;
   plan?: string | null;
+  isPlatformAdmin?: boolean;
 }) {
+  const groups = isPlatformAdmin ? [...NAV, ADMIN_GROUP] : NAV;
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -177,7 +192,7 @@ export function AppNav({
         {/* Navigation Items */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-5 space-y-6">
           <nav className="space-y-6">
-            {NAV.map((group) => (
+            {groups.map((group) => (
               <div key={group.label} className="space-y-1">
                 {!collapsed ? (
                   <span className="px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400 block mb-1.5">
@@ -296,7 +311,7 @@ export function AppNav({
               </div>
 
               <nav className="space-y-7">
-                {NAV.map((group) => (
+                {groups.map((group) => (
                   <div key={group.label} className="space-y-2">
                     <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
                       {group.label}

@@ -46,7 +46,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
   const [agentId, setAgentId] = useState("all");
   const [agents, setAgents] = useState<{ id: string; name: string }[]>([]);
   const [report, setReport] = useState<QaReport | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loadedQuery, setLoadedQuery] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<DetailTab>("calls");
@@ -56,21 +56,24 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
     return params.toString();
   }, [period, date, agentId]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await authFetch(`/api/reports?${query}`);
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || "Could not load report");
-      setReport(body as QaReport);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load report");
-      setReport(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [query]);
+  const loading = loadedQuery !== query;
+
+  const load = useCallback(
+    () =>
+      authFetch(`/api/reports?${query}`)
+        .then(async (res) => {
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(body.error || "Could not load report");
+          setReport(body as QaReport);
+          setError(null);
+        })
+        .catch((err) => {
+          setError(err instanceof Error ? err.message : "Could not load report");
+          setReport(null);
+        })
+        .finally(() => setLoadedQuery(query)),
+    [query],
+  );
 
   useEffect(() => {
     void authFetch("/api/agents")

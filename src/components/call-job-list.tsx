@@ -36,10 +36,11 @@ export function CallJobList({
   teamScope: string[];
 }) {
   const [calls, setCalls] = useState(initialCalls);
-
-  useEffect(() => {
+  const [seenInitialCalls, setSeenInitialCalls] = useState(initialCalls);
+  if (seenInitialCalls !== initialCalls) {
+    setSeenInitialCalls(initialCalls);
     setCalls(initialCalls);
-  }, [initialCalls]);
+  }
 
   useEffect(() => {
     let cancelled = false;

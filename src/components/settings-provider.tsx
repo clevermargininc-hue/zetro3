@@ -17,6 +17,27 @@ export type SettingsData = {
     role: "admin" | "member";
     memberCount: number;
   };
+  billing?: {
+    plan: "trial" | "monthly" | "annual" | "paused";
+    label: string;
+    trialCalls: number;
+    scoredCalls: number;
+    trialRemaining: number | null;
+    committedCalls: number | null;
+    contractEnd: string | null;
+    canScore: boolean;
+  } | null;
+  usage?: {
+    monthLabel: string;
+    scoredThisMonth: number;
+    rescoredThisMonth: number;
+    byBand: { short: number; medium: number; long: number };
+    spentTzs: number;
+    invoiceTzs: number;
+    minimumApplied: boolean;
+    tierLabel: string | null;
+    committedRemaining: number | null;
+  } | null;
   error?: string;
 };
 
@@ -51,34 +72,37 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [info, setInfo] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const settingsRes = await authFetch("/api/settings");
-      const settings = (await settingsRes.json()) as SettingsData;
-      if (!settingsRes.ok) {
-        setError(settings.error || "Could not load settings.");
-        return;
-      }
-      setData(settings);
-      setFullName(settings.profile.fullName);
-      setUsername(
-        settings.profile.username ||
-          suggestUsername(settings.profile.email, settings.profile.fullName),
-      );
-      setWorkspaceName(settings.workspace.name);
-      const country = settings.workspace.country || "Tanzania";
-      if (isTanzania(country)) {
-        setLocationMode("tz");
-        setCountryDraft("");
-      } else {
-        setLocationMode("other");
-        setCountryDraft(country);
-      }
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load settings.");
-    }
-  }, []);
+  const load = useCallback(
+    () =>
+      authFetch("/api/settings")
+        .then(async (settingsRes) => {
+          const settings = (await settingsRes.json()) as SettingsData;
+          if (!settingsRes.ok) {
+            setError(settings.error || "Could not load settings.");
+            return;
+          }
+          setData(settings);
+          setFullName(settings.profile.fullName);
+          setUsername(
+            settings.profile.username ||
+              suggestUsername(settings.profile.email, settings.profile.fullName),
+          );
+          setWorkspaceName(settings.workspace.name);
+          const country = settings.workspace.country || "Tanzania";
+          if (isTanzania(country)) {
+            setLocationMode("tz");
+            setCountryDraft("");
+          } else {
+            setLocationMode("other");
+            setCountryDraft(country);
+          }
+          setError(null);
+        })
+        .catch((err) => {
+          setError(err instanceof Error ? err.message : "Could not load settings.");
+        }),
+    [],
+  );
 
   useEffect(() => {
     void load();

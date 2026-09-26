@@ -31,7 +31,7 @@ export function AuditPrintDocument({
         <div className="flex items-center gap-3 bg-navy px-5 py-5 text-white">
           <ZetroMark className="h-10 w-10" />
           <div>
-            <p className="text-[18px] font-bold tracking-tight">Zetro</p>
+            <p className="font-brand text-[17px] font-bold tracking-[-0.01em]">Zetro</p>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-soft">Call audit</p>
           </div>
         </div>

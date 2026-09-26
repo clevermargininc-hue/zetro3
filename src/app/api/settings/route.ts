@@ -3,6 +3,8 @@ import { getRequestUser } from "@/lib/supabase/request-user";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncProfileFromAuth, updateProfileName, updateUsername } from "@/lib/workspace-settings";
 import { displayCountry, workspaceLanguages } from "@/lib/locale";
+import { BILLING_PLAN_LABELS, estimateInvoice } from "@/lib/billing";
+import { billingMonthLabel, getMonthBandUsage, getPlanStatus } from "@/lib/plans";
 import {
   getMembership,
   isSetupRequired,
@@ -58,10 +60,29 @@ export async function GET(request: Request) {
       profile = withUsername.data;
     }
 
-    const { count } = await supabase
-      .from("workspace_members")
-      .select("user_id", { count: "exact", head: true })
-      .eq("workspace_id", membership.workspaceId);
+    const [{ count }, planStatus, monthUsage] = await Promise.all([
+      supabase
+        .from("workspace_members")
+        .select("user_id", { count: "exact", head: true })
+        .eq("workspace_id", membership.workspaceId),
+      getPlanStatus(membership.workspaceId).catch(() => null),
+      getMonthBandUsage(membership.workspaceId).catch(() => null),
+    ]);
+    const invoice =
+      planStatus && monthUsage
+        ? estimateInvoice({
+            plan: planStatus.plan,
+            committedCalls: planStatus.committedCalls,
+            first: monthUsage.first,
+            rescore: monthUsage.rescore,
+          })
+        : null;
+    const scoredThisMonth = monthUsage
+      ? monthUsage.first.short + monthUsage.first.medium + monthUsage.first.long
+      : 0;
+    const rescoredThisMonth = monthUsage
+      ? monthUsage.rescore.short + monthUsage.rescore.medium + monthUsage.rescore.long
+      : 0;
 
     const payload = {
       profile: {
@@ -82,6 +103,36 @@ export async function GET(request: Request) {
         role: membership.role,
         memberCount: count || 1,
       },
+      billing:
+        planStatus && !planStatus.setupMissing
+          ? {
+              plan: planStatus.plan,
+              label: BILLING_PLAN_LABELS[planStatus.plan],
+              trialCalls: planStatus.trialCalls,
+              scoredCalls: planStatus.scoredCalls,
+              trialRemaining: planStatus.trialRemaining,
+              committedCalls: planStatus.committedCalls,
+              contractEnd: planStatus.contractEnd,
+              canScore: planStatus.canScore,
+            }
+          : null,
+      usage:
+        planStatus && !planStatus.setupMissing && monthUsage
+          ? {
+              monthLabel: billingMonthLabel(monthUsage.since),
+              scoredThisMonth,
+              rescoredThisMonth,
+              byBand: monthUsage.first,
+              spentTzs: invoice?.usageTzs ?? 0,
+              invoiceTzs: invoice?.totalTzs ?? 0,
+              minimumApplied: invoice?.minimumApplied ?? false,
+              tierLabel: invoice?.tier.label ?? null,
+              committedRemaining:
+                planStatus.committedCalls != null
+                  ? Math.max(0, planStatus.committedCalls - scoredThisMonth)
+                  : null,
+            }
+          : null,
     };
     const response = NextResponse.json(payload);
     setWorkspaceCookie(response);

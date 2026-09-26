@@ -5,6 +5,7 @@ import { describeAiError } from "@/lib/ai-client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loadQaDocuments, summarizeDocuments } from "@/lib/qa-documents";
 import { readinessErrorMessage } from "@/lib/qa-kinds";
+import { checkScoringAllowed, recordScoreEvent } from "@/lib/plans";
 import { getTeamScope } from "@/lib/workspaces";
 import type { AuditMode } from "@/lib/types";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
@@ -51,7 +52,7 @@ export async function POST(
 
   const { data: call } = await supabase
     .from("calls")
-    .select("id, user_id, status")
+    .select("id, user_id, status, duration_seconds")
     .eq("id", id)
     .single();
 
@@ -69,6 +70,12 @@ export async function POST(
 
   if (!force && call.status === "completed" && existingScore) {
     return NextResponse.json({ ok: true, status: "completed", mode, reused: true });
+  }
+
+  const rescore = Boolean(existingScore);
+  const allowed = await checkScoringAllowed(user.id, { rescore });
+  if (!allowed.ok) {
+    return NextResponse.json({ error: allowed.message, code: allowed.code }, { status: 402 });
   }
 
   if (mode === "documents") {
@@ -111,6 +118,13 @@ export async function POST(
 
   try {
     await scoreCall(id, mode, { force: true });
+    await recordScoreEvent({
+      workspaceId: allowed.workspaceId,
+      callId: id,
+      userId: user.id,
+      kind: rescore ? "rescore" : "first",
+      durationSeconds: call.duration_seconds == null ? null : Number(call.duration_seconds),
+    });
     return NextResponse.json({ ok: true, status: "completed", mode });
   } catch (error) {
     console.error("Scoring failed", error);

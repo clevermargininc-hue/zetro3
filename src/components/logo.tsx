@@ -1,5 +1,9 @@
 import Link from "next/link";
 
+/** The Z from Unbounded Bold, so the mark matches the wordmark and favicon without loading the font. */
+const Z_PATH =
+  "M17.54 17.75L6.46 17.75L6.46 15.45L13.98 8.07L16.27 8.75L6.50 8.75L6.50 6.25L17.50 6.25L17.50 8.55L9.98 15.94L8.00 15.25L17.54 15.25L17.54 17.75Z";
+
 export function ZetroMark({
   className = "h-9 w-9",
   invert = false,
@@ -13,14 +17,8 @@ export function ZetroMark({
         invert ? "bg-white text-blue" : "bg-blue text-white"
       } ${className}`}
     >
-      <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none" aria-hidden>
-        <path
-          d="M6.5 7.5L17.5 7.5L6.5 16.5L17.5 16.5"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+      <svg viewBox="0 0 24 24" className="h-full w-full" aria-hidden>
+        <path d={Z_PATH} fill="currentColor" />
       </svg>
     </span>
   );
@@ -36,20 +34,18 @@ export function Logo({
   collapsed?: boolean;
 }) {
   const mark = size === "lg" ? "h-10 w-10" : size === "sm" ? "h-8 w-8" : "h-9 w-9";
-  const type = size === "lg" ? "text-2xl" : size === "sm" ? "text-[18px]" : "text-xl";
+  const type = size === "lg" ? "text-[22px]" : size === "sm" ? "text-[16px]" : "text-[19px]";
 
   return (
-    <Link href="/" className="flex items-center gap-3">
+    <Link href="/" className="flex items-center gap-2.5">
       <ZetroMark className={mark} invert={invert} />
       {!collapsed && (
-        <span className="leading-tight flex flex-col justify-center">
-          <span
-            className={`${type} block font-bold tracking-tight ${
-              invert ? "text-white" : "text-ink"
-            }`}
-          >
-            Zetro
-          </span>
+        <span
+          className={`${type} font-brand font-bold leading-none tracking-[-0.01em] ${
+            invert ? "text-white" : "text-ink"
+          }`}
+        >
+          Zetro
         </span>
       )}
     </Link>

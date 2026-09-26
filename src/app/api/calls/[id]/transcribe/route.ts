@@ -1,6 +1,7 @@
 import { NextResponse, after } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request-user";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { checkScoringAllowed } from "@/lib/plans";
 import { getTeamScope } from "@/lib/workspaces";
 import { transcribeCall } from "@/lib/process-call";
 import { describePrepareError } from "@/lib/ai-client";
@@ -71,6 +72,11 @@ export async function POST(
           .eq("id", id);
       }
       return NextResponse.json({ ok: true, status, reused: true });
+    }
+
+    const allowed = await checkScoringAllowed(user.id, { rescore: turns > 0 });
+    if (!allowed.ok) {
+      return NextResponse.json({ error: allowed.message, code: allowed.code }, { status: 402 });
     }
 
     const work = transcribeCall(id, { force }).catch((error) => {

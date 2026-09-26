@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isPlatformAdmin } from "@/lib/platform-admin";
 
 const WORKSPACE_COOKIE = "zetro-workspace";
 
@@ -140,6 +141,8 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(login);
   }
 
+  const isAdminUser = Boolean(user) && isPlatformAdmin(user?.email);
+
   if (user && (path === "/login" || path === "/signup")) {
     const next = isSafeReturnPath(request.nextUrl.searchParams.get("next"));
     if (next?.startsWith("/invite/")) {
@@ -148,7 +151,9 @@ export async function updateSession(request: NextRequest) {
     const ready = await userHasWorkspace(request, supabase, user.id);
     const dest = request.nextUrl.clone();
     dest.search = "";
-    if (ready === true) {
+    if (isAdminUser && (!next || ready !== true)) {
+      dest.pathname = next?.startsWith("/admin") ? next : "/admin";
+    } else if (ready === true) {
       dest.pathname = next || "/dashboard";
     } else {
       dest.pathname = "/onboarding";
@@ -171,14 +176,21 @@ export async function updateSession(request: NextRequest) {
         markWorkspace(redirect);
         return redirect;
       }
+      if (isAdminUser) {
+        const dest = request.nextUrl.clone();
+        dest.pathname = "/admin";
+        dest.search = "";
+        return redirectWithCookies(response, dest);
+      }
     }
   }
 
-  if (user && !isPublic && !isOnboarding && !isInvite) {
+  const isPlatformAdminArea = path === "/admin" || path.startsWith("/admin/");
+  if (user && !isPublic && !isOnboarding && !isInvite && !isPlatformAdminArea) {
     const ready = await userHasWorkspace(request, supabase, user.id);
     if (ready === false) {
       const dest = request.nextUrl.clone();
-      dest.pathname = "/onboarding";
+      dest.pathname = isAdminUser ? "/admin" : "/onboarding";
       dest.search = "";
       return redirectWithCookies(response, dest);
     }

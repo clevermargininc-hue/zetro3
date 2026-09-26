@@ -198,11 +198,12 @@ export function StandardsBoard() {
   const [error, setError] = useState<string | null>(null);
   const [pendingKind, setPendingKind] = useState<QaKind | null>(null);
 
-  async function refresh() {
-    const res = await authFetch("/api/documents");
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(body.error || "Could not load standards");
-    setReadiness(body as QaReadiness);
+  function refresh() {
+    return authFetch("/api/documents").then(async (res) => {
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || "Could not load standards");
+      setReadiness(body as QaReadiness);
+    });
   }
 
   useEffect(() => {

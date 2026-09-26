@@ -26,6 +26,20 @@ export const BILLING_HONESTY =
 export type BillingCycle = "monthly" | "annual";
 export type LengthBand = "short" | "medium" | "long";
 
+/** Commercial plan a Zetro admin assigns to a workspace. New workspaces start on trial. */
+export type BillingPlan = "trial" | "monthly" | "annual" | "paused";
+export const BILLING_PLANS: BillingPlan[] = ["trial", "monthly", "annual", "paused"];
+export const BILLING_PLAN_LABELS: Record<BillingPlan, string> = {
+  trial: "Free trial",
+  monthly: "Billed monthly",
+  annual: "Billed annually",
+  paused: "Paused",
+};
+
+export function isBillingPlan(value: unknown): value is BillingPlan {
+  return typeof value === "string" && (BILLING_PLANS as string[]).includes(value);
+}
+
 export const LENGTH_BANDS: { id: LengthBand; label: string; range: string; maxMinutes: number }[] = [
   { id: "short", label: "Short", range: "Up to 5 min", maxMinutes: 5 },
   { id: "medium", label: "Medium", range: "5–10 min", maxMinutes: 10 },
@@ -114,6 +128,60 @@ export function quotePrice(input: {
     vatPerMonthTzs: Math.round(monthlyTzs * VAT_RATE),
     overLength: talkMinutes > MAX_TALK_MINUTES,
     largeVolume: callsPerMonth > LARGE_VOLUME_CALLS,
+  };
+}
+
+export type BandCounts = Record<LengthBand, number>;
+
+export function emptyBandCounts(): BandCounts {
+  return { short: 0, medium: 0, long: 0 };
+}
+
+export type InvoiceEstimate = {
+  cycle: BillingCycle;
+  tier: VolumeTier;
+  firstCalls: number;
+  rescoreCalls: number;
+  firstTzs: number;
+  rescoreTzs: number;
+  usageTzs: number;
+  totalTzs: number;
+  minimumApplied: boolean;
+};
+
+/**
+ * This month's invoice from actual scores. The volume level comes from the contract commitment
+ * when set (calls above it keep the same rate); re-scores are half the call price.
+ */
+export function estimateInvoice(input: {
+  plan: BillingPlan;
+  committedCalls: number | null;
+  first: BandCounts;
+  rescore: BandCounts;
+}): InvoiceEstimate | null {
+  if (input.plan !== "monthly" && input.plan !== "annual") return null;
+  const cycle: BillingCycle = input.plan;
+  const firstCalls = input.first.short + input.first.medium + input.first.long;
+  const rescoreCalls = input.rescore.short + input.rescore.medium + input.rescore.long;
+  const tier = tierForCalls(input.committedCalls ?? firstCalls);
+  let firstTzs = 0;
+  let rescoreTzs = 0;
+  for (const band of LENGTH_BANDS) {
+    const price = pricePerCall(tier, band.id, cycle);
+    firstTzs += input.first[band.id] * price;
+    rescoreTzs += input.rescore[band.id] * Math.round(price / 2);
+  }
+  const usageTzs = firstTzs + rescoreTzs;
+  return {
+    cycle,
+    tier,
+    firstCalls,
+    rescoreCalls,
+    firstTzs,
+    rescoreTzs,
+    usageTzs,
+    totalTzs: Math.max(MONTHLY_MINIMUM_TZS, usageTzs),
+    minimumApplied: usageTzs < MONTHLY_MINIMUM_TZS,
   };
 }
 

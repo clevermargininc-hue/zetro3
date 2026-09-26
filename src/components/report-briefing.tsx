@@ -37,7 +37,7 @@ export function ReportBriefing({
         <div className="flex items-center gap-3">
           <ZetroMark className="h-10 w-10" />
           <div>
-            <p className="text-[18px] font-bold tracking-tight text-ink">Zetro</p>
+            <p className="font-brand text-[17px] font-bold tracking-[-0.01em] text-ink">Zetro</p>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue">QA briefing</p>
           </div>
         </div>
