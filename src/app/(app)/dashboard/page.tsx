@@ -6,10 +6,9 @@ import type { Call, CallScore } from "@/lib/types";
 import { summarizeCustomerVoice } from "@/lib/customer-voice";
 import { complianceFollowRateFromScore, rollupComplianceRate } from "@/lib/compliance-engine";
 import { JoinRequestBanner } from "@/components/join-request-banner";
-import { QaMixCharts, QaParameterBars, QaTrendCharts } from "@/components/qa-chart-grid";
+import { QaMixCharts, QaTrendCharts } from "@/components/qa-chart-grid";
 import { KpiStrip, PageHeader, scoreChipClass } from "@/components/ui";
 import {
-  PARAMETER_LABELS,
   autoQualityBuckets,
   calendarDay,
   dayKeys,
@@ -116,20 +115,6 @@ export default async function DashboardPage({
           keyOf: (iso) => calendarDay(iso),
         });
 
-  const parameterRows = PARAMETER_LABELS.flatMap(([key, label]) => {
-    const values = scoreObjects
-      .map((score) => Number(score[key]))
-      .filter((value) => Number.isFinite(value));
-    if (!values.length) return [];
-    return [
-      {
-        key,
-        label,
-        value: Math.round(values.reduce((sum, n) => sum + n, 0) / values.length),
-      },
-    ];
-  });
-
   return (
     <div className="space-y-6 pb-10">
       <PageHeader
@@ -206,8 +191,6 @@ export default async function DashboardPage({
           hint: `${row.call_count} ${row.call_count === 1 ? "call" : "calls"}`,
         }))}
       />
-
-      {parameterRows.length ? <QaParameterBars rows={parameterRows} /> : null}
 
       <section className="surface overflow-hidden">
         <div className="px-5 py-3.5 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
