@@ -92,20 +92,3 @@ export function QaMixCharts({
     </div>
   );
 }
-
-export function QaParameterBars({
-  rows,
-}: {
-  rows: { key: string; label: string; value: number }[];
-}) {
-  return (
-    <ChartCard title="Scorecard averages" subtitle="Workspace roll-up of each skill">
-      <HBars
-        empty="Score calls to see each skill."
-        scaleMax={100}
-        color={C.blue}
-        rows={rows.map((row) => ({ key: row.key, label: row.label, value: row.value }))}
-      />
-    </ChartCard>
-  );
-}

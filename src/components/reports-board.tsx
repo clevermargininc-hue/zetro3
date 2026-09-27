@@ -5,16 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { authFetch } from "@/lib/auth-fetch";
 import { formatAht, verdictLabel } from "@/lib/format";
 import { ReportBriefing } from "@/components/report-briefing";
-import { QaMixCharts, QaParameterBars, QaTrendCharts } from "@/components/qa-chart-grid";
-import { KpiStrip, PageHeader, scoreChipClass } from "@/components/ui";
-import {
-  REPORT_PERIODS,
-  REPORT_TZ,
-  todayInNairobi,
-  type QaReport,
-  type ReportPeriod,
-} from "@/lib/reports";
-import { PARAMETER_LABELS, qualityBuckets, reportBucketKey, reportBucketKeys } from "@/lib/workspace-charts";
+import { PageHeader, scoreChipClass } from "@/components/ui";
+import { REPORT_PERIODS, todayInNairobi, type QaReport, type ReportPeriod } from "@/lib/reports";
 
 const PERIOD_LABEL: Record<ReportPeriod, string> = {
   daily: "Daily",
@@ -127,7 +119,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
         <div className="no-print">
           <PageHeader
             title="Reports"
-            description="Quality, customer voice, and who to coach. Print the briefing for the huddle. Download the spreadsheet if someone needs the raw rows."
+            description="Who to coach, which calls to review, and what customers said. Print this for the huddle, or download the spreadsheet for the raw rows."
             actions={
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -154,15 +146,10 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
         </div>
       )}
 
-      <section className="surface p-5 space-y-4 no-print">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <p className="text-[13px] font-bold text-ink">Scope</p>
-          {report ? <span className="chip">{report.period_label}</span> : null}
-        </div>
-
+      <section className="surface p-4 no-print">
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
-            <label className="block text-[12px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-muted">
               Period
             </label>
             <select
@@ -178,7 +165,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
             </select>
           </div>
           <div>
-            <label className="block text-[12px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-muted">
               Date in period
             </label>
             <input
@@ -191,7 +178,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
             />
           </div>
           <div>
-            <label className="block text-[12px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-muted">
               Agent
             </label>
             <select
@@ -213,19 +200,23 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
       {error ? <p className="alert-error no-print">{error}</p> : null}
 
       {loading ? (
-        <div className="surface p-10 flex items-center justify-center no-print">
-          <div className="h-5 w-5 rounded-full border-2 border-slate-200 border-t-blue animate-spin mr-3" />
-          <span className="text-muted text-[13px] font-medium">Building the briefing…</span>
+        <div className="surface flex items-center justify-center p-10 no-print">
+          <div className="mr-3 h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-blue" />
+          <span className="text-[13px] font-medium text-muted">Building the briefing…</span>
         </div>
       ) : null}
 
-      {!loading && report ? <ReportVisuals report={report} /> : null}
+      {!loading && report && !report.calls.length ? (
+        <p className="surface px-5 py-8 text-center text-[13px] text-muted">
+          No scored calls in this period. Pick another date or a longer period.
+        </p>
+      ) : null}
 
-      {!loading && report && briefing ? <ReportBriefing report={report} briefing={briefing} /> : null}
+      {!loading && report && briefing && report.calls.length ? <ReportBriefing report={report} briefing={briefing} /> : null}
 
-      {!compact && report && !loading ? (
+      {!compact && report && !loading && report.calls.length ? (
         <section className="surface overflow-hidden no-print">
-          <div className="flex flex-wrap border-b border-slate-200 px-6 bg-slate-50 gap-6">
+          <div className="flex flex-wrap gap-6 border-b border-line px-5">
             {(
               [
                 ["calls", `Calls (${report.calls.length})`],
@@ -432,95 +423,6 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
           </div>
         </section>
       ) : null}
-    </div>
-  );
-}
-
-function ReportVisuals({ report }: { report: QaReport }) {
-  const summary = report.summary;
-  const voice = report.customer_voice?.summary;
-  const buckets = qualityBuckets({
-    keys: reportBucketKeys(report.period, report.range_start, report.range_end),
-    points: report.calls.map((row) => ({ at: row.audited_at, score: Number(row.overall_score) || 0 })),
-    keyOf: (iso) => reportBucketKey(iso, report.period, REPORT_TZ),
-  });
-  const averages: Record<(typeof PARAMETER_LABELS)[number][0], number | null> = {
-    greeting: summary.avg_greeting,
-    empathy: summary.avg_empathy,
-    professionalism: summary.avg_professionalism,
-    resolution: summary.avg_resolution,
-    communication: summary.avg_communication,
-    language_handling: summary.avg_language_handling,
-  };
-  const parameterRows = PARAMETER_LABELS.flatMap(([key, label]) => {
-    const value = averages[key];
-    return value == null ? [] : [{ key, label, value }];
-  });
-
-  return (
-    <div className="space-y-6 no-print">
-      <KpiStrip
-        items={[
-          {
-            label: "Quality score",
-            value: summary.avg_overall != null ? `${summary.avg_overall}%` : "—",
-            hint: `${summary.excellent + summary.good} of ${summary.calls_audited} at 70% or above`,
-          },
-          {
-            label: "Calls audited",
-            value: String(summary.calls_audited),
-            hint: report.period_label,
-          },
-          {
-            label: "Compliance followed",
-            value: summary.compliance_followed_pct != null ? `${summary.compliance_followed_pct}%` : "—",
-            hint:
-              summary.compliance_not_followed_pct != null
-                ? `${summary.compliance_not_followed_pct}% not followed`
-                : "No company rules checked",
-          },
-          {
-            label: "Frustrated customers",
-            value: summary.customer_frustrated_pct != null ? `${summary.customer_frustrated_pct}%` : "—",
-            hint:
-              summary.customer_satisfied_pct != null
-                ? `${summary.customer_satisfied_pct}% satisfied`
-                : "No customer voice yet",
-          },
-        ]}
-      />
-      {summary.calls_audited === 0 ? (
-        <p className="text-[13px] text-muted">
-          No scored calls in this period. Pick another date or a longer period.
-        </p>
-      ) : null}
-      <QaTrendCharts
-        labels={buckets.map((row) => row.label)}
-        avgScores={buckets.map((row) => row.avg)}
-        calls={buckets.map((row) => row.calls)}
-        rangeText={report.period_label}
-      />
-      <QaMixCharts
-        excellent={summary.excellent}
-        good={summary.good}
-        review={summary.needs_improvement}
-        poor={summary.poor}
-        satisfied={voice?.satisfied_count ?? 0}
-        frustrated={voice?.frustrated_count ?? 0}
-        mixed={voice?.mixed_count ?? 0}
-        neutral={voice?.neutral_count ?? 0}
-        agentRows={report.agents
-          .filter((row) => row.avg_score != null)
-          .sort((a, b) => (b.avg_score || 0) - (a.avg_score || 0))
-          .slice(0, 8)
-          .map((row) => ({
-            key: row.agent_id || row.agent_name,
-            label: row.agent_name,
-            value: row.avg_score || 0,
-            hint: `${row.call_count} ${row.call_count === 1 ? "call" : "calls"}`,
-          }))}
-      />
-      {parameterRows.length ? <QaParameterBars rows={parameterRows} /> : null}
     </div>
   );
 }
