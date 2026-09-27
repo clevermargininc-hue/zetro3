@@ -1,177 +1,195 @@
 import Link from "next/link";
+import { BarChart, ChartCard, Donut, HBars, LineChart, dayLabel } from "@/components/admin-charts";
+import { AdminLiveUsers } from "@/components/admin-live-users";
 import { PlanChip } from "@/components/admin-plan-chip";
 import { KpiStrip, PageHeader } from "@/components/ui";
-import { listWorkspacesForAdmin, type AdminWorkspaceRow } from "@/lib/admin-data";
-import { BILLING_PLANS, BILLING_PLAN_LABELS, isBillingPlan } from "@/lib/billing";
+import { ANALYTICS_RANGES, LIVE_MINUTES, getAdminAnalytics, isAnalyticsRange, type AnalyticsRange } from "@/lib/admin-analytics";
+import { BILLING_PLAN_LABELS, formatTzs, formatUsdFromTzs } from "@/lib/billing";
+import { billingMonthLabel } from "@/lib/plans";
 
-type Filter = "all" | "attention" | (typeof BILLING_PLANS)[number];
+const COLORS = {
+  blue: "var(--blue)",
+  soft: "#7ea6f4",
+  green: "var(--good)",
+  amber: "var(--warn)",
+  grey: "#94a3b8",
+};
 
-function trialUsed(row: AdminWorkspaceRow) {
-  return row.billing.plan === "trial" && row.scoredCalls >= row.billing.trialCalls;
-}
+const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
+const n = (value: number) => value.toLocaleString("en-US");
 
-function contractEnded(row: AdminWorkspaceRow) {
-  return Boolean(row.billing.contractEnd && row.billing.contractEnd < new Date().toISOString().slice(0, 10));
-}
-
-function needsAttention(row: AdminWorkspaceRow) {
-  return trialUsed(row) || contractEnded(row) || (row.duplicateCompany && row.billing.plan === "trial");
-}
-
-function matches(row: AdminWorkspaceRow, q: string) {
-  if (!q) return true;
-  const haystack = [row.name, row.domain, row.contact?.email, row.contact?.full_name].join(" ").toLowerCase();
-  return haystack.includes(q);
-}
-
-function filterHref(filter: Filter, q: string) {
-  const params = new URLSearchParams();
-  if (filter !== "all") params.set("plan", filter);
-  if (q) params.set("q", q);
-  const query = params.toString();
-  return query ? `/admin?${query}` : "/admin";
-}
-
-export default async function AdminHomePage({
+export default async function AdminAnalyticsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ plan?: string; q?: string }>;
+  searchParams: Promise<{ range?: string }>;
 }) {
-  const params = await searchParams;
-  const filter: Filter =
-    params.plan === "attention" ? "attention" : isBillingPlan(params.plan) ? params.plan : "all";
-  const q = (params.q || "").trim().toLowerCase();
-  const { rows, setupMissing } = await listWorkspacesForAdmin();
+  const { range } = await searchParams;
+  const requested = Number(range);
+  const days: AnalyticsRange = isAnalyticsRange(requested) ? requested : 30;
+  const data = await getAdminAnalytics(days);
 
-  const visible = rows.filter((row) => {
-    if (!matches(row, q)) return false;
-    if (filter === "all") return true;
-    if (filter === "attention") return needsAttention(row);
-    return row.billing.plan === filter;
-  });
-
-  const count = (plan: string) => rows.filter((row) => row.billing.plan === plan).length;
-  const filters: { id: Filter; label: string; n: number }[] = [
-    { id: "all", label: "All", n: rows.length },
-    { id: "attention", label: "Needs attention", n: rows.filter(needsAttention).length },
-    ...BILLING_PLANS.map((plan) => ({ id: plan, label: BILLING_PLAN_LABELS[plan], n: count(plan) })),
-  ];
+  const labels = data.daily.map((point) => dayLabel(point.day));
+  const activeUsers = data.daily.map((point) => point.activeUsers);
+  const firstScores = data.daily.map((point) => point.firstScores);
+  const rescores = data.daily.map((point) => point.rescores);
+  const uploads = data.daily.map((point) => point.uploads);
+  const newUsers = data.daily.map((point) => point.newUsers);
+  const newWorkspaces = data.daily.map((point) => point.newWorkspaces);
+  const rangeText = `Last ${days} days`;
 
   return (
     <div className="space-y-6">
       <PageHeader
         kicker="Admin"
-        title="Companies and plans"
-        description="Every workspace, its plan, and how many calls it has scored. Open one to change its plan."
+        title="Analytics"
+        description="Who is using Zetro right now, how much they use it, and how companies move from trial to paying. Only real customers are counted: people who finished setup and joined a company. Zetro staff, test accounts and unfinished sign-ups are left out."
+        actions={
+          <div className="flex gap-1.5">
+            {ANALYTICS_RANGES.map((option) => (
+              <Link
+                key={option}
+                href={option === 30 ? "/admin" : `/admin?range=${option}`}
+                className={`chip ${option === days ? "border-blue bg-blue-soft text-blue" : ""}`}
+              >
+                {option} days
+              </Link>
+            ))}
+          </div>
+        }
       />
 
-      {setupMissing ? (
+      {data.setupMissing ? (
         <p className="alert-error text-[13px]">
-          Plans are not set up in the database yet. Run <code>supabase/billing.sql</code> in the Supabase SQL
-          Editor. Until then every workspace shows as a free trial and nothing is enforced.
+          Analytics is not set up in the database, or it is out of date. Run <code>supabase/analytics.sql</code> in
+          the Supabase SQL Editor (after <code>supabase/billing.sql</code>). Live users and activity charts start
+          filling in from then.
         </p>
       ) : null}
 
+      <AdminLiveUsers initial={data.live} liveMinutes={LIVE_MINUTES} />
+
       <KpiStrip
         items={[
-          { label: "Workspaces", value: String(rows.length) },
-          { label: "On free trial", value: String(count("trial")), hint: `${rows.filter(trialUsed).length} used up` },
-          { label: "Paying", value: String(count("monthly") + count("annual")) },
-          { label: "Paused", value: String(count("paused")) },
+          { label: "Active today", value: n(data.counts.activeToday) },
+          { label: "Active in 7 days", value: n(data.counts.active7d) },
+          { label: "Active in 30 days", value: n(data.counts.active30d) },
+          { label: "Total users", value: n(data.counts.totalUsers), hint: `${n(data.companyCount)} companies` },
+        ]}
+      />
+      {data.counts.unfinishedSignups > 0 ? (
+        <p className="text-[12px] text-muted">
+          {n(data.counts.unfinishedSignups)} more accounts signed up but never finished setup or joined a company.
+          Most of them are bots, so they are not counted anywhere on this page.
+        </p>
+      ) : null}
+      <KpiStrip
+        items={[
+          { label: "Paying companies", value: n(data.payingCount), hint: `of ${n(data.companyCount)}` },
+          { label: `Calls scored in ${billingMonthLabel(new Date(data.monthStart))}`, value: n(data.scoredThisMonth) },
+          {
+            label: "Billing so far this month",
+            value: formatTzs(data.billedTzs),
+            hint: `${formatUsdFromTzs(data.billedTzs)} · estimate, excl. VAT`,
+          },
+          {
+            label: "Calls uploaded",
+            value: n(sum(uploads)),
+            hint: rangeText.toLowerCase(),
+          },
         ]}
       />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2">
-          {filters.map((item) => (
-            <Link
-              key={item.id}
-              href={filterHref(item.id, q)}
-              className={`chip ${filter === item.id ? "border-blue bg-blue-soft text-blue" : ""}`}
-            >
-              {item.label} · {item.n}
-            </Link>
-          ))}
-        </div>
-        <form action="/admin" className="flex gap-2">
-          {filter !== "all" ? <input type="hidden" name="plan" value={filter} /> : null}
-          <input
-            name="q"
-            defaultValue={params.q || ""}
-            placeholder="Search company or email"
-            className="field w-56"
+      <div className="grid gap-5 lg:grid-cols-2">
+        <ChartCard
+          title="Active users per day"
+          subtitle={`${rangeText} · people who opened the app`}
+          total={n(Math.max(0, ...activeUsers))}
+        >
+          <LineChart labels={labels} values={activeUsers} label="Active users" />
+          <p className="mt-2 text-[11px] text-muted">Big number: busiest day in the range.</p>
+        </ChartCard>
+
+        <ChartCard
+          title="Calls scored per day"
+          subtitle={rangeText}
+          total={n(sum(firstScores) + sum(rescores))}
+          legend={[
+            { label: "First score", color: COLORS.blue },
+            { label: "Re-score", color: COLORS.soft },
+          ]}
+        >
+          <BarChart
+            labels={labels}
+            series={[
+              { label: "First scores", color: COLORS.blue, values: firstScores },
+              { label: "Re-scores", color: COLORS.soft, values: rescores },
+            ]}
           />
-          <button type="submit" className="btn btn-ghost text-[13px]">
-            Search
-          </button>
-        </form>
+        </ChartCard>
+
+        <ChartCard title="Calls uploaded per day" subtitle={rangeText} total={n(sum(uploads))}>
+          <BarChart labels={labels} series={[{ label: "Uploads", color: COLORS.green, values: uploads }]} />
+        </ChartCard>
+
+        <ChartCard
+          title="New sign-ups per day"
+          subtitle={rangeText}
+          total={n(sum(newUsers))}
+          legend={[
+            { label: "New users", color: COLORS.blue },
+            { label: "New companies", color: COLORS.amber },
+          ]}
+        >
+          <BarChart
+            labels={labels}
+            series={[
+              { label: "New users", color: COLORS.blue, values: newUsers },
+              { label: "New companies", color: COLORS.amber, values: newWorkspaces },
+            ]}
+          />
+        </ChartCard>
       </div>
 
-      <div className="surface overflow-x-auto">
-        <table className="data-table min-w-[56rem]">
-          <thead>
-            <tr>
-              <th>Company</th>
-              <th>Contact</th>
-              <th>Plan</th>
-              <th>Usage</th>
-              <th>This month</th>
-              <th>Created</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {visible.map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <p className="font-semibold text-ink">{row.name}</p>
-                  <p className="text-[12px] text-muted">
-                    {row.companyDomain || "Personal email"} · {row.access === "team" ? "Team" : "Solo"} ·{" "}
-                    {row.memberCount} {row.memberCount === 1 ? "member" : "members"}
-                  </p>
-                </td>
-                <td>
-                  <p className="text-ink">{row.contact?.full_name || "—"}</p>
-                  <p className="text-[12px] text-muted">{row.contact?.email || "—"}</p>
-                </td>
-                <td>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <PlanChip plan={row.billing.plan} />
-                    {trialUsed(row) ? <span className="chip chip-bad">Trial used</span> : null}
-                    {row.duplicateCompany ? <span className="chip chip-wait">Same company twice</span> : null}
-                    {contractEnded(row) ? <span className="chip chip-bad">Contract ended</span> : null}
-                  </div>
-                </td>
-                <td className="tabular-nums">
-                  {row.billing.plan === "trial"
-                    ? `${row.scoredCalls.toLocaleString("en-US")} / ${row.billing.trialCalls.toLocaleString("en-US")} trial calls`
-                    : `${row.scoredCalls.toLocaleString("en-US")} scored${
-                        row.billing.committedCalls
-                          ? ` · ${row.billing.committedCalls.toLocaleString("en-US")}/mo committed`
-                          : ""
-                      }`}
-                </td>
-                <td className="tabular-nums">
-                  {row.firstThisMonth.toLocaleString("en-US")} scored
-                  {row.rescoresThisMonth ? ` · ${row.rescoresThisMonth} re-scored` : ""}
-                </td>
-                <td className="text-[12px] text-muted">{row.createdAt.slice(0, 10)}</td>
-                <td className="text-right">
-                  <Link href={`/admin/workspaces/${row.id}`} className="btn btn-ghost text-[13px]">
-                    Manage
-                  </Link>
-                </td>
-              </tr>
-            ))}
-            {visible.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="py-8 text-center text-muted">
-                  No workspaces match.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+      <div className="grid gap-5 lg:grid-cols-3">
+        <ChartCard title="Companies by plan" subtitle="Right now">
+          <Donut
+            centerLabel="companies"
+            slices={[
+              { label: BILLING_PLAN_LABELS.trial, value: data.planMix.trial, color: COLORS.soft },
+              { label: BILLING_PLAN_LABELS.monthly, value: data.planMix.monthly, color: COLORS.blue },
+              { label: BILLING_PLAN_LABELS.annual, value: data.planMix.annual, color: COLORS.green },
+              { label: BILLING_PLAN_LABELS.paused, value: data.planMix.paused, color: COLORS.grey },
+            ]}
+          />
+        </ChartCard>
+
+        <ChartCard title="Trial to paying" subtitle="All companies, all time">
+          <HBars
+            empty="No companies yet."
+            rows={data.funnel.map((step) => ({
+              key: step.label,
+              label: step.label,
+              value: step.value,
+              hint: data.funnel[0].value ? `${Math.round((step.value / data.funnel[0].value) * 100)}%` : undefined,
+            }))}
+          />
+        </ChartCard>
+
+        <ChartCard title="Top companies this month" subtitle="Calls scored, including re-scores">
+          <HBars
+            empty="No calls scored this month yet."
+            rows={data.topCompanies.map((company) => ({
+              key: company.id,
+              value: company.calls,
+              label: (
+                <Link href={`/admin/workspaces/${company.id}`} className="inline-flex items-center gap-2 hover:text-blue">
+                  <span className="truncate">{company.name}</span>
+                  <PlanChip plan={company.plan} />
+                </Link>
+              ),
+            }))}
+          />
+        </ChartCard>
       </div>
     </div>
   );

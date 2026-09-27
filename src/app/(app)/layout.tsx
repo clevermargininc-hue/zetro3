@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { AppNav } from "@/components/app-nav";
 import { PlanBanner } from "@/components/plan-banner";
+import { PresencePing } from "@/components/presence-ping";
 import { isPlatformAdmin } from "@/lib/platform-admin";
 import { getPlanStatus, type PlanStatus } from "@/lib/plans";
 import { requireUser } from "@/lib/supabase/server";
@@ -77,6 +78,7 @@ export default async function AppLayout({
         <main className="mx-auto w-full max-w-[1180px] flex-1 px-5 py-7 print:max-w-none print:px-0 print:py-0 lg:px-8">
           <PlanBanner status={planStatus} />
           {children}
+          <PresencePing />
         </main>
       </div>
     </div>

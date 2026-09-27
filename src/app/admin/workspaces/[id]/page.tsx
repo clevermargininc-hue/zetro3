@@ -20,7 +20,7 @@ export default async function AdminWorkspacePage({ params }: { params: Promise<{
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/admin" className="text-[12px] font-semibold text-muted hover:text-blue">
+        <Link href="/admin/companies" className="text-[12px] font-semibold text-muted hover:text-blue">
           ← All companies
         </Link>
       </div>

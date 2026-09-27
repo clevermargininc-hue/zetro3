@@ -6,7 +6,19 @@ import type { Call, CallScore } from "@/lib/types";
 import { summarizeCustomerVoice } from "@/lib/customer-voice";
 import { complianceFollowRateFromScore, rollupComplianceRate } from "@/lib/compliance-engine";
 import { JoinRequestBanner } from "@/components/join-request-banner";
+import { QaMixCharts, QaParameterBars, QaTrendCharts } from "@/components/qa-chart-grid";
 import { KpiStrip, PageHeader, scoreChipClass } from "@/components/ui";
+import {
+  PARAMETER_LABELS,
+  autoQualityBuckets,
+  calendarDay,
+  dayKeys,
+  isQualityRange,
+  lastNDays,
+  qualityBuckets,
+  QUALITY_RANGES,
+  type QualityRange,
+} from "@/lib/workspace-charts";
 
 const Icons = {
   emptyBox: (
@@ -22,13 +34,32 @@ function formatTotalTime(seconds: number) {
   if (!seconds || seconds <= 0) return "0 mins";
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
+  if (hours > 0) return `${hours}h ${minutes}m`;
   return `${minutes} mins`;
 }
 
-export default async function DashboardPage() {
+function scoreOf(call: Call & { call_scores?: CallScore[] | CallScore | null }) {
+  const raw = Array.isArray(call.call_scores) ? call.call_scores[0] : call.call_scores;
+  if (!raw) return null;
+  const overall = Number(raw.overall_score);
+  if (!Number.isFinite(overall)) return null;
+  return { ...raw, overall_score: overall };
+}
+
+function parseOverviewRange(value?: string): QualityRange | "all" {
+  if (!value || value === "all") return "all";
+  const requested = Number(value);
+  return isQualityRange(requested) ? requested : "all";
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string }>;
+}) {
+  const { range } = await searchParams;
+  const days = parseOverviewRange(range);
+
   const { supabase, user } = await requireUser();
   const teamScope = await getTeamScope(user.id);
   const { data: calls } = await supabase
@@ -38,56 +69,88 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false });
 
   const allCalls = calls || [];
-  const completedCalls = allCalls.filter((c) => c.status === "completed");
+  const inRange =
+    days === "all" ? null : new Set(lastNDays(days));
+  const rangeCalls = inRange
+    ? allCalls.filter((call) => inRange.has(calendarDay(call.completed_at || call.created_at)))
+    : allCalls;
+  const completedCalls = rangeCalls.filter((call) => call.status === "completed");
 
-  // Extract valid scores
-  const scoreObjects: CallScore[] = completedCalls
-    .map((c) => (Array.isArray(c.call_scores) ? c.call_scores[0] : c.call_scores))
-    .filter(Boolean) as CallScore[];
+  const scoreObjects = completedCalls.map((call) => scoreOf(call)).filter((score): score is CallScore => Boolean(score));
 
-  const scoreValues = scoreObjects
-    .map((s) => s.overall_score)
-    .filter((n): n is number => typeof n === "number");
-
+  const scoreValues = scoreObjects.map((score) => score.overall_score);
   const avgScore = scoreValues.length
     ? Math.round(scoreValues.reduce((sum, n) => sum + n, 0) / scoreValues.length)
     : null;
-
-  // Pass rate (Score >= 70%)
-  const passedCalls = scoreValues.filter((s) => s >= 70).length;
+  const passedCalls = scoreValues.filter((score) => score >= 70).length;
   const passRate = scoreValues.length ? Math.round((passedCalls / scoreValues.length) * 100) : null;
 
-  // Total evaluated talk time and AHT
   const handleDurations = completedCalls
-    .map((c) => Number(c.duration_seconds))
+    .map((call) => Number(call.duration_seconds))
     .filter((n) => Number.isFinite(n) && n > 0);
   const totalAudioSeconds = handleDurations.reduce((acc, n) => acc + n, 0);
-  const ahtSeconds = handleDurations.length
-    ? Math.round(totalAudioSeconds / handleDurations.length)
-    : null;
+  const ahtSeconds = handleDurations.length ? Math.round(totalAudioSeconds / handleDurations.length) : null;
 
   const complianceRate = rollupComplianceRate(
-    scoreObjects.map((s) => {
-      const rate = complianceFollowRateFromScore(s);
+    scoreObjects.map((score) => {
+      const rate = complianceFollowRateFromScore(score);
       return { passed: rate.passed, failed: rate.failed };
     }),
   );
 
-  // Quality distribution tiers
-  const tierExcellent = scoreValues.filter((s) => s >= 85).length;
-  const tierGood = scoreValues.filter((s) => s >= 70 && s < 85).length;
-  const tierNeedsImp = scoreValues.filter((s) => s >= 50 && s < 70).length;
-  const tierPoor = scoreValues.filter((s) => s < 50).length;
-
   const customerVoice = summarizeCustomerVoice(scoreObjects);
+  const agentLeaderboard = rankByAgentId(rangeCalls);
+  const rangeText = days === "all" ? "All time" : `Last ${days} days`;
+  const points = completedCalls.flatMap((call) => {
+    const score = scoreOf(call);
+    if (!score) return [];
+    return [{ at: call.completed_at || call.created_at, score: score.overall_score }];
+  });
+  const windowDays = days === "all" ? [] : lastNDays(days);
+  const buckets =
+    days === "all"
+      ? autoQualityBuckets(points)
+      : qualityBuckets({
+          keys: dayKeys(windowDays[0] || calendarDay(new Date()), windowDays[windowDays.length - 1] || calendarDay(new Date())),
+          points,
+          keyOf: (iso) => calendarDay(iso),
+        });
 
-  const agentLeaderboard = rankByAgentId(allCalls);
+  const parameterRows = PARAMETER_LABELS.flatMap(([key, label]) => {
+    const values = scoreObjects
+      .map((score) => Number(score[key]))
+      .filter((value) => Number.isFinite(value));
+    if (!values.length) return [];
+    return [
+      {
+        key,
+        label,
+        value: Math.round(values.reduce((sum, n) => sum + n, 0) / values.length),
+      },
+    ];
+  });
 
   return (
     <div className="space-y-6 pb-10">
       <PageHeader
         title="Overview"
         description="Call quality, customer voice, and handling time in this workspace."
+        actions={
+          <div className="flex gap-1.5">
+            <Link href="/dashboard" className={`chip ${days === "all" ? "border-blue bg-blue-soft text-blue" : ""}`}>
+              All
+            </Link>
+            {QUALITY_RANGES.map((option) => (
+              <Link
+                key={option}
+                href={`/dashboard?range=${option}`}
+                className={`chip ${option === days ? "border-blue bg-blue-soft text-blue" : ""}`}
+              >
+                {option} days
+              </Link>
+            ))}
+          </div>
+        }
       />
 
       <JoinRequestBanner />
@@ -120,158 +183,46 @@ export default async function DashboardPage() {
         ]}
       />
 
-      <section className="surface p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-5">
-          <div>
-            <h3 className="text-[14px] font-semibold text-ink">Customer voice</h3>
-            <p className="text-[12px] text-muted mt-0.5">
-              Share of customers who liked the service vs who were frustrated
-            </p>
-          </div>
-          <Link href="/reports" className="btn btn-ghost text-[12px] shrink-0">
-            See themes in Reports
-          </Link>
-        </div>
+      <QaTrendCharts
+        labels={buckets.map((row) => row.label)}
+        avgScores={buckets.map((row) => row.avg)}
+        calls={buckets.map((row) => row.calls)}
+        rangeText={rangeText}
+      />
 
-        {customerVoice.analyzed > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="border border-line px-5 py-4">
-              <p className="text-[12px] font-medium uppercase tracking-wider text-muted">
-                Satisfied customers
-              </p>
-              <p className="mt-2 text-3xl font-bold tabular-nums text-ink">
-                {customerVoice.satisfied_pct}%
-              </p>
-            </div>
-            <div className="border border-line px-5 py-4">
-              <p className="text-[12px] font-medium uppercase tracking-wider text-muted">
-                Frustrated customers
-              </p>
-              <p className="mt-2 text-3xl font-bold tabular-nums text-ink">
-                {customerVoice.frustrated_pct}%
-              </p>
-            </div>
-          </div>
-        ) : (
-          <p className="py-2 text-[13px] text-muted">
-            Audit calls to measure how many customers are satisfied or frustrated.
-          </p>
-        )}
-      </section>
+      <QaMixCharts
+        excellent={scoreValues.filter((score) => score >= 85).length}
+        good={scoreValues.filter((score) => score >= 70 && score < 85).length}
+        review={scoreValues.filter((score) => score >= 50 && score < 70).length}
+        poor={scoreValues.filter((score) => score < 50).length}
+        satisfied={customerVoice.satisfied_count}
+        frustrated={customerVoice.frustrated_count}
+        mixed={customerVoice.mixed_count}
+        neutral={customerVoice.neutral_count}
+        agentRows={agentLeaderboard.slice(0, 8).map((row) => ({
+          key: row.id,
+          label: row.name,
+          value: row.avg_score ?? 0,
+          hint: `${row.call_count} ${row.call_count === 1 ? "call" : "calls"}`,
+        }))}
+      />
 
-      <section className="surface p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-[14px] font-semibold text-ink">Score distribution</h3>
-                <p className="text-[12px] text-muted">Calls by evaluation band</p>
-              </div>
-              <span className="text-[12px] text-muted">{scoreValues.length} scored</span>
-            </div>
-
-            {scoreValues.length > 0 ? (
-              <div className="space-y-4">
-                <div className="h-1.5 w-full bg-slate-100 overflow-hidden flex">
-                  <div
-                    className="bg-navy h-full"
-                    style={{ width: `${(tierExcellent / scoreValues.length) * 100}%` }}
-                    title={`Excellent: ${tierExcellent}`}
-                  />
-                  <div
-                    className="bg-blue h-full"
-                    style={{ width: `${(tierGood / scoreValues.length) * 100}%` }}
-                    title={`Good: ${tierGood}`}
-                  />
-                  <div
-                    className="bg-slate-400 h-full"
-                    style={{ width: `${(tierNeedsImp / scoreValues.length) * 100}%` }}
-                    title={`Needs Improvement: ${tierNeedsImp}`}
-                  />
-                  <div
-                    className="bg-slate-300 h-full"
-                    style={{ width: `${(tierPoor / scoreValues.length) * 100}%` }}
-                    title={`Poor: ${tierPoor}`}
-                  />
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[12px]">
-                  <div>
-                    <span className="text-muted block">Excellent (85+)</span>
-                    <span className="font-medium text-ink tabular-nums">{tierExcellent} ({Math.round((tierExcellent / scoreValues.length) * 100)}%)</span>
-                  </div>
-                  <div>
-                    <span className="text-muted block">Good (70–84)</span>
-                    <span className="font-medium text-ink tabular-nums">{tierGood} ({Math.round((tierGood / scoreValues.length) * 100)}%)</span>
-                  </div>
-                  <div>
-                    <span className="text-muted block">Review (50–69)</span>
-                    <span className="font-medium text-ink tabular-nums">{tierNeedsImp} ({Math.round((tierNeedsImp / scoreValues.length) * 100)}%)</span>
-                  </div>
-                  <div>
-                    <span className="text-muted block">Poor (&lt;50)</span>
-                    <span className="font-medium text-ink tabular-nums">{tierPoor} ({Math.round((tierPoor / scoreValues.length) * 100)}%)</span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p className="py-4 text-muted text-[13px]">No evaluations yet.</p>
-            )}
-      </section>
-
-      <section className="surface overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-line flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-[14px] font-semibold text-ink">Leaderboard</h2>
-            <p className="text-[12px] text-muted mt-0.5">Average score by agent</p>
-          </div>
-          <Link href="/leaderboard" className="btn btn-ghost text-[12px]">
-            View all
-          </Link>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-line bg-slate-50 text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                <th className="px-6 py-3">Agent</th>
-                <th className="px-6 py-3 text-right">Audits</th>
-                <th className="px-6 py-3 text-right">Avg score</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-[13px]">
-              {agentLeaderboard.slice(0, 6).map((row) => (
-                <tr key={row.id} className="hover:bg-slate-50">
-                  <td className="px-6 py-3">
-                    <span className="font-medium text-ink tabular-nums">{row.name}</span>
-                  </td>
-                  <td className="px-6 py-3 text-right tabular-nums text-slate-600">{row.call_count}</td>
-                  <td className="px-6 py-3 text-right">
-                    <span className={`${scoreChipClass(row.avg_score)} tabular-nums`}>
-                      {row.avg_score != null ? `${row.avg_score}%` : "—"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!agentLeaderboard.length ? (
-            <p className="px-6 py-8 text-[13px] text-muted">Upload and score calls to fill the leaderboard.</p>
-          ) : null}
-        </div>
-      </section>
+      {parameterRows.length ? <QaParameterBars rows={parameterRows} /> : null}
 
       <section className="surface overflow-hidden">
         <div className="px-5 py-3.5 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-[14px] font-semibold text-ink">Recent scores</h2>
-            <p className="text-[12px] text-muted mt-0.5">Latest recordings and marks</p>
+            <p className="text-[12px] text-muted mt-0.5">Latest recordings in this window</p>
           </div>
           <Link href="/calls" className="btn btn-ghost text-[12px]">
             View all
           </Link>
         </div>
 
-        {/* Mobile list */}
         <div className="divide-y divide-line md:hidden">
-          {allCalls.slice(0, 8).map((call) => {
-            const score = Array.isArray(call.call_scores) ? call.call_scores[0] : call.call_scores;
+          {rangeCalls.slice(0, 8).map((call) => {
+            const score = scoreOf(call);
             const rate = score ? complianceFollowRateFromScore(score) : null;
             return (
               <Link
@@ -302,7 +253,7 @@ export default async function DashboardPage() {
               </Link>
             );
           })}
-          {!allCalls.length ? (
+          {!rangeCalls.length ? (
             <div className="py-12 text-center px-5">
               <h3 className="text-[14px] font-semibold text-ink">No call records</h3>
               <p className="mt-1 text-[13px] text-muted">Upload recordings to start quality auditing.</p>
@@ -313,7 +264,6 @@ export default async function DashboardPage() {
           ) : null}
         </div>
 
-        {/* Desktop table */}
         <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -327,10 +277,9 @@ export default async function DashboardPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-line text-[13px]">
-              {allCalls.slice(0, 8).map((call) => {
-                const score = Array.isArray(call.call_scores) ? call.call_scores[0] : call.call_scores;
+              {rangeCalls.slice(0, 8).map((call) => {
+                const score = scoreOf(call);
                 const rate = score ? complianceFollowRateFromScore(score) : null;
-
                 return (
                   <tr key={call.id} className="hover:bg-surface-2 transition-colors">
                     <td className="px-6 py-3.5">
@@ -362,9 +311,7 @@ export default async function DashboardPage() {
                           {score.overall_score}%
                         </span>
                       ) : (
-                        <span className="chip">
-                          {call.status === "failed" ? "Failed" : "Processing"}
-                        </span>
+                        <span className="chip">{call.status === "failed" ? "Failed" : "Processing"}</span>
                       )}
                     </td>
                     <td className="px-6 py-3.5 text-right whitespace-nowrap">
@@ -382,7 +329,7 @@ export default async function DashboardPage() {
             </tbody>
           </table>
 
-          {!allCalls.length && (
+          {!rangeCalls.length ? (
             <div className="py-16 text-center">
               <div className="inline-flex p-3 mb-3 text-muted">{Icons.emptyBox}</div>
               <h3 className="text-[14px] font-semibold text-ink">No calls yet</h3>
@@ -393,7 +340,7 @@ export default async function DashboardPage() {
                 Upload calls
               </Link>
             </div>
-          )}
+          ) : null}
         </div>
       </section>
     </div>
@@ -407,14 +354,11 @@ function rankByAgentId(
     }
   >,
 ) {
-  const groups = new Map<
-    string,
-    { id: string; name: string; scores: CallScore[] }
-  >();
+  const groups = new Map<string, { id: string; name: string; scores: CallScore[] }>();
 
   for (const call of calls) {
     if (call.status !== "completed") continue;
-    const score = Array.isArray(call.call_scores) ? call.call_scores[0] : call.call_scores;
+    const score = scoreOf(call);
     if (!score || typeof score.overall_score !== "number") continue;
     const name = agentLabel(call);
     const key = name.toLowerCase();
@@ -431,9 +375,7 @@ function rankByAgentId(
       id: row.id,
       name: row.name,
       call_count: row.scores.length,
-      avg_score: Math.round(
-        row.scores.reduce((sum, score) => sum + score.overall_score, 0) / row.scores.length,
-      ),
+      avg_score: Math.round(row.scores.reduce((sum, score) => sum + score.overall_score, 0) / row.scores.length),
     }))
     .sort((a, b) => b.avg_score - a.avg_score);
 }

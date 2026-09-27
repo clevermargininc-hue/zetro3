@@ -353,7 +353,9 @@ export function buildQaReport(
   const rows: ReportCallRow[] = calls
     .map((call): ReportCallRow | null => {
       const score = scoreOf(call);
-      if (!score || typeof score.overall_score !== "number") return null;
+      if (!score) return null;
+      const overall = Number(score.overall_score);
+      if (!Number.isFinite(overall)) return null;
       const auditedAt = call.completed_at || score.created_at || call.created_at;
       if (typeof auditedAt !== "string" || !inRange(auditedAt, range.startIso, range.endIso)) {
         return null;
@@ -402,7 +404,7 @@ export function buildQaReport(
         agent_name: agentNameOf(call),
         audited_at: auditedAt,
         duration_seconds,
-        overall_score: Number(score.overall_score),
+        overall_score: overall,
         greeting: score.greeting == null ? null : Number(score.greeting),
         empathy: score.empathy == null ? null : Number(score.empathy),
         professionalism: score.professionalism == null ? null : Number(score.professionalism),
