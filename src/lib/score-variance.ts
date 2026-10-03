@@ -44,24 +44,48 @@ export function verdictFromOverall(score: number): Verdict {
   return "poor";
 }
 
-/** Company weights are percent-of-100. Do not renormalize to the weights the model happened to return. */
+function paramWeight(row: { weight_pct?: number | null }) {
+  const n = Number(row.weight_pct);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Weighted company overall. Unweighted lines share leftover percent.
+ * If listed weights do not sum to 100, scale them so the total cannot silently max at 80 or 120.
+ */
 export function overallFromParameters(
   parameters: { score: number; weight_pct?: number | null }[] | undefined,
 ): number | null {
   if (!parameters?.length) return null;
-  const weighted = parameters.filter(
-    (row) => row.weight_pct != null && Number.isFinite(Number(row.weight_pct)),
-  );
+  const weighted = parameters.filter((row) => paramWeight(row) != null);
+  const unweighted = parameters.filter((row) => paramWeight(row) == null);
   if (!weighted.length) {
     return clampScore(
       parameters.reduce((sum, row) => sum + (Number(row.score) || 0), 0) /
         parameters.length,
     );
   }
-  const earned = weighted.reduce(
-    (sum, row) => sum + (Number(row.score) || 0) * Math.max(0, Number(row.weight_pct)) / 100,
-    0,
-  );
+  const weightSum = weighted.reduce((sum, row) => sum + (paramWeight(row) as number), 0);
+  const scale = weightSum > 0 && unweighted.length === 0 ? 100 / weightSum : 1;
+  let used = 0;
+  let earned = 0;
+  for (const row of weighted) {
+    const weight = (paramWeight(row) as number) * scale;
+    used += weight;
+    earned += (Number(row.score) || 0) * weight / 100;
+  }
+  if (unweighted.length) {
+    if (used > 100 && used > 0) {
+      earned *= 100 / used;
+      used = 100;
+    }
+    const leftover = Math.max(0, 100 - used);
+    const each = leftover / unweighted.length;
+    earned += unweighted.reduce(
+      (sum, row) => sum + (Number(row.score) || 0) * each / 100,
+      0,
+    );
+  }
   return clampScore(earned);
 }
 
@@ -82,7 +106,7 @@ function formatAnchorBlock(previous: PreviousCallScore, source: ConsistencyAncho
   const paramLines =
     Array.isArray(params) && params.length
       ? params
-          .slice(0, 40)
+          .slice(0, 250)
           .map((row) => `- ${row.name}: ${Math.round(Number(row.score) || 0)}%`)
           .join("\n")
       : [
@@ -168,25 +192,10 @@ export function standardsFingerprint(
 }
 
 function sameRecording(
-  a: {
-    file_name?: string | null;
-    duration_seconds?: number | null;
-    assembly_id?: string | null;
-  },
-  b: {
-    file_name?: string | null;
-    duration_seconds?: number | null;
-    assembly_id?: string | null;
-  },
+  a: { assembly_id?: string | null },
+  b: { assembly_id?: string | null },
 ) {
-  if (a.assembly_id && b.assembly_id && a.assembly_id === b.assembly_id) return true;
-  const nameA = (a.file_name || "").trim().toLowerCase();
-  const nameB = (b.file_name || "").trim().toLowerCase();
-  if (!nameA || !nameB || nameA !== nameB) return false;
-  const durA = Number(a.duration_seconds ?? 0);
-  const durB = Number(b.duration_seconds ?? 0);
-  if (!durA || !durB) return false;
-  return Math.abs(durA - durB) <= 5;
+  return Boolean(a.assembly_id && b.assembly_id && a.assembly_id === b.assembly_id);
 }
 
 /**
@@ -291,7 +300,8 @@ export function stabilizeRescoreAnalysis(
   }
 
   const prevFp = String(previous.metric_evidence?.standards_fingerprint || "").trim();
-  if (nextFp && prevFp && nextFp !== prevFp) {
+  const skipClamp = !prevFp || Boolean(nextFp && prevFp !== nextFp);
+  if (skipClamp) {
     if (hadAutoZero(analysis)) {
       const fromParams = overallFromParameters(evidenceBase.parameters);
       let favoured = Number(evidenceBase.raw_score);
@@ -331,12 +341,15 @@ export function stabilizeRescoreAnalysis(
 
   const nextAutoZero = hadAutoZero(analysis);
   const prevAutoZero = hadAutoZero(previous);
+  const newAutoZero = nextAutoZero && !prevAutoZero;
 
   const evidence: MetricEvidence = { ...evidenceBase };
-  const stabilizedParams = stabilizeParameters(
-    evidence.parameters,
-    previous.metric_evidence?.parameters,
-  );
+  const stabilizedParams = newAutoZero
+    ? evidence.parameters
+    : stabilizeParameters(
+        evidence.parameters,
+        previous.metric_evidence?.parameters,
+      );
   if (stabilizedParams) {
     evidence.parameters = stabilizedParams;
   }
@@ -388,7 +401,7 @@ export function stabilizeRescoreAnalysis(
     };
     return {
       ...analysis,
-      ...(nextAutoZero && !prevAutoZero ? {} : clampedDims),
+      ...(newAutoZero ? {} : clampedDims),
       overall_score: 0,
       verdict: verdictFromOverall(0),
       metric_evidence: evidence,

@@ -10,6 +10,7 @@ import { indexQaDocument } from "@/lib/qa-retrieve";
 import { ALL_DOCUMENT_KINDS, QA_KINDS, type QaKind } from "@/lib/qa-kinds";
 
 export const runtime = "nodejs";
+export const maxDuration = 120;
 
 function emptyReadiness(setupRequired: boolean) {
   return {

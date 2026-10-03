@@ -10,6 +10,15 @@ function optionalNumber(value: string | undefined, fallback: number) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+export type ReasoningEffortSetting = "minimal" | "low" | "medium" | "high";
+
+function reasoningEffort(value: string | undefined, fallback: ReasoningEffortSetting) {
+  const v = (value || "").trim().toLowerCase();
+  return v === "minimal" || v === "low" || v === "medium" || v === "high"
+    ? (v as ReasoningEffortSetting)
+    : fallback;
+}
+
 export function getPublicEnv() {
   return {
     supabaseUrl: required(
@@ -49,5 +58,20 @@ export function getServerEnv() {
     aiMaxRetries: Math.max(1, Math.round(optionalNumber(process.env.AI_MAX_RETRIES, 3))),
     // Documents audits run playbook + full scorecard JSON; allow several minutes per LLM call.
     aiTimeoutMs: optionalNumber(process.env.AI_TIMEOUT, 240_000),
+    /** Reasoning effort for the main call-scoring pass (gpt-5 / o-series only). */
+    aiReasoningEffort: reasoningEffort(process.env.AI_REASONING_EFFORT, "low"),
+    /** Reasoning effort when READING company Standards (playbooks + section digests). */
+    aiStandardsReasoningEffort: reasoningEffort(
+      process.env.AI_STANDARDS_REASONING_EFFORT,
+      "medium",
+    ),
+    /**
+     * Characters of company Standards sent verbatim per audit. Files beyond this are
+     * read section-by-section into a full rule digest instead of being cut off.
+     * ~240k chars ≈ 60k tokens — safe for 128k-context models with the transcript.
+     */
+    standardsCharBudget: Math.round(
+      optionalNumber(process.env.STANDARDS_CHAR_BUDGET, 240_000),
+    ),
   };
 }

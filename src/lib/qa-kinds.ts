@@ -40,6 +40,7 @@ export type QaReadiness = {
   documents: Array<
     Omit<QaDocument, "extracted_text" | "user_id" | "file_path" | "mime_type"> & {
       has_text: boolean;
+      chars?: number;
     }
   >;
   setupRequired: boolean;

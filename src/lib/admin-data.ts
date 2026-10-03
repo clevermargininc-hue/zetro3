@@ -51,7 +51,7 @@ export async function listWorkspacesForAdmin() {
   const db = createAdminClient();
   const since = billingMonthStart().toISOString();
 
-  const [workspacesRes, membersRes, billingRes, usageRes] = await Promise.all([
+  const [workspacesRes, membersRes, billingRes, usageRes, eventsRes] = await Promise.all([
     db
       .from("workspaces")
       .select("id, name, plan, domain, country, created_by, created_at")
@@ -59,6 +59,7 @@ export async function listWorkspacesForAdmin() {
     db.from("workspace_members").select("workspace_id, user_id, role"),
     db.from("workspace_billing").select(BILLING_COLUMNS),
     db.rpc("workspace_usage", { since }),
+    db.from("score_events").select("workspace_id").eq("kind", "first"),
   ]);
   if (workspacesRes.error) throw new Error(workspacesRes.error.message);
   if (membersRes.error) throw new Error(membersRes.error.message);
@@ -80,6 +81,13 @@ export async function listWorkspacesForAdmin() {
     usageById.set(row.workspace_id, row);
   }
 
+  const firstScoresByWs = new Map<string, number>();
+  for (const row of (eventsRes.data || []) as { workspace_id: string }[]) {
+    if (row.workspace_id) {
+      firstScoresByWs.set(row.workspace_id, (firstScoresByWs.get(row.workspace_id) || 0) + 1);
+    }
+  }
+
   const contactIdFor = new Map<string, string>();
   for (const ws of workspacesRes.data || []) {
     const admin = members.find((m) => m.workspace_id === ws.id && m.role === "admin");
@@ -91,6 +99,7 @@ export async function listWorkspacesForAdmin() {
     const id = ws.id as string;
     const contact = profiles.get(contactIdFor.get(id) || "") || null;
     const usage = usageById.get(id);
+    const cumulativeScored = Math.max(Number(usage?.scored_calls) || 0, firstScoresByWs.get(id) || 0);
     return {
       id,
       name: ws.name as string,
@@ -102,7 +111,7 @@ export async function listWorkspacesForAdmin() {
       contact,
       companyDomain: companyDomainFor((ws.domain as string | null) ?? null, contact?.email),
       billing: billingById.get(id) || defaultBilling(id),
-      scoredCalls: Number(usage?.scored_calls) || 0,
+      scoredCalls: cumulativeScored,
       firstThisMonth: Number(usage?.first_scores) || 0,
       rescoresThisMonth: Number(usage?.rescores) || 0,
       duplicateCompany: false,

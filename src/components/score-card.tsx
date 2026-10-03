@@ -130,18 +130,36 @@ export function ScoreCard({ score }: { score: CallScore }) {
 
       {score.standards_used?.length ? (
         <section className="surface p-5 space-y-3">
-          <div>
-            <h4 className="text-[14px] font-semibold text-ink">Files we read</h4>
-            <p className="text-[12px] text-muted mt-0.5">
-              Marks come from these files, not from a generic list.
-            </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h4 className="text-[14px] font-semibold text-ink">Company documents read</h4>
+              <p className="text-[12px] text-muted mt-0.5">
+                Evaluated against your company files — not generic rules.
+              </p>
+            </div>
+            {score.metric_evidence?.standards_coverage?.parameters_scored ? (
+              <span className="chip chip-ok">
+                {score.metric_evidence.standards_coverage.parameters_scored} scorecard criteria audited
+              </span>
+            ) : null}
           </div>
           <div className="flex flex-wrap gap-2">
-            {score.standards_used.map((doc) => (
-              <div key={doc.id} className="chip">
-                {QA_KIND_LABELS[doc.kind] || doc.kind}: {doc.title}
-              </div>
-            ))}
+            {score.standards_used.map((doc) => {
+              const cov = score.metric_evidence?.standards_coverage?.documents?.find(
+                (d) => d.id === doc.id || d.file_name === doc.file_name,
+              );
+              return (
+                <div key={doc.id} className="chip">
+                  <span className="font-semibold">{QA_KIND_LABELS[doc.kind] || doc.kind}:</span>
+                  <span>{doc.title}</span>
+                  {cov?.chars ? (
+                    <span className="text-muted font-mono font-normal">
+                      · {(cov.chars / 1000).toFixed(1)}k chars read
+                    </span>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
         </section>
       ) : null}

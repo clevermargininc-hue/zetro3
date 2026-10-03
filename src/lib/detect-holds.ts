@@ -49,10 +49,20 @@ export function detectHoldEvents(utterances: GenericUtterance[]): HoldListenResu
   for (let i = 0; i < utterances.length; i++) {
     const u = utterances[i];
     const text = String(u.text || "").replace(/\s+/g, " ").trim();
-    if (text && HOLD_CUE.test(text)) {
+    const saidHold = Boolean(text && HOLD_CUE.test(text));
+    if (saidHold) {
       const start_s = Math.floor((u.start || 0) / 1000);
-      const nextStart = utterances[i + 1]?.start ?? u.end ?? u.start;
-      const end_s = Math.max(start_s, Math.floor(nextStart / 1000));
+      let resume = utterances[i + 1];
+      for (let j = i + 1; j < utterances.length; j++) {
+        const gapFromCue = (utterances[j].start || 0) - (u.end || u.start || 0);
+        if (gapFromCue >= 1500) {
+          resume = utterances[j];
+          break;
+        }
+        resume = utterances[j];
+      }
+      const endMs = resume?.start ?? u.end ?? u.start;
+      const end_s = Math.max(start_s, Math.floor((endMs || 0) / 1000));
       events.push({
         type: "verbal",
         utterance_index: i,
@@ -66,7 +76,7 @@ export function detectHoldEvents(utterances: GenericUtterance[]): HoldListenResu
     const next = utterances[i + 1];
     if (!next) continue;
     const gap = (next.start || 0) - (u.end || u.start || 0);
-    if (gap >= SILENCE_HOLD_MS) {
+    if (gap >= SILENCE_HOLD_MS && saidHold) {
       const start_s = Math.floor((u.end || u.start || 0) / 1000);
       const end_s = Math.floor((next.start || 0) / 1000);
       events.push({

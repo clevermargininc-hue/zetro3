@@ -97,6 +97,27 @@ h3 {
   box-shadow: none;
 }
 
+.field {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  padding: 0.55rem 0.75rem;
+  font-size: 13px;
+  color: var(--text);
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 1px var(--blue);
+}
+
+.field::placeholder {
+  color: #9ca3af;
+}
+
 .page-head {
   display: flex;
   flex-wrap: wrap;
@@ -543,32 +564,24 @@ textarea {
 }
 
 .hero-mesh {
-  background-color: var(--cream);
+  background-color: #fafbfd;
   background-image:
-    radial-gradient(ellipse 55% 42% at 92% 4%, rgba(26, 86, 219, 0.1), transparent 62%),
-    linear-gradient(180deg, #fbfaf6 0%, var(--cream) 100%);
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(26, 86, 219, 0.08), transparent 70%),
+    linear-gradient(180deg, #ffffff 0%, #f6f8fb 100%);
 }
 
 .hero-art {
   position: relative;
-  width: min(100%, 27rem);
+  width: min(100%, 34rem);
   margin-left: auto;
-  padding: 1.25rem 0 0 1.5rem;
 }
 
 .art-shape {
-  position: absolute;
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 .art-shape-a {
-  top: 0;
-  left: 0;
-  width: 6.75rem;
-  height: 3.4rem;
-  border-radius: 0 0 6.75rem 6.75rem;
-  background: color-mix(in srgb, var(--blue) 16%, transparent);
+  display: none;
 }
 
 .photo-blob {
@@ -647,7 +660,7 @@ textarea {
 }
 
 .band-story {
-  background: var(--cream);
+  background: #fafbfe;
   padding: 4.5rem 0 6.5rem;
   overflow-x: clip;
 }
@@ -801,23 +814,15 @@ textarea {
 }
 
 .art-line {
-  position: absolute;
-  pointer-events: none;
-  background: color-mix(in srgb, var(--blue) 22%, transparent);
+  display: none;
 }
 
 .art-line-a {
-  top: 38%;
-  right: 0;
-  width: 42%;
-  height: 2px;
+  display: none;
 }
 
 .art-line-b {
-  right: 12%;
-  bottom: 18%;
-  width: 2px;
-  height: 28%;
+  display: none;
 }
 
 .mark-svg {

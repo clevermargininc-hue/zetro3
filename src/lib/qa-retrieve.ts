@@ -18,21 +18,36 @@ type StoredChunk = {
 };
 
 function asVector(value: number[] | string) {
-  if (Array.isArray(value)) return value.map(Number);
-  try {
-    const parsed = JSON.parse(value) as number[];
-    return Array.isArray(parsed) ? parsed.map(Number) : [];
-  } catch {
-    return [];
+  if (Array.isArray(value)) {
+    return value.map(Number).filter((n) => Number.isFinite(n));
   }
+  if (typeof value !== "string") return [];
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    if (Array.isArray(parsed)) {
+      return parsed.map(Number).filter((n) => Number.isFinite(n));
+    }
+  } catch {
+    /* pgvector text: {0.1,0.2} */
+  }
+  if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+    return trimmed
+      .slice(1, -1)
+      .split(",")
+      .map((part) => Number(part.trim()))
+      .filter((n) => Number.isFinite(n));
+  }
+  return [];
 }
 
 export async function indexQaDocument(doc: QaDocument) {
   const chunks = chunkText(doc.extracted_text);
-  if (!chunks.length) return;
-  const embeddings = await embedTexts(chunks);
   const supabase = createAdminClient();
   await supabase.from("qa_document_chunks").delete().eq("document_id", doc.id);
+  if (!chunks.length) return;
+  const embeddings = await embedTexts(chunks);
 
   const rows = chunks.map((content, index) => ({
     document_id: doc.id,
@@ -60,31 +75,46 @@ async function extraRulesForCall(userId: string, callText: string) {
   if (!callText.trim()) return "";
   const supabase = createAdminClient();
   const teamScope = await getTeamScope(userId);
-  const { data, error } = await supabase
-    .from("qa_document_chunks")
-    .select("document_id, kind, content, embedding")
-    .in("user_id", teamScope);
+  const pageSize = 1000;
+  const data: StoredChunk[] = [];
+  for (let from = 0; from < 20_000; from += pageSize) {
+    const { data: page, error } = await supabase
+      .from("qa_document_chunks")
+      .select("document_id, kind, content, embedding")
+      .in("user_id", teamScope)
+      .range(from, from + pageSize - 1);
+    if (error) return "";
+    if (!page?.length) break;
+    data.push(...(page as StoredChunk[]));
+    if (page.length < pageSize) break;
+  }
 
-  if (error || !data?.length) return "";
+  if (!data.length) return "";
 
   const query = await embedQuery(
     `Find company scorecard criteria, compliance rules, required disclosures, consent, recording notices, and prohibited statements that apply to this call.\n\n${callText.slice(0, 6000)}`,
   );
+  if (!query?.length) return "";
 
-  const ranked = (data as StoredChunk[])
+  const ranked = data
     .map((chunk) => ({
       ...chunk,
-      score: cosineSimilarity(query, asVector(chunk.embedding)),
+      vector: asVector(chunk.embedding),
+    }))
+    .filter((chunk) => chunk.vector.length === query.length)
+    .map((chunk) => ({
+      ...chunk,
+      score: cosineSimilarity(query, chunk.vector),
     }))
     .sort((a, b) => b.score - a.score);
 
   const limits: Record<QaKind, number> = {
-    scorecard: 12,
-    compliance: 10,
-    document: 8,
-    opening: 3,
-    closing: 3,
-    holding: 3,
+    scorecard: 24,
+    compliance: 20,
+    document: 16,
+    opening: 6,
+    closing: 6,
+    holding: 6,
   };
 
   const picked = ALL_DOCUMENT_KINDS.flatMap((kind) =>
@@ -117,7 +147,8 @@ export async function retrieveQaContext(
   const checklist = formatCompanyRuleChecklist(docs);
   const files = formatQaContext(docs);
   const scripts = formatCallScripts(docs);
-  const extra = await extraRulesForCall(userId, callText).catch(() => "");
+  const extraRaw = await extraRulesForCall(userId, callText).catch(() => "");
+  const extra = extraRaw.slice(0, 15000);
   const complianceChecklist = formatComplianceChecklist(extractCompanyComplianceRules(docs));
 
   return [

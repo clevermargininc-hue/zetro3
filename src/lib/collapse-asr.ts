@@ -63,14 +63,22 @@ export function collapseAsrLoops(text: string) {
   return out.join(" ").replace(/\s+/g, " ").trim();
 }
 
-/** Collapse ASR stutter loops only. Do not guess replacement words — that invents false Kiswahili. */
-export function collapseTurnList<T extends { text: string }>(turns: T[]): T[] {
+/** Collapse ASR stutter loops only. Do not drop a different speaker's similar reply. */
+export function collapseTurnList<T extends { text: string; speaker?: string }>(turns: T[]): T[] {
   const out: T[] = [];
   for (const turn of turns) {
     const text = collapseAsrLoops(turn.text);
     if (!text) continue;
     const prev = out[out.length - 1];
-    if (prev && (sameText(prev.text, text) || nearDuplicate(prev.text, text))) continue;
+    if (prev && (sameText(prev.text, text) || nearDuplicate(prev.text, text))) {
+      const prevSpeaker = String(prev.speaker || "");
+      const nextSpeaker = String(turn.speaker || "");
+      if (prevSpeaker && nextSpeaker && prevSpeaker !== nextSpeaker) {
+        out.push({ ...turn, text });
+        continue;
+      }
+      continue;
+    }
     out.push({ ...turn, text });
   }
   return out;

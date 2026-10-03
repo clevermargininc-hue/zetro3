@@ -96,6 +96,33 @@ export type CustomerVoiceInsight = {
   quote: string;
 };
 
+/** How one uploaded Standards file was read for an audit. */
+export type StandardsCoverageDoc = {
+  id: string;
+  file_name: string;
+  kind: string;
+  /** Characters of extracted text stored for the file. */
+  chars: number;
+  /** full = sent verbatim; digest = every section read into a rule digest (file larger than budget). */
+  mode: "full" | "digest";
+  sections: number;
+};
+
+/** Proof that the audit read every company file and scored every company line. */
+export type StandardsCoverage = {
+  budget_chars: number;
+  total_chars: number;
+  documents: StandardsCoverageDoc[];
+  parameters_expected?: number;
+  parameters_scored?: number;
+  /** Lines the first pass skipped that a follow-up pass scored. */
+  parameters_recovered?: number;
+  parameters_unscored?: string[];
+  compliance_expected?: number;
+  compliance_checked?: number;
+  compliance_recovered?: number;
+};
+
 export type MetricEvidence = Partial<Record<ScoreDimension, MetricEvidenceItem>> & {
   holding?: MetricEvidenceItem;
   document_references?: DocumentReference[];
@@ -111,6 +138,8 @@ export type MetricEvidence = Partial<Record<ScoreDimension, MetricEvidenceItem>>
   customer_voice?: CustomerVoiceInsight;
   /** Hash of Standards content used for this audit (invalidates ±5 clamp when files change). */
   standards_fingerprint?: string;
+  /** Which company files were read and whether every company line was scored. */
+  standards_coverage?: StandardsCoverage;
   /** Present when a re-audit was compared to a previous score. */
   rescore_variance?: {
     previous_overall: number;

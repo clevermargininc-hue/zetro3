@@ -65,15 +65,15 @@ export function SalesForm({
 
   if (success) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 text-center animate-in zoom-in-95 duration-500">
-        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-good/10 text-good">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <div className="border border-line bg-surface-2 p-8 text-center animate-in fade-in duration-300">
+        <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-good/15 text-good">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
-        <h3 className="mb-2 text-xl font-bold text-ink">Request received</h3>
-        <p className="text-[14px] text-muted">
-          We will reply by email with a quote in TZS. To move faster, write to{" "}
+        <h3 className="mb-2 text-[17px] font-semibold text-ink">Quote request received</h3>
+        <p className="text-[13px] leading-relaxed text-muted">
+          We will reply by email with a price per call in TZS within 1 business day. For urgent contract terms, email{" "}
           <a href={salesMailto("Zetro — contract or sales deal")} className="font-semibold text-blue hover:underline">
             {SALES_EMAIL}
           </a>
@@ -86,25 +86,25 @@ export function SalesForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-ink">Full name</span>
-          <input name="fullName" required type="text" className="field" placeholder="Jane Doe" />
+        <label className="block">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">Full name</span>
+          <input name="fullName" required type="text" className="field mt-1.5" placeholder="Jane Doe" />
         </label>
 
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-ink">Company name</span>
-          <input name="companyName" required type="text" className="field" placeholder="Acme Corp" />
+        <label className="block">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">Company name</span>
+          <input name="companyName" required type="text" className="field mt-1.5" placeholder="Acme Corp" />
         </label>
       </div>
 
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-ink">Work email</span>
-        <input name="workEmail" required type="email" className="field" placeholder="jane@acmecorp.com" />
+      <label className="block">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">Work email</span>
+        <input name="workEmail" required type="email" className="field mt-1.5" placeholder="jane@acmecorp.com" />
       </label>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-ink">Scored calls / month</span>
+        <label className="block">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">Calls / month</span>
           <input
             name="callsPerMonth"
             type="number"
@@ -113,11 +113,11 @@ export function SalesForm({
             defaultValue={
               Number.isFinite(parsedCalls) && parsedCalls > 0 ? Math.round(parsedCalls) : DEFAULT_CALLS_PER_MONTH
             }
-            className="field"
+            className="field mt-1.5 tabular-nums"
           />
         </label>
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-ink">Talk time (min)</span>
+        <label className="block">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">Talk time (min)</span>
           <input
             name="talkMinutes"
             type="number"
@@ -125,36 +125,36 @@ export function SalesForm({
             max={60}
             step={0.5}
             defaultValue={Number.isFinite(parsedMinutes) && parsedMinutes > 0 ? parsedMinutes : DEFAULT_TALK_MINUTES}
-            className="field"
+            className="field mt-1.5 tabular-nums"
           />
         </label>
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-ink">Billing</span>
-          <select name="billing" defaultValue={billing} className="field">
+        <label className="block">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">Billing</span>
+          <select name="billing" defaultValue={billing} className="field mt-1.5">
             <option value="monthly">Monthly</option>
-            <option value="annual">Annual</option>
+            <option value="annual">Annual (Save 20%)</option>
           </select>
         </label>
       </div>
 
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-ink">Anything else (optional)</span>
+      <label className="block">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">Anything else (optional)</span>
         <textarea
           name="message"
           rows={3}
-          className="field resize-none"
-          placeholder="Languages, phone system, number of agents, start date…"
+          className="field mt-1.5 resize-none"
+          placeholder="Languages, telephony system, number of agents, target start date…"
         />
       </label>
 
       {error ? <p className="alert-error text-[13px]">{error}</p> : null}
 
-      <button type="submit" disabled={loading} className="btn btn-lg btn-blue mt-2">
-        {loading ? "Sending request…" : "Request a quote"}
+      <button type="submit" disabled={loading} className="btn btn-lg btn-blue w-full mt-2 font-semibold">
+        {loading ? "Sending request…" : "Request quote in TZS"}
       </button>
 
-      <p className="mt-2 text-center text-[12px] text-muted">
-        Priced per scored call, in TZS, excluding VAT. This form does not charge you.
+      <p className="mt-1 text-center text-[12px] text-muted">
+        Priced per scored call in TZS, excluding VAT. This form does not charge your card.
       </p>
     </form>
   );

@@ -43,17 +43,19 @@ function inferSeverity(line: string, autoFail: boolean): ComplianceSeverity {
 }
 
 function looksLikeRule(line: string, fromComplianceFile: boolean) {
-  if (line.length < 12 || line.length > 280) return false;
-  if (SKIP_LINE.test(line)) return false;
+  const clean = line.replace(/^\|\s*|\s*\|$/g, "").trim();
+  if (clean.length < 8 || clean.length > 500) return false;
+  if (SKIP_LINE.test(clean)) return false;
   if (fromComplianceFile) {
     return (
-      COMPLIANCE_KIND.test(line) ||
-      COMPLIANCE_TOPIC.test(line) ||
-      /^\d+[\).:-]\s+\S+/.test(line) ||
-      /^[-*•]\s+\S+/.test(line)
+      COMPLIANCE_KIND.test(clean) ||
+      COMPLIANCE_TOPIC.test(clean) ||
+      /^\d+[\).:-]\s+\S+/.test(clean) ||
+      /^[-*•]\s+\S+/.test(clean) ||
+      clean.includes("|")
     );
   }
-  return COMPLIANCE_KIND.test(line) && COMPLIANCE_TOPIC.test(line);
+  return COMPLIANCE_KIND.test(clean) && COMPLIANCE_TOPIC.test(clean);
 }
 
 function splitLines(text: string) {
@@ -68,18 +70,19 @@ function splitLines(text: string) {
  * Pull enforceable rules from uploaded compliance files (and related policy lines).
  * Scorecard quality metrics stay on the scorecard — they are not compliance.
  */
-export function extractCompanyComplianceRules(docs: QaDocument[], limit = 40): CompanyComplianceRule[] {
+export function extractCompanyComplianceRules(docs: QaDocument[], limit = 150): CompanyComplianceRule[] {
   const sources = readableDocs(docs);
   const out: CompanyComplianceRule[] = [];
   const seen = new Set<string>();
 
   function push(raw: string, fileName: string) {
     const name = raw
+      .replace(/^\|\s*|\s*\|$/g, "")
       .replace(/^[-*•]\s+/, "")
       .replace(/^\d+[\).:-]\s+/, "")
       .replace(/\s+/g, " ")
       .trim();
-    if (name.length < 12 || name.length > 220) return;
+    if (name.length < 8 || name.length > 500) return;
     const key = name.toLowerCase();
     if (seen.has(key)) return;
     seen.add(key);
@@ -105,7 +108,7 @@ export function extractCompanyComplianceRules(docs: QaDocument[], limit = 40): C
     }
   }
 
-  if (out.length < 8) {
+  if (out.length < 15) {
     for (const doc of related) {
       const fileName = doc.file_name || doc.title;
       for (const line of splitLines(doc.extracted_text)) {
@@ -161,13 +164,15 @@ export function formatCompliancePlaybookBlock(entries: CompliancePlaybookEntry[]
   ].join("\n");
 }
 
-export function normalizeComplianceResult(value: unknown): ComplianceResult {
+export function normalizeComplianceResult(value: unknown): ComplianceResult | null {
   const v = String(value || "")
     .toLowerCase()
     .replace(/[\s_-]+/g, "");
+  if (!v) return null;
   if (v === "fail" || v === "breach" || v === "miss" || v === "failed") return "fail";
   if (v === "na" || v === "n/a" || v === "notapplicable" || v === "ifapplicable") return "n/a";
-  return "pass";
+  if (v === "pass" || v === "passed" || v === "ok" || v === "yes" || v === "followed") return "pass";
+  return null;
 }
 
 export function normalizeComplianceSeverity(value: unknown): ComplianceSeverity {
@@ -213,6 +218,8 @@ export function normalizeComplianceChecks(
     const key = matchKey(rule);
     if (!key || seen.has(key)) continue;
     seen.add(key);
+    const result = normalizeComplianceResult(item.result);
+    if (!result) continue;
     const index = Number(item.utterance_index);
     const fromUtterance =
       Number.isFinite(index) && index >= 0 && index < utterances.length ? utterances[index] : null;
@@ -225,7 +232,7 @@ export function normalizeComplianceChecks(
     out.push({
       rule,
       file_name: resolveFileName(cleanScoreLine(String(item.file_name || "")), files),
-      result: normalizeComplianceResult(item.result),
+      result,
       severity: normalizeComplianceSeverity(item.severity),
       note: cleanScoreLine(String(item.note || "")).slice(0, 280),
       quote: cleanScoreQuote(String(item.quote || ""), String(fromUtterance?.text || "")).slice(0, 180),
@@ -244,12 +251,7 @@ export function mergeComplianceChecks(
   const byKey = new Map(modelChecks.map((row) => [matchKey(row.rule), row]));
   return playbook.map((rule) => {
     const key = matchKey(rule.name);
-    const hit =
-      byKey.get(key) ||
-      modelChecks.find((row) => {
-        const other = matchKey(row.rule);
-        return Boolean(other && (other.includes(key) || key.includes(other)));
-      });
+    const hit = byKey.get(key);
     if (hit) {
       return {
         ...hit,
@@ -261,11 +263,11 @@ export function mergeComplianceChecks(
     return {
       rule: rule.name,
       file_name: rule.file_name || resolveFileName("", files),
-      result: rule.if_applicable ? "n/a" : "n/a",
+      result: rule.if_applicable ? "n/a" : "fail",
       severity: rule.severity,
       note: rule.if_applicable
         ? "If applicable — situation did not arise on this call."
-        : "No clear evidence to mark this company rule on this call.",
+        : "No clear evidence this company rule was followed on this call.",
       quote: "",
       start_s: null,
     } satisfies ComplianceCheck;

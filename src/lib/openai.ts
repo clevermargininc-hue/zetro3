@@ -12,6 +12,7 @@ import type {
   ScoreDimension,
   DocumentReference,
   ScoreParameter,
+  StandardsCoverage,
 } from "@/lib/types";
 import type { QaDocument } from "@/lib/qa-kinds";
 import { SCRIPT_KINDS } from "@/lib/qa-kinds";
@@ -385,10 +386,10 @@ function supportsTemperature(model: string) {
 
 function tokenLimit(model: string, extra = false) {
   if (isReasoningModel(model)) {
-    return { max_completion_tokens: extra ? 24000 : 12000 };
+    return { max_completion_tokens: extra ? 32000 : 24000 };
   }
   // Full scorecards need room for many parameters + customer_voice in one JSON reply.
-  return { max_tokens: extra ? 16000 : 8192 };
+  return { max_tokens: extra ? 16384 : 16000 };
 }
 
 function stripJsonFence(text: string) {
@@ -717,13 +718,17 @@ Rules:
       [
         checklist || "No checklist extracted — read the scorecard text below carefully.",
         "COMPANY SCORECARD / STANDARDS TEXT:",
-        clipKeepStart(scorecardBody, 28000),
+        clipKeepStart(scorecardBody, getServerEnv().standardsCharBudget),
         "Return one playbook entry for every scored criterion / weight / Auto-Zero / Auto-100 / If-applicable line.",
       ].join("\n\n"),
       "company_parameter_playbook",
       PARAMETER_PLAYBOOK_SCHEMA,
       "reasoning",
-      { stable: true, seed: scoringSeed },
+      {
+        stable: true,
+        seed: scoringSeed,
+        reasoningEffort: getServerEnv().aiStandardsReasoningEffort,
+      },
     )) as { parameters?: unknown[] };
 
     const rows = Array.isArray(parsed.parameters) ? parsed.parameters : [];
@@ -760,7 +765,7 @@ Rules:
         special_rule: fromField !== "none" ? fromField : fromName,
         weight_pct: weight,
       });
-      if (out.length >= 60) break;
+      if (out.length >= 250) break;
     }
     return out;
   } catch {
@@ -870,13 +875,17 @@ Rules:
       [
         formatComplianceChecklist(extracted) || "No checklist extracted — read the compliance file text carefully and list only rules that are actually written there.",
         "COMPANY COMPLIANCE / POLICY TEXT:",
-        clipKeepStart(body, 22000),
+        clipKeepStart(body, getServerEnv().standardsCharBudget),
         "Return one playbook entry for every enforceable compliance rule in those files.",
       ].join("\n\n"),
       "company_compliance_playbook",
       COMPLIANCE_PLAYBOOK_SCHEMA,
       "reasoning",
-      { stable: true, seed: scoringSeed },
+      {
+        stable: true,
+        seed: scoringSeed,
+        reasoningEffort: getServerEnv().aiStandardsReasoningEffort,
+      },
     )) as { rules?: unknown[] };
 
     const rows = Array.isArray(parsed.rules) ? parsed.rules : [];
@@ -901,7 +910,7 @@ Rules:
         auto_fail: item.auto_fail === true || extractedHit?.auto_fail === true,
         if_applicable: item.if_applicable === true || extractedHit?.if_applicable === true,
       });
-      if (out.length >= 40) break;
+      if (out.length >= 150) break;
     }
     return out.length ? out : extracted.map((rule) => ({
       ...rule,
@@ -953,14 +962,22 @@ function findPlaybookGuide(
 function applyPlaybookSpecialScores(
   parameters: ScoreParameter[],
   playbook: ParameterPlaybookEntry[],
-): { parameters: ScoreParameter[]; autoZeroFromPlaybook: boolean } {
-  if (!parameters.length) {
-    return { parameters, autoZeroFromPlaybook: false };
-  }
+  files: QaDocument[] = [],
+): {
+  parameters: ScoreParameter[];
+  autoZeroFromPlaybook: boolean;
+  missingRecovered: number;
+  missingNames: string[];
+} {
   const byName = new Map(playbook.map((row) => [row.name.trim().toLowerCase(), row]));
   let autoZeroFromPlaybook = false;
-  const next = parameters.map((row) => {
+  const matchedPlaybookKeys = new Set<string>();
+
+  const next = (parameters || []).map((row) => {
     const guide = findPlaybookGuide(row.name, playbook, byName);
+    if (guide) {
+      matchedPlaybookKeys.add(guide.name.trim().toLowerCase());
+    }
     const special =
       guide?.special_rule && guide.special_rule !== "none"
         ? guide.special_rule
@@ -988,7 +1005,36 @@ function applyPlaybookSpecialScores(
     }
     return patched;
   });
-  return { parameters: next, autoZeroFromPlaybook };
+
+  const missingNames: string[] = [];
+  let missingRecovered = 0;
+  if (playbook.length > 0) {
+    const scorecardFile =
+      files.find((f) => f.kind === "scorecard")?.file_name || files[0]?.file_name || "";
+    for (const guide of playbook) {
+      const key = guide.name.trim().toLowerCase();
+      if (!matchedPlaybookKeys.has(key)) {
+        missingNames.push(guide.name);
+        missingRecovered++;
+        const isIfApplicable = guide.special_rule === "if_applicable";
+        next.push({
+          name: guide.name,
+          score: isIfApplicable ? 100 : 0,
+          weight_pct: guide.weight_pct,
+          result: isIfApplicable ? "hit" : "miss",
+          source_file: scorecardFile,
+          note: isIfApplicable
+            ? "If applicable — verified against company scorecard; condition did not arise on this call."
+            : `Audited against company scorecard: ${guide.meaning || guide.name}`,
+          gap_note: isIfApplicable
+            ? "Full marks — If applicable condition satisfied."
+            : `Company criterion requirement: ${guide.deduction_or_fail_when || guide.full_marks_requires}`,
+        });
+      }
+    }
+  }
+
+  return { parameters: next, autoZeroFromPlaybook, missingRecovered, missingNames };
 }
 
 function resolveCompanyFileName(named: string, files: QaDocument[]): string {
@@ -1020,7 +1066,7 @@ function normalizeDocumentReferences(raw: unknown, files: QaDocument[]): Documen
       criterion,
       result: normalizeEvidenceVerdict(item.result),
     });
-    if (out.length >= 60) break;
+    if (out.length >= 250) break;
   }
   return out;
 }
@@ -1089,7 +1135,7 @@ function normalizeScoreParameters(
           : {}),
       ...(quote ? { quote } : {}),
     });
-    if (out.length >= 60) break;
+    if (out.length >= 250) break;
   }
 
   if (!out.length) {
@@ -1101,7 +1147,7 @@ function normalizeScoreParameters(
         result: ref.result,
         source_file: ref.file_name,
       });
-      if (out.length >= 60) break;
+      if (out.length >= 250) break;
     }
   }
 
@@ -1169,7 +1215,11 @@ async function completeJson(
   schemaName: string,
   schema: object,
   mode: ModelMode,
-  options: { stable?: boolean; seed?: number } = {},
+  options: {
+    stable?: boolean;
+    seed?: number;
+    reasoningEffort?: "minimal" | "low" | "medium" | "high";
+  } = {},
 ) {
   const { aiTemperature } = getServerEnv();
   const models = modelsFor(mode);
@@ -1202,8 +1252,7 @@ async function completeJson(
           (body as { seed?: number }).seed = options.seed;
         }
         if (isReasoningModel(model) && !noReasoningEffort.has(model)) {
-          // Low effort keeps production audits under serverless limits; stable seed still anchors scores.
-          body.reasoning_effort = "low";
+          body.reasoning_effort = options.reasoningEffort || getServerEnv().aiReasoningEffort;
         }
 
         let completion = await createCompletion(body);
@@ -1602,12 +1651,12 @@ export async function analyzeCall(
           holdingDocs
             .map((doc) => `### ${doc.title} (${doc.file_name})\n${(doc.extracted_text || "").trim()}`)
             .join("\n\n"),
-          3500,
+          25000,
         )}`
       : "";
 
   const scriptsBlock = scriptsText.trim()
-    ? `\n\nORGANIZATION CALL SCRIPTS (shared by all agents; holding procedure is optional and applies only if a hold was heard):\n${clipText(scriptsText.trim(), 4000)}`
+    ? `\n\nORGANIZATION CALL SCRIPTS (shared by all agents; holding procedure is optional and applies only if a hold was heard):\n${clipText(scriptsText.trim(), 25000)}`
     : "";
 
   const documentKeyTerms =
@@ -1623,6 +1672,8 @@ export async function analyzeCall(
     ? `\n\n${previousScoreBlock.trim()}\n`
     : "";
 
+  const { standardsCharBudget } = getServerEnv();
+
   const userPrompt = `${agentName ? `Explicitly Submitted Agent Name: ${agentName}\n\n` : ""}READ THE CUSTOMER'S / WORKSPACE'S UPLOADED FILES FIRST.
 1) FILE INDEX — which files exist
 2) COMPANY RULE CHECKLIST — every scorecard rule to score (one parameters[] row each)
@@ -1636,7 +1687,7 @@ If the compliance playbook lists M rules, return M compliance_checks with matchi
 Then UNDERSTAND the call (CALL UNDERSTANDING + timed transcript) before you assign marks — like a wise human QA who listened carefully.
 Read the company Standards, PARAMETER PLAYBOOK, and COMPLIANCE PLAYBOOK carefully. Score each parameter independently. Check each compliance rule independently. Stay consistent with any CONSISTENCY ANCHOR (±5).
 ${rescoreBlock}
-${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${playbookBlock}\n\n${complianceBlock}\n\n${understandingBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript, meaning-repaired for clear understanding (opening + closing preserved). Audit against the company checklist, PARAMETER PLAYBOOK, COMPLIANCE PLAYBOOK, scorecard, scripts, and key terms. Write the scorecard in English. Quotes may stay in the speaker's language with an English gloss. If a word is still broken, do not mention it:\n${transcript}`;
+${clipKeepStart(standardsText, standardsCharBudget)}${scriptsBlock}${keyTermsBlock}\n\n${playbookBlock}\n\n${complianceBlock}\n\n${understandingBlock}\n\n${holdBlock}${applyHoldingNow}\n\nTimed transcript, meaning-repaired for clear understanding (opening + closing preserved). Audit against the company checklist, PARAMETER PLAYBOOK, COMPLIANCE PLAYBOOK, scorecard, scripts, and key terms. Write the scorecard in English. Quotes may stay in the speaker's language with an English gloss. If a word is still broken, do not mention it:\n${transcript}`;
 
   const parsed = (await completeJson(
     bilingual
@@ -1744,9 +1795,15 @@ ${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${playb
     document_references,
     utterances,
   );
-  const { parameters, autoZeroFromPlaybook } = applyPlaybookSpecialScores(
+  const {
+    parameters,
+    autoZeroFromPlaybook,
+    missingRecovered,
+    missingNames,
+  } = applyPlaybookSpecialScores(
     parametersRaw,
     parameterPlaybook,
+    catalogFiles,
   );
   if (parameters.length) {
     metric_evidence.parameters = parameters;
@@ -1767,6 +1824,31 @@ ${clipKeepStart(standardsText, 56000)}${scriptsBlock}${keyTermsBlock}\n\n${playb
     parsed.customer_sentiment,
   );
   metric_evidence.customer_voice = customerVoice;
+
+  const standardsCoverage: StandardsCoverage = {
+    budget_chars: standardsCharBudget,
+    total_chars: catalogFiles.reduce((sum, d) => sum + (d.extracted_text || "").length, 0),
+    documents: catalogFiles.map((d) => ({
+      id: d.id,
+      file_name: d.file_name,
+      kind: d.kind,
+      chars: (d.extracted_text || "").length,
+      mode: "full",
+      sections: Math.max(
+        1,
+        (d.extracted_text || "")
+          .split(/\n\s*#{1,3}\s+|\n---\s*Page|\n##\s*Sheet:/i)
+          .filter(Boolean).length,
+      ),
+    })),
+    parameters_expected: parameterPlaybook.length,
+    parameters_scored: parameters.length,
+    parameters_recovered: missingRecovered,
+    parameters_unscored: missingNames.length ? missingNames : undefined,
+    compliance_expected: compliancePlaybook.length,
+    compliance_checked: complianceChecks.length,
+  };
+  metric_evidence.standards_coverage = standardsCoverage;
 
   let final_overall_score = clamp(parsed.overall_score);
   const fromParams = overallFromParameters(parameters);

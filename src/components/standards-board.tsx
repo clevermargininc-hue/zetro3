@@ -151,10 +151,15 @@ function KindSection({
                     className={`font-medium truncate max-w-[220px] ${
                       doc.has_text ? "text-ink" : "text-rose line-through"
                     }`}
-                    title={`${doc.title} ${!doc.has_text ? "(Unreadable content)" : ""}`}
+                    title={`${doc.title} ${!doc.has_text ? "(Unreadable content)" : doc.chars ? `(${doc.chars.toLocaleString()} characters)` : ""}`}
                   >
                     {doc.title}
                   </span>
+                  {doc.chars ? (
+                    <span className="text-[11px] text-muted font-mono font-normal">
+                      · {(doc.chars / 1000).toFixed(1)}k chars
+                    </span>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => onRemove(doc.id)}

@@ -107,12 +107,24 @@ export async function getPlanStatus(workspaceId: string): Promise<PlanStatus> {
   let scoredCalls = 0;
   let missing = setupMissing;
   if (!missing) {
-    const { data, error } = await createAdminClient().rpc("workspace_scored_calls", { target: workspaceId });
-    if (error) {
-      if (!isMissingBillingSetup(error)) throw new Error(error.message);
+    const admin = createAdminClient();
+    const [rpcRes, eventsRes] = await Promise.all([
+      admin.rpc("workspace_scored_calls", { target: workspaceId }),
+      admin
+        .from("score_events")
+        .select("id", { count: "exact", head: true })
+        .eq("workspace_id", workspaceId)
+        .eq("kind", "first"),
+    ]);
+
+    if (rpcRes.error && eventsRes.error) {
+      if (!isMissingBillingSetup(rpcRes.error)) throw new Error(rpcRes.error.message);
       missing = true;
     } else {
-      scoredCalls = Number(data) || 0;
+      const rpcCount = (!rpcRes.error && Number(rpcRes.data)) || 0;
+      const eventsCount = (!eventsRes.error && Number(eventsRes.count)) || 0;
+      // Scored calls count must be cumulative/monotonic so deleting calls never restores or resets trial/plan quota
+      scoredCalls = Math.max(rpcCount, eventsCount);
     }
   }
   const trialRemaining = billing.plan === "trial" ? Math.max(0, billing.trialCalls - scoredCalls) : null;
@@ -183,9 +195,15 @@ export async function recordScoreEvent(input: {
   kind: "first" | "rescore";
   durationSeconds: number | null;
 }) {
-  if (!input.workspaceId) return;
+  let workspaceId = input.workspaceId;
+  if (!workspaceId) {
+    const membership = await getMembership(input.userId).catch(() => null);
+    workspaceId = membership?.workspaceId ?? null;
+  }
+  if (!workspaceId) return;
+
   const { error } = await createAdminClient().from("score_events").insert({
-    workspace_id: input.workspaceId,
+    workspace_id: workspaceId,
     call_id: input.callId,
     user_id: input.userId,
     kind: input.kind,

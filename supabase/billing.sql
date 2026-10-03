@@ -33,6 +33,7 @@ create index if not exists score_events_workspace_idx
 alter table public.score_events enable row level security;
 
 -- Calls with a saved score, across everyone in the workspace. Used for the trial limit.
+-- Uses score_events so that deleting calls from the workspace does NOT refund or reset the quota.
 create or replace function public.workspace_scored_calls(target uuid)
 returns bigint
 language sql
@@ -40,11 +41,16 @@ stable
 security definer
 set search_path = public
 as $$
-  select count(*)
-  from public.call_scores s
-  join public.calls c on c.id = s.call_id
-  where c.user_id in (
-    select m.user_id from public.workspace_members m where m.workspace_id = target
+  select greatest(
+    coalesce((select count(*) from public.score_events e where e.workspace_id = target and e.kind = 'first'), 0),
+    coalesce((
+      select count(*)
+      from public.call_scores s
+      join public.calls c on c.id = s.call_id
+      where c.user_id in (
+        select m.user_id from public.workspace_members m where m.workspace_id = target
+      )
+    ), 0)
   );
 $$;
 
@@ -58,11 +64,14 @@ set search_path = public
 as $$
   select
     w.id,
-    (
-      select count(*)
-      from public.call_scores s
-      join public.calls c on c.id = s.call_id
-      join public.workspace_members m on m.user_id = c.user_id and m.workspace_id = w.id
+    greatest(
+      coalesce((select count(*) from public.score_events e where e.workspace_id = w.id and e.kind = 'first'), 0),
+      coalesce((
+        select count(*)
+        from public.call_scores s
+        join public.calls c on c.id = s.call_id
+        join public.workspace_members m on m.user_id = c.user_id and m.workspace_id = w.id
+      ), 0)
     ),
     (
       select count(*) from public.score_events e

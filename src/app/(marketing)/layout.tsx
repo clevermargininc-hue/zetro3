@@ -53,9 +53,12 @@ export default async function MarketingLayout({ children }: { children: React.Re
               </Link>
               <a
                 href={salesMailto("Zetro — contract or sales deal")}
-                className="block break-all font-semibold text-ink hover:text-blue"
+                className="inline-flex items-center gap-1.5 font-semibold text-blue hover:underline text-[13px]"
               >
-                {SALES_EMAIL}
+                <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <span>{SALES_EMAIL}</span>
               </a>
             </div>
             <div className="space-y-2">

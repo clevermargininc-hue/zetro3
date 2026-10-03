@@ -15,7 +15,7 @@ export function chunkText(text: string, size = 900, overlap = 140) {
     if (end >= clean.length) break;
     start = Math.max(end - overlap, start + 1);
   }
-  return chunks.slice(0, 80);
+  return chunks.slice(0, 400);
 }
 
 export async function embedTexts(inputs: string[]) {
@@ -32,6 +32,9 @@ export async function embedTexts(inputs: string[]) {
       }),
     );
     const ordered = [...response.data].sort((a, b) => a.index - b.index);
+    if (ordered.length !== batch.length) {
+      throw new Error("Embedding batch returned a different number of vectors than inputs.");
+    }
     for (const row of ordered) vectors.push(row.embedding);
   }
 

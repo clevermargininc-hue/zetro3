@@ -1,20 +1,71 @@
 import Link from "next/link";
-import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
-import { MicMark } from "@/components/marketing-marks";
+import { HeroProductPreview } from "@/components/hero-product-preview";
+import { FaqAccordion } from "@/components/faq-accordion";
 
-const STEPS = [
-  ["01", "Upload", "Drop in a recording from the floor."],
-  ["02", "Prepare", "Read the call in English, Kiswahili, or both."],
-  ["03", "Score", "Mark it on your scorecard, with the notes a coach can use."],
-] as const;
+const STATS = [
+  { label: "Call coverage", value: "100%", hint: "Audit every conversation, not a 2% sample" },
+  { label: "Audit turnaround", value: "< 60s", hint: "From upload to full weighted scorecard" },
+  { label: "Languages", value: "Bilingual", hint: "Native English & Kiswahili code-switching" },
+  { label: "Standards fidelity", value: "100%", hint: "All scorecard categories, weights & rules" },
+];
 
-const SCORE_ROWS = [
-  ["Greeting", "5"],
-  ["Resolution", "4"],
-  ["Compliance", "5"],
-  ["Hold time", "4"],
-] as const;
+const COMPARISON_ROWS = [
+  {
+    feature: "Floor Coverage Rate",
+    manual: "1% – 3% random sampling",
+    zetro: "100% of all calls audited",
+    highlight: true,
+  },
+  {
+    feature: "Scorecard Adherence",
+    manual: "Subjective & prone to auditor fatigue",
+    zetro: "Strictly bound to your uploaded document weights",
+    highlight: false,
+  },
+  {
+    feature: "Turnaround Time",
+    manual: "48 – 72 hours coaching lag",
+    zetro: "Under 60 seconds after call completion",
+    highlight: true,
+  },
+  {
+    feature: "Code-Switching (SWA + ENG)",
+    manual: "Translators needed, context often lost",
+    zetro: "Native dual-language transcript & sentiment",
+    highlight: false,
+  },
+  {
+    feature: "Compliance Risk Alerts",
+    manual: "98% of violations go unspotted",
+    zetro: "Instant auto-zero trigger with audio proof",
+    highlight: true,
+  },
+  {
+    feature: "Coaching Evidence",
+    manual: "Vague recollections from memory",
+    zetro: "Exact timestamped quotes from call audio",
+    highlight: false,
+  },
+];
+
+const WORKFLOW_STEPS = [
+  {
+    step: "01",
+    title: "Upload & Ingest",
+    desc: "Drop in call recordings (.mp3, .wav, .m4a) or stream from your contact center telephony.",
+  },
+  {
+    step: "02",
+    title: "Extract Company Rules",
+    desc: "Zetro reads your uploaded Excel, Word, or PDF scorecards with complete weight percentages.",
+  },
+  {
+    step: "03",
+    title: "Audit & Coach",
+    desc: "Receive comprehensive scores, auto-zero flags, and timestamped quotes ready for the huddle.",
+  },
+];
 
 export default async function HomePage() {
   let signedIn = false;
@@ -30,197 +81,443 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="hero-mesh relative overflow-hidden">
-        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-6 pb-20 pt-20 lg:grid-cols-12 lg:gap-16 lg:px-8 lg:pb-28 lg:pt-28">
+      {/* Hero Section */}
+      <section className="hero-mesh relative overflow-hidden border-b border-line">
+        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-6 pb-16 pt-14 lg:grid-cols-12 lg:gap-14 lg:px-8 lg:pb-24 lg:pt-20">
           <div className="lg:col-span-6">
-            <h1 className="reveal max-w-xl font-display text-[2.4rem] font-bold leading-[1.08] tracking-tight text-ink sm:text-5xl lg:text-[3.5rem]">
-              Every conversation, scored against your scorecard.
+            {/* Value Tag */}
+            <div className="inline-flex items-center gap-2 border border-line bg-white px-3 py-1 text-xs font-semibold text-muted">
+              <span className="h-2 w-2 rounded-full bg-blue" />
+              <span className="text-ink">Enterprise Contact Center QA</span>
+              <span className="text-line">|</span>
+              <span>English &amp; Kiswahili</span>
+            </div>
+
+            <h1 className="reveal mt-5 max-w-xl font-display text-[2.5rem] font-bold leading-[1.08] tracking-tight text-ink sm:text-5xl lg:text-[3.5rem]">
+              Every conversation, scored against your company scorecard.
             </h1>
-            <p className="reveal reveal-delay-1 mt-6 max-w-lg text-[17px] font-semibold leading-relaxed text-ink">
-              Too many important calls for one QA shift. Zetro marks them against the scorecard you
-              already use — with notes and quotes coaches can take to the huddle. English, Kiswahili,
-              or both.
+
+            <p className="reveal reveal-delay-1 mt-5 max-w-lg text-[15px] leading-relaxed text-muted sm:text-[16px]">
+              Stop relying on 2% random manual sampling. Upload your existing scorecard documents or
+              compliance manuals, and let Zetro audit 100% of customer calls with your exact criteria
+              weights and timestamped quote citations.
             </p>
-            <div className="reveal reveal-delay-2 mt-10 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
-              <Link href={signedIn ? "/dashboard" : "/signup"} className="btn btn-lg btn-blue px-8">
-                {signedIn ? "Open workspace" : "Try it on one call"}
+
+            {/* CTAs */}
+            <div className="reveal reveal-delay-2 mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                href={signedIn ? "/dashboard" : "/signup"}
+                className="btn btn-lg btn-blue px-7 text-center font-semibold"
+              >
+                {signedIn ? "Open workspace" : "Audit your first call free"}
               </Link>
-              <Link href="/how-it-works" className="btn btn-lg btn-ghost px-8">
+              <Link
+                href="/how-it-works"
+                className="btn btn-lg btn-outline px-7 text-center"
+              >
                 See how it works
               </Link>
             </div>
+
+            {/* Micro Trust Proof */}
+            <div className="reveal reveal-delay-2 mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-muted">
+              <div className="flex items-center gap-1.5">
+                <span className="text-good font-bold">✓</span>
+                <span>Upload Excel, PDF, or Word</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-good font-bold">✓</span>
+                <span>Zero prompt truncation</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-good font-bold">✓</span>
+                <span>5 free calls included</span>
+              </div>
+            </div>
           </div>
 
-          <div className="hero-art reveal reveal-delay-2 lg:col-span-6">
-            <span className="art-shape art-shape-a" aria-hidden />
-            <figure className="photo-blob photo-hero">
-              <Image
-                src="/marketing/agent.jpg"
-                alt="A contact-center agent on a live call, wearing a headset at her desk"
-                fill
-                preload
-                sizes="(min-width: 1024px) 26rem, 90vw"
-                className="object-cover object-[center_42%]"
-              />
-            </figure>
-            <figure className="photo-blob photo-blob-alt photo-float" aria-hidden>
-              <Image
-                src="/marketing/floor.jpg"
-                alt=""
-                fill
-                sizes="10rem"
-                className="object-cover object-[center_40%]"
-              />
-            </figure>
+          {/* Interactive Product Preview Card */}
+          <div className="reveal reveal-delay-2 lg:col-span-6">
+            <HeroProductPreview />
           </div>
         </div>
       </section>
 
+      {/* Stats Proof Bar (Using exact Charges card grid design from Pricing page) */}
+      <section className="border-b border-line bg-bg py-8">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="grid gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+            {STATS.map((stat) => (
+              <div key={stat.label} className="bg-white px-6 py-6">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+                  {stat.label}
+                </p>
+                <p className="mt-2 text-[28px] font-semibold tracking-tight text-ink tabular-nums sm:text-[32px]">
+                  {stat.value}
+                </p>
+                <p className="mt-2 text-[13px] leading-relaxed text-muted">{stat.hint}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Feature Deep Dive Sections */}
       <section id="features" className="band-story">
         <div className="band-story-stack mx-auto max-w-7xl px-6 lg:px-8">
+          {/* Feature 1: Scorecards */}
           <div className="split">
             <div className="split-copy">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-blue">Your rules</p>
-              <h2 className="mt-3 max-w-lg font-display text-3xl font-bold tracking-tight text-ink sm:text-5xl">
-                Your scorecard.
-              </h2>
-              <p className="mt-4 max-w-lg text-[17px] font-semibold leading-relaxed text-ink">
-                Greeting, resolution, compliance — marked the way you already judge a call. You keep
-                your own points and weighting. Zetro follows that scorecard, so every coach on the
-                floor marks the same way.
+              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-blue">
+                Your Exact Standards
               </p>
-            </div>
-            <div className="split-media">
-              <div className="art-panel art-panel-blue art-scorecard">
-                <span className="art-shape art-shape-a" aria-hidden />
-                <ul>
-                  {SCORE_ROWS.map(([label, score]) => (
-                    <li key={label}>
-                      <span>{label}</span>
-                      <b>{score}</b>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div className="split split-rev">
-            <div className="split-copy">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-blue">Two languages</p>
-              <h2 className="mt-3 max-w-lg font-display text-3xl font-bold tracking-tight text-ink sm:text-5xl">
-                English and Kiswahili.
+              <h2 className="mt-3 max-w-lg font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+                Upload your scorecard. Zetro preserves your exact weights.
               </h2>
-              <p className="mt-4 max-w-lg text-[17px] font-semibold leading-relaxed text-ink">
-                Agents mix them on the same call. That is fine. Zetro reads both, so a greeting, a
-                promise, or a risk is not missed when the language changes mid-sentence.
+              <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-muted">
+                No rigid templates or generic AI rubrics. Whether your company uses a complex Excel
+                workbook with merged sub-criteria or a Word compliance policy, Zetro extracts every single
+                row, weight percentage, and zero-tolerance clause without character truncation.
               </p>
+              <ul className="mt-6 space-y-2.5 text-[13px] text-ink">
+                <li className="flex items-start gap-2.5">
+                  <span className="mt-0.5 font-bold text-good">✓</span>
+                  <span>Multi-sheet Excel spreadsheets with custom weights (e.g., 25%, 30%)</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="mt-0.5 font-bold text-good">✓</span>
+                  <span>Critical compliance guidelines &amp; Auto-Zero rules</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="mt-0.5 font-bold text-good">✓</span>
+                  <span>Standard greetings, hold time policies, and mandatory disclaimers</span>
+                </li>
+              </ul>
             </div>
-            <div className="split-media">
-              <div className="art-panel art-panel-blue">
-                <span className="art-shape art-shape-a" aria-hidden />
-                <span className="art-line art-line-a" aria-hidden />
-                <span className="art-line art-line-b" aria-hidden />
-                <MicMark />
-              </div>
-            </div>
-          </div>
 
-          <div className="split">
-            <div className="split-copy">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-blue">The huddle</p>
-              <h2 className="mt-3 max-w-lg font-display text-3xl font-bold tracking-tight text-ink sm:text-5xl">
-                Notes you can take.
-              </h2>
-              <p className="mt-4 max-w-lg text-[17px] font-semibold leading-relaxed text-ink">
-                Each score comes with a quote from the call — the moment it refers to, not a guess.
-                A coach can walk into the huddle with the words the agent used, and the point that
-                needs work.
-              </p>
-            </div>
+            {/* Feature Card 1 (Pricing Card Style) */}
             <div className="split-media">
-              <div className="split-visual">
-                <span className="art-shape art-shape-a" aria-hidden />
-                <figure className="photo-blob photo-split">
-                  <Image
-                    src="/marketing/review.jpg"
-                    alt="A quality team in a briefing"
-                    fill
-                    sizes="(min-width: 1024px) 24rem, 90vw"
-                    className="object-cover object-[center_78%]"
-                  />
-                </figure>
-              </div>
-            </div>
-          </div>
+              <div className="w-full max-w-md border border-line bg-white shadow-xs">
+                <div className="flex items-center justify-between border-b border-line bg-bg px-5 py-3.5">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+                    Scorecard_Floor_2026.xlsx
+                  </span>
+                  <span className="chip chip-ok font-semibold">100% Extracted</span>
+                </div>
 
-          <div className="split split-rev">
-            <div className="split-copy">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-blue">How to start</p>
-              <h2 className="mt-3 max-w-lg font-display text-3xl font-bold tracking-tight text-ink sm:text-5xl">
-                Three steps.
-              </h2>
-              <ol className="path-rail mt-8">
-                {STEPS.map(([n, title, body]) => (
-                  <li key={n}>
-                    <span>{n}</span>
-                    <div>
-                      <h3 className="font-display text-[20px] font-bold text-ink">{title}</h3>
-                      <p className="mt-1 text-[15px] font-semibold text-ink">{body}</p>
+                <div className="divide-y divide-line">
+                  <div className="p-4 hover:bg-surface-2 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] font-semibold text-ink">Mandatory Identification</span>
+                      <span className="font-mono text-[12px] font-bold text-blue">25% weight</span>
                     </div>
-                  </li>
-                ))}
-              </ol>
+                    <p className="mt-1 text-[12px] text-muted">Customer national ID and OTP verified</p>
+                    <div className="mt-2 flex items-center justify-between text-[11px]">
+                      <span className="text-muted">Floor Score:</span>
+                      <span className="font-semibold text-good">5.0 / 5.0 (Passed)</span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 hover:bg-surface-2 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] font-semibold text-ink">Regulatory Disclosure</span>
+                      <span className="font-mono text-[12px] font-bold text-blue">30% weight</span>
+                    </div>
+                    <p className="mt-1 text-[12px] text-muted">Terms of interest and repayment date cited</p>
+                    <div className="mt-2 flex items-center justify-between text-[11px]">
+                      <span className="text-muted">Auto-Zero Status:</span>
+                      <span className="font-semibold text-good">Safe (No breaches)</span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 hover:bg-surface-2 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] font-semibold text-ink">Empathy &amp; Resolution</span>
+                      <span className="font-mono text-[12px] font-bold text-blue">45% weight</span>
+                    </div>
+                    <p className="mt-1 text-[12px] text-muted">Active listening and clear next steps</p>
+                    <div className="mt-2 flex items-center justify-between text-[11px]">
+                      <span className="text-muted">Floor Score:</span>
+                      <span className="font-semibold text-good">4.6 / 5.0</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-line bg-bg px-5 py-2.5 text-[11px] text-muted">
+                  Strictly follows company weight distribution
+                </div>
+              </div>
             </div>
+          </div>
+
+          {/* Feature 2: Bilingual Intelligence */}
+          <div className="split split-rev">
+            <div className="split-copy">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-blue">
+                Dual Language Support
+              </p>
+              <h2 className="mt-3 max-w-lg font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+                English and Kiswahili. Native code-switching on live calls.
+              </h2>
+              <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-muted">
+                Agents and customers across East Africa fluidly mix English and Kiswahili in the same
+                sentence. Generic speech tools stumble or lose compliance context when the dialect shifts.
+                Zetro understands both simultaneously.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2 text-xs">
+                <span className="border border-line bg-white px-2.5 py-1 text-ink font-medium">
+                  Swahili Customer Dialects
+                </span>
+                <span className="border border-line bg-white px-2.5 py-1 text-ink font-medium">
+                  English Regulatory Scripts
+                </span>
+                <span className="border border-line bg-white px-2.5 py-1 text-ink font-medium">
+                  Sheng &amp; Colloquial Phrases
+                </span>
+              </div>
+            </div>
+
+            {/* Feature Card 2 (Pricing Card Style) */}
             <div className="split-media">
-              <div className="split-visual">
-                <span className="art-shape art-shape-a" aria-hidden />
-                <figure className="photo-blob photo-split">
-                  <Image
-                    src="/marketing/hand.jpg"
-                    alt="A real hand on a desk beside a headset"
-                    fill
-                    sizes="(min-width: 1024px) 24rem, 90vw"
-                    className="object-cover object-[center_45%]"
-                  />
-                </figure>
+              <div className="w-full max-w-md border border-line bg-white shadow-xs">
+                <div className="flex items-center justify-between border-b border-line bg-bg px-5 py-3.5">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+                    Audio Diarization Stream
+                  </span>
+                  <span className="chip">Code-Switching Active</span>
+                </div>
+
+                <div className="divide-y divide-line text-[13px]">
+                  {/* Customer utterance */}
+                  <div className="p-4">
+                    <div className="flex items-center justify-between text-[11px] text-muted mb-1">
+                      <span className="font-semibold text-ink">Customer (Kiswahili)</span>
+                      <span className="font-mono text-muted tabular-nums">00:18</span>
+                    </div>
+                    <p className="text-ink font-medium">
+                      &ldquo;Habari, nimejaribu kutuma muamala lakini nimekatwa mara mbili bila kupata huduma.&rdquo;
+                    </p>
+                  </div>
+
+                  {/* Agent utterance */}
+                  <div className="p-4 bg-blue-soft/30">
+                    <div className="flex items-center justify-between text-[11px] text-blue mb-1">
+                      <span className="font-semibold text-blue">Agent (Bilingual)</span>
+                      <span className="font-mono text-blue tabular-nums">00:32</span>
+                    </div>
+                    <p className="text-ink font-medium">
+                      &ldquo;Pole sana kwa usumbufu huo. Let me pull up your transaction reference right
+                      now to verify the duplicate deduction.&rdquo;
+                    </p>
+                  </div>
+
+                  {/* QA Engine Audit */}
+                  <div className="p-4 bg-bg">
+                    <div className="flex items-center gap-1.5 text-good font-semibold text-[12px] mb-1">
+                      <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Audited: Section 3 (Empathy &amp; Ownership)</span>
+                    </div>
+                    <p className="text-[12px] text-muted">
+                      Swahili empathy statement validated alongside immediate ownership in English.
+                      Score: 5.0/5.0.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Feature 3: The Huddle */}
+          <div className="split">
+            <div className="split-copy">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-blue">
+                Actionable 1-on-1s
+              </p>
+              <h2 className="mt-3 max-w-lg font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+                Coaching notes backed by actual timestamps and quotes.
+              </h2>
+              <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-muted">
+                No more arguments in the QA briefing. Every score generated by Zetro is tethered to the
+                exact seconds in the audio where the behavior occurred. Coaches walk into the huddle with
+                the agent’s actual words, not a vague summary.
+              </p>
+              <div className="mt-6 space-y-2.5 text-[13px] text-ink">
+                <div className="flex items-start gap-2.5">
+                  <span className="font-bold text-good">✓</span>
+                  <span>Instant PDF export for 1-on-1 coaching sessions</span>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="font-bold text-good">✓</span>
+                  <span>Highlighted strengths and actionable growth areas for the floor</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature Card 3 (Pricing Card Style) */}
+            <div className="split-media">
+              <div className="w-full max-w-md border border-line bg-white shadow-xs">
+                <div className="flex items-center justify-between border-b border-line bg-bg px-5 py-3.5">
+                  <div>
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+                      Coach Briefing
+                    </span>
+                    <p className="text-[13px] font-semibold text-ink">Agent John M. · Floor Team B</p>
+                  </div>
+                  <span className="chip chip-ok font-semibold">91% Score</span>
+                </div>
+
+                <div className="divide-y divide-line text-[13px]">
+                  <div className="p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-good">Core Strength</p>
+                    <p className="mt-1 text-ink">
+                      Exceptional patience during complex account verification. Handled anxious customer politely.
+                    </p>
+                  </div>
+
+                  <div className="p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-warn">Focus Area</p>
+                    <p className="mt-1 text-ink">
+                      Check in with the customer every 30 seconds during hold time to prevent silent drop rate.
+                    </p>
+                    <p className="mt-2 text-[12px] text-muted">
+                      Quote at <span className="font-mono font-bold text-blue">02:15</span>:
+                      <em className="text-ink"> &ldquo;Ngoja nikuweke hold kidogo...&rdquo; (Hold exceeded 58s)</em>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="border-t border-line bg-bg px-5 py-2.5 text-[11px] text-muted">
+                  Ready for weekly supervisor huddle
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="bg-navy-2 px-6 py-16 text-white lg:px-8 lg:py-20">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-12">
-          <div className="lg:col-span-7">
-            <h2 className="font-display text-3xl font-bold tracking-tight sm:text-5xl sm:leading-[1.1]">
-              Try it on one call.
+      {/* Comparison Grid (Matching PriceTable style from Pricing page) */}
+      <section className="border-y border-line bg-white py-16 lg:py-20">
+        <div className="mx-auto max-w-5xl px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="page-kicker">Comparison</p>
+            <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+              Why contact centers choose Zetro
             </h2>
-            <p className="mt-4 max-w-lg text-[16px] font-semibold leading-relaxed text-white">
-              Score one recording against your scorecard, then decide if the floor should run on
-              Zetro.
+            <p className="mt-3 text-[15px] leading-relaxed text-muted">
+              Manual auditing leaves 98% of your customer conversations unmonitored. Here is how Zetro
+              transforms floor operations:
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href={signedIn ? "/dashboard" : "/signup"} className="btn btn-lg btn-blue px-8">
-                {signedIn ? "Open workspace" : "Start a workspace"}
-              </Link>
-              <Link href="/talk-sales" className="btn btn-lg btn-ghost px-8">
-                Talk to sales
-              </Link>
-            </div>
           </div>
-          <div className="lg:col-span-5">
-            <div className="close-art">
-              <span className="art-shape art-shape-a" aria-hidden />
-              <figure className="photo-blob photo-close">
-                <Image
-                  src="/marketing/coach.jpg"
-                  alt="A quality lead ready to brief the floor"
-                  fill
-                  sizes="22rem"
-                  className="object-cover object-[center_30%]"
-                />
-              </figure>
+
+          <div className="mt-10 overflow-x-auto border border-line bg-white">
+            <table className="w-full min-w-[36rem] border-collapse text-left">
+              <thead>
+                <tr className="border-b border-line bg-bg">
+                  <th scope="col" className="px-5 py-4 text-[12px] font-semibold uppercase tracking-wider text-muted">
+                    Operational Metric
+                  </th>
+                  <th scope="col" className="px-5 py-4 text-[12px] font-semibold uppercase tracking-wider text-muted">
+                    Traditional Manual QA
+                  </th>
+                  <th scope="col" className="px-5 py-4 text-[12px] font-semibold uppercase tracking-wider text-blue bg-blue-soft">
+                    Zetro Automated Intelligence
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARISON_ROWS.map((row) => (
+                  <tr key={row.feature} className="border-b border-line last:border-b-0 hover:bg-surface-2 transition-colors">
+                    <th scope="row" className="px-5 py-4 text-[14px] font-medium text-ink">
+                      {row.feature}
+                    </th>
+                    <td className="px-5 py-4 text-[14px] text-muted">
+                      {row.manual}
+                    </td>
+                    <td
+                      className={`px-5 py-4 text-[14px] font-semibold ${
+                        row.highlight ? "text-good" : "text-ink"
+                      } bg-blue-soft/30`}
+                    >
+                      {row.zetro}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* 3-Step Simple Path (Matching solutions role grid card layout) */}
+      <section className="border-b border-line bg-bg py-16 lg:py-20">
+        <div className="mx-auto max-w-5xl px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="page-kicker">How to start</p>
+            <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+              From audio recording to scored audit in three steps
+            </h2>
+          </div>
+
+          <div className="mt-10 grid border border-line bg-white sm:grid-cols-3">
+            {WORKFLOW_STEPS.map((s, index) => (
+              <div
+                key={s.step}
+                className={`p-6 flex flex-col ${
+                  index < 2 ? "border-b border-line sm:border-b-0 sm:border-r" : ""
+                }`}
+              >
+                <span className="text-[12px] font-bold uppercase tracking-wider text-blue">
+                  Step {s.step}
+                </span>
+                <h3 className="mt-3 text-[16px] font-semibold text-ink">{s.title}</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-muted">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Frequently Asked Questions */}
+      <section className="bg-white py-16 lg:py-20 border-b border-line">
+        <div className="mx-auto max-w-4xl px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <p className="page-kicker">FAQ</p>
+            <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+              Frequently asked questions
+            </h2>
+            <p className="mt-3 text-[15px] text-muted">
+              Everything you need to know about setting up Zetro for your contact center.
+            </p>
+          </div>
+
+          <FaqAccordion />
+        </div>
+      </section>
+
+      {/* Closing CTA Box (Matching Pricing Page Blue Highlight Section) */}
+      <section className="bg-bg py-12 lg:py-16">
+        <div className="mx-auto max-w-5xl px-6 lg:px-8">
+          <div className="flex flex-col gap-6 border border-blue/20 bg-blue-soft px-6 py-8 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+            <div className="max-w-xl">
+              <span className="chip chip-ok mb-2">5 Free Calls Included</span>
+              <h2 className="text-[20px] font-semibold text-ink">Ready to audit 100% of your calls?</h2>
+              <p className="mt-2 text-[14px] leading-relaxed text-muted">
+                Score your first recording against your own company scorecard in under 60 seconds.
+                We load your criteria and rules automatically. No card required.
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+              <Link
+                href={signedIn ? "/dashboard" : "/signup"}
+                className="btn btn-lg btn-blue w-full sm:w-auto"
+              >
+                {signedIn ? "Open workspace" : "Start free workspace"}
+              </Link>
+              <Link href="/talk-sales" className="text-[13px] font-semibold text-blue hover:underline">
+                Or talk to sales →
+              </Link>
             </div>
           </div>
         </div>

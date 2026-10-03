@@ -1,13 +1,36 @@
 import Link from "next/link";
 import { Metadata } from "next";
-import { Logo } from "@/components/logo";
+import { MarketingNav } from "@/components/marketing-nav";
 import { SalesForm } from "@/components/sales-form";
 import { SALES_EMAIL, salesMailto } from "@/lib/contact";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Talk to sales | Zetro",
-  description: "Tell us how many calls you score and how long they last. We reply with a quote in TZS.",
+  title: "Talk to Sales | Zetro",
+  description:
+    "Tell us how many calls you score and average duration. We will reply with a customized quote in Tanzanian shillings.",
 };
+
+const BENEFITS = [
+  {
+    step: "01",
+    label: "Billing",
+    title: "Pay per scored call",
+    desc: "Priced strictly by recording length and monthly volume tier. Failed or unscored uploads are always free.",
+  },
+  {
+    step: "02",
+    label: "Standards",
+    title: "Your own scorecard",
+    desc: "Upload your existing Excel, Word, or PDF guidelines. We score to your exact criteria weights and Auto-Zero rules.",
+  },
+  {
+    step: "03",
+    label: "Terms",
+    title: "Invoicing in TZS",
+    desc: "Direct monthly or annual invoicing payable within 30 days. No credit card required, with US dollars as a reference.",
+  },
+];
 
 export default async function TalkSalesPage({
   searchParams,
@@ -16,82 +39,129 @@ export default async function TalkSalesPage({
 }) {
   const { calls, minutes, billing } = await searchParams;
 
-  return (
-    <div className="min-h-screen bg-surface-2 flex flex-col">
-      <header className="border-b border-line/40 bg-white/70 none-xl sticky top-0 z-50">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Logo />
-          <Link href="/pricing" className="text-[14px] font-semibold text-muted hover:text-ink transition-colors">
-            Back to pricing
-          </Link>
-        </div>
-      </header>
+  let signedIn = false;
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    signedIn = Boolean(user);
+  } catch {
+    signedIn = false;
+  }
 
-      <main className="flex-1 flex items-center justify-center p-6 py-12 lg:py-20">
-        <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
-          
-          <div className="animate-in fade-in slide-in-from-left-8 duration-700">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-line/50 shadow-sm mb-6">
-              <span className="flex h-2 w-2 rounded-full bg-blue animate-pulse"></span>
-              <span className="text-[12px] font-bold uppercase tracking-wider text-muted">Talk to us</span>
-            </div>
-            
-            <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-ink mb-6 leading-tight">
-              Tell us your calls. <br />We will send a quote.
+  return (
+    <div className="marketing-shell flex min-h-full flex-col bg-white">
+      <MarketingNav signedIn={signedIn} />
+
+      <main className="flex-1 bg-surface-2/40 py-12 lg:py-20">
+        <div className="mx-auto w-full max-w-6xl px-6 lg:px-8">
+          {/* Header */}
+          <div className="max-w-2xl">
+            <p className="page-kicker">Enterprise &amp; Volume</p>
+            <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
+              Tell us your calls. We will send a quote.
             </h1>
-            
-            <p className="text-[16px] leading-relaxed text-muted mb-8">
-              How many calls you want scored each month and how long they last. That sets the price per call. Invoices are in TZS.
+            <p className="mt-4 text-[16px] leading-relaxed text-muted">
+              How many calls you want scored each month and how long they last sets your price per call.
+              Invoices are issued in Tanzanian shillings.
             </p>
-            
-            <div className="space-y-6">
-              <div className="flex gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white border border-line/40 shadow-sm text-blue font-bold">1</div>
-                <div>
-                  <h3 className="font-semibold text-ink">You pay per scored call</h3>
-                  <p className="text-sm text-muted mt-1">Priced by call length and monthly volume. Failed uploads are free.</p>
-                </div>
+          </div>
+
+          <div className="mt-12 grid grid-cols-1 items-start gap-10 lg:grid-cols-12 lg:gap-12">
+            {/* Left Column: Benefit Cards matching Pricing Charges Style */}
+            <div className="space-y-6 lg:col-span-5">
+              <div className="grid gap-px border border-line bg-line shadow-xs">
+                {BENEFITS.map((item) => (
+                  <div key={item.step} className="bg-white p-5">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+                      {item.step} · {item.label}
+                    </p>
+                    <h3 className="mt-1 text-[15px] font-semibold text-ink">{item.title}</h3>
+                    <p className="mt-2 text-[13px] leading-relaxed text-muted">{item.desc}</p>
+                  </div>
+                ))}
               </div>
-              <div className="flex gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white border border-line/40 shadow-sm text-blue font-bold">2</div>
-                <div>
-                  <h3 className="font-semibold text-ink">Your scorecard</h3>
-                  <p className="text-sm text-muted mt-1">We mark calls the way you already judge quality.</p>
-                </div>
+
+              {/* Direct email highlight card */}
+              <div className="border border-blue/20 bg-blue-soft p-5 shadow-xs">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-blue">
+                  Direct Contract Inquiries
+                </p>
+                <h3 className="mt-1 text-[15px] font-semibold text-ink">Prefer email or phone?</h3>
+                <p className="mt-1 text-[13px] leading-relaxed text-muted">
+                  Email us with your floor requirements. We will review and reply within one business
+                  day with an agreement.
+                </p>
+                <a
+                  href={salesMailto("Zetro — contract or sales deal")}
+                  className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-blue hover:underline"
+                >
+                  <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    />
+                  </svg>
+                  <span>{SALES_EMAIL}</span>
+                </a>
               </div>
-              <div className="flex gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white border border-line/40 shadow-sm text-blue font-bold">3</div>
-                <div>
-                  <h3 className="font-semibold text-ink">Invoices by email, in TZS</h3>
-                  <p className="text-sm text-muted mt-1">
-                    No online payment yet. For contracts, payment, and deals, email{" "}
-                    <a href={salesMailto("Zetro — contract or sales deal")} className="font-semibold text-blue hover:underline">
-                      {SALES_EMAIL}
-                    </a>
-                    .
+
+              <div className="flex items-center gap-2 text-[12px] text-muted">
+                <span className="font-semibold text-good">✓</span>
+                <span>Includes 5 free trial calls scored on your own scorecard</span>
+              </div>
+            </div>
+
+            {/* Right Column: Sales Quote Form Card matching Pricing Calculator */}
+            <div className="lg:col-span-7">
+              <div className="border border-line bg-white shadow-xs">
+                <div className="border-b border-line bg-bg px-6 py-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+                    Quote Request
+                  </p>
+                  <h2 className="mt-0.5 text-[18px] font-semibold text-ink">
+                    Ask for a custom price in TZS
+                  </h2>
+                  <p className="mt-1 text-[13px] text-muted">
+                    Tell us your volume. We reply with a price per call in TZS. This form does not charge your card.
                   </p>
                 </div>
+
+                <div className="p-6 sm:p-8">
+                  <SalesForm
+                    initialCalls={calls}
+                    initialMinutes={minutes}
+                    initialBilling={billing}
+                  />
+                </div>
               </div>
             </div>
           </div>
-          
-          <div className="animate-in fade-in slide-in-from-right-8 duration-700 delay-150">
-            <div className="bg-white rounded-3xl p-8 border border-line/40 shadow-sm shadow-blue/5">
-              <h2 className="text-2xl font-bold tracking-tight text-ink mb-2">Ask for a quote</h2>
-              <p className="text-sm text-muted mb-8">
-                Tell us your volume. We reply with a price per call in TZS. This form does not charge you.
-              </p>
-              
-              <SalesForm
-                initialCalls={calls}
-                initialMinutes={minutes}
-                initialBilling={billing}
-              />
-            </div>
-          </div>
-          
         </div>
       </main>
+
+      {/* Footer matching standard marketing layout */}
+      <footer className="mt-auto border-t border-line bg-bg py-12">
+        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+          <p className="text-[12px] font-semibold text-muted">
+            Zetro is a product of Clevermargins Software Business Solutions (CSBS).
+          </p>
+          <div className="flex items-center gap-6 text-[13px] font-semibold text-muted">
+            <Link href="/pricing" className="hover:text-ink">
+              Pricing
+            </Link>
+            <Link href="/how-it-works" className="hover:text-ink">
+              How it works
+            </Link>
+            <Link href="/login" className="hover:text-ink">
+              Sign in
+            </Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
