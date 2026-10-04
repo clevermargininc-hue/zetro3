@@ -10,7 +10,7 @@
 export const TZS_PER_USD = 2_600;
 export const VAT_RATE = 0.18;
 export const MONTHLY_MINIMUM_TZS = 500_000;
-export const SETUP_FEE_TZS = 750_000;
+export const SETUP_FEE_TZS = 100_000;
 export const ANNUAL_DISCOUNT = 0.1;
 export const TRIAL_CALLS = 50;
 export const AUDIO_DAYS_INCLUDED = 90;

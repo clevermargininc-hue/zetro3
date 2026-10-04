@@ -25,7 +25,7 @@ Volume discounts are small on purpose. Our cost per call does not fall with volu
 
 | Charge | Amount (excluding VAT) | What it covers |
 |---|---|---|
-| Setup and calibration | **750,000 TZS, once** | Loading the customer's scorecard, compliance files and scripts; scoring 20 calls with their QA lead and adjusting until marks agree. **Waived on a 12-month contract.** |
+| Setup and calibration | **100,000 TZS, once** | Loading the customer's scorecard, compliance files and scripts; scoring 20 calls with their QA lead and adjusting until marks agree. **Waived on a 12-month contract.** |
 | Monthly minimum | **500,000 TZS** | Support, hosting share, and small accounts. If the calls cost less than this, the invoice is the minimum. |
 | Re-scoring a call | Half the call price | For example, after the customer changes their scorecard. |
 | Audio storage beyond 90 days | Quoted | 90 days of recordings are included. |
@@ -37,7 +37,7 @@ Volume discounts are small on purpose. Our cost per call does not fall with volu
 | Contract | Month to month | 12 months |
 | Invoice | Each month, for the calls scored | Once a year, for 12 months of the committed volume. Calls above the commitment are invoiced monthly at the same rate. |
 | Price per call | Table above | **10% off** the table, rounded to the nearest shilling (for example 175 → 158 TZS) |
-| Setup and calibration | 750,000 TZS once | **Waived** |
+| Setup and calibration | 100,000 TZS once | **Waived** |
 | Monthly minimum | 500,000 TZS | 500,000 TZS (not discounted) |
 
 With the 10% discount, margin is still about 37–50% at typical call lengths (today's cost), and about 29% in the worst case (calls at the top of their band, 30,001 – 100,000 level, before the cost cut).
@@ -125,7 +125,7 @@ Exchange rate used: about 2,600 TZS = 1 USD.
 
 | Cost | How it is recovered |
 |---|---|
-| Setup and calibration (1–3 days of work) | 750,000 TZS setup fee, or earned back over a 12-month contract |
+| Setup and calibration (1–3 days of work) | 100,000 TZS setup fee, or earned back over a 12-month contract |
 | Free trial (50 calls) | about 4,300 TZS — sales cost |
 
 **Cash flow, not cost**
