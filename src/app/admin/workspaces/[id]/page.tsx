@@ -19,22 +19,37 @@ export default async function AdminWorkspacePage({ params }: { params: Promise<{
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link href="/admin/companies" className="text-[12px] font-semibold text-muted hover:text-blue">
-          ← All companies
-        </Link>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue">
+            <Link href="/admin" className="hover:underline">Admin Console</Link>
+            <span className="text-slate-300">/</span>
+            <Link href="/admin/companies" className="hover:underline text-muted">Companies</Link>
+            <span className="text-slate-300">/</span>
+            <span className="text-ink font-normal">{workspace.name}</span>
+          </div>
+          <h1 className="mt-1 text-[22px] font-bold tracking-tight text-ink">
+            {workspace.name}
+          </h1>
+          <p className="mt-1 text-[13px] text-muted">
+            {[
+              workspace.domain || "No company domain",
+              workspace.access === "team" ? "Team access" : "Solo access",
+              workspace.country || "Tanzania",
+              `Workspace created ${workspace.createdAt.slice(0, 10)}`,
+            ].join(" · ")}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <PlanChip plan={status.plan} />
+          <Link
+            href="/admin/companies"
+            className="rounded border border-line bg-white px-3 py-1.5 text-[12px] font-semibold text-muted hover:text-ink hover:bg-slate-50 transition-colors shadow-2xs"
+          >
+            ← Back to Companies
+          </Link>
+        </div>
       </div>
-      <PageHeader
-        kicker="Company"
-        title={workspace.name}
-        description={[
-          workspace.domain || "No company domain",
-          workspace.access === "team" ? "Team access" : "Solo access",
-          workspace.country || "Tanzania",
-          `Created ${workspace.createdAt.slice(0, 10)}`,
-        ].join(" · ")}
-        actions={<PlanChip plan={status.plan} />}
-      />
 
       {status.setupMissing ? (
         <p className="alert-error text-[13px]">

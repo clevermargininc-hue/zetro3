@@ -38,25 +38,38 @@ export default async function AdminAnalyticsPage({
   const rangeText = `Last ${days} days`;
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        kicker="Admin"
-        title="Analytics"
-        description="Who is using Zetro right now, how much they use it, and how companies move from trial to paying. Only real customers are counted: people who finished setup and joined a company. Zetro staff, test accounts and unfinished sign-ups are left out."
-        actions={
-          <div className="flex gap-1.5">
-            {ANALYTICS_RANGES.map((option) => (
-              <Link
-                key={option}
-                href={option === 30 ? "/admin" : `/admin?range=${option}`}
-                className={`chip ${option === days ? "border-blue bg-blue-soft text-blue" : ""}`}
-              >
-                {option} days
-              </Link>
-            ))}
+    <div className="space-y-7">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue">
+            <span>Admin Console</span>
+            <span className="text-slate-300">/</span>
+            <span className="text-muted font-normal">Real-Time Operations</span>
           </div>
-        }
-      />
+          <h1 className="mt-1 text-[22px] font-bold tracking-tight text-ink">
+            Platform Analytics & Overview
+          </h1>
+          <p className="mt-1 max-w-2xl text-[13px] text-muted leading-relaxed">
+            Realtime activity, daily call auditing throughput, active user sessions, and conversion funnel from free trial to paying enterprise accounts.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-1.5 rounded-lg border border-line bg-white p-1 shadow-2xs">
+          {ANALYTICS_RANGES.map((option) => (
+            <Link
+              key={option}
+              href={option === 30 ? "/admin" : `/admin?range=${option}`}
+              className={`rounded px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+                option === days
+                  ? "bg-blue text-white shadow-2xs"
+                  : "text-muted hover:text-ink hover:bg-slate-50"
+              }`}
+            >
+              {option}d
+            </Link>
+          ))}
+        </div>
+      </div>
 
       {data.setupMissing ? (
         <p className="alert-error text-[13px]">

@@ -59,11 +59,19 @@ export default async function AdminCompaniesPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        kicker="Admin"
-        title="Companies and plans"
-        description="Every workspace, its plan, and how many calls it has scored. Open one to change its plan."
-      />
+      <div>
+        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue">
+          <span>Admin Console</span>
+          <span className="text-slate-300">/</span>
+          <span className="text-muted font-normal">Organization Management</span>
+        </div>
+        <h1 className="mt-1 text-[22px] font-bold tracking-tight text-ink">
+          Companies & Account Plans
+        </h1>
+        <p className="mt-1 max-w-2xl text-[13px] text-muted leading-relaxed">
+          Manage client company subscriptions, trial call allocations, monthly commit volumes, and billing contract renewals.
+        </p>
+      </div>
 
       {setupMissing ? (
         <p className="alert-error text-[13px]">
