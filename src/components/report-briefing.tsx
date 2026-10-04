@@ -23,8 +23,6 @@ export function ReportBriefing({
   briefing: QaBriefing;
 }) {
   const d = briefing.deltas;
-  const frustratedThemes = briefing.customer_themes.filter((row) => row.kind === "frustration");
-  const satisfiedThemes = briefing.customer_themes.filter((row) => row.kind === "satisfaction");
 
   return (
     <article className="qa-briefing space-y-5">
@@ -125,64 +123,17 @@ export function ReportBriefing({
         </ChartCard>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <ChartCard title="Weakest skills" subtitle="Lowest scorecard averages in this window">
-          <HBars
-            empty="No skill scores in this window."
-            scaleMax={100}
-            rows={briefing.weakest_parameters.map((row) => ({
-              key: row.name,
-              label: row.name,
-              value: row.avg,
-            }))}
-          />
-        </ChartCard>
-
-        <ChartCard title="What customers said" subtitle="Frustration first — that is usually the coaching signal">
-          {briefing.customer_themes.length ? (
-            <div className="space-y-4">
-              {frustratedThemes.length ? (
-                <ThemeList kind="Frustrated" rows={frustratedThemes} />
-              ) : null}
-              {satisfiedThemes.length ? (
-                <ThemeList kind="Satisfied" rows={satisfiedThemes} />
-              ) : null}
-            </div>
-          ) : (
-            <p className="py-6 text-center text-[13px] text-muted">No customer themes in this window.</p>
-          )}
-        </ChartCard>
-      </div>
+      <ChartCard title="Weakest skills" subtitle="Lowest scorecard averages in this window">
+        <HBars
+          empty="No skill scores in this window."
+          scaleMax={100}
+          rows={briefing.weakest_parameters.map((row) => ({
+            key: row.name,
+            label: row.name,
+            value: row.avg,
+          }))}
+        />
+      </ChartCard>
     </article>
-  );
-}
-
-function ThemeList({
-  kind,
-  rows,
-}: {
-  kind: "Frustrated" | "Satisfied";
-  rows: QaBriefing["customer_themes"];
-}) {
-  return (
-    <div>
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted">{kind}</p>
-      <ul className="space-y-2">
-        {rows.map((row) => (
-          <li key={`${row.kind}-${row.theme}`} className="border border-line px-3 py-2.5">
-            <div className="flex items-baseline justify-between gap-2">
-              <p className="text-[13px] font-semibold text-ink">{row.theme}</p>
-              <span className="shrink-0 tabular-nums text-[12px] text-muted">{row.count}</span>
-            </div>
-            {row.quote ? <p className="mt-1.5 text-[12px] leading-relaxed text-muted">“{row.quote}”</p> : null}
-            {row.call_id ? (
-              <Link href={`/upload/score/${row.call_id}`} className="mt-1.5 inline-block text-[12px] font-medium text-blue">
-                Open example
-              </Link>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }

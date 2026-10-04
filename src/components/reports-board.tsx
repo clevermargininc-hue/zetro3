@@ -119,7 +119,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
         <div className="no-print">
           <PageHeader
             title="Reports"
-            description="Who to coach, which calls to review, and what customers said. Print this for the huddle, or download the spreadsheet for the raw rows."
+            description="Who to coach, which calls to review, and weakest skills. Print this for the huddle, or download the spreadsheet for the raw rows."
             actions={
               <div className="flex flex-wrap items-center gap-2">
                 <button

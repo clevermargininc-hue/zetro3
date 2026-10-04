@@ -1,17 +1,15 @@
 import ExcelJS from "exceljs";
 import { formatAht } from "@/lib/format";
-import { BRAND, hex } from "@/lib/brand";
 import {
-  addTableRow,
-  brandBanner,
-  finishSheet,
-  headerRow,
-  paintScoreCell,
-  setTableColumns,
-  styleBody,
-  tableCol,
-  XLSX_DATA_ROW,
-  XLSX_HEADER_ROW,
+  addBrandBanner,
+  addKpiCards,
+  addSectionHeader,
+  addTableHeader,
+  addTableSummaryRow,
+  createWorksheet,
+  finalizeWorksheet,
+  styleTableRow,
+  type ColumnDef,
 } from "@/lib/xlsx-brand";
 import {
   auditModeLabel,
@@ -21,210 +19,307 @@ import {
   type QaReport,
 } from "@/lib/reports";
 
-function dash(value: number | string | null | undefined) {
-  if (value == null || value === "") return "—";
-  return String(value);
-}
-
-function pct(value: number | null | undefined) {
-  if (value == null) return "—";
-  return `${value}%`;
-}
-
-function titleBlock(
-  workbook: ExcelJS.Workbook,
-  sheet: ExcelJS.Worksheet,
-  report: QaReport,
-  caption: string,
-  lastColumn: number,
-  freezeHeader = true,
-) {
-  return brandBanner(
-    workbook,
-    sheet,
-    `${caption}  ·  ${report.period_label}`,
-    `${report.agent_label}  ·  ${report.range_start} – ${report.range_end}  ·  Africa/Nairobi  ·  ${formatReportDate(report.generated_at)}`,
-    lastColumn,
-    freezeHeader,
-  );
+function signed(delta: number) {
+  if (delta > 0) return `+${delta}`;
+  return String(delta);
 }
 
 export async function excelBuffer(report: QaReport): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "Zetro";
+  wb.creator = "Zetro QA";
   wb.created = new Date(report.generated_at);
 
   const s = report.summary;
   const briefing = report.briefing;
+  const sub = `${report.agent_label}  ·  ${report.range_start} – ${report.range_end}  ·  Timezone: Africa/Nairobi  ·  Generated: ${formatReportDate(report.generated_at)}`;
 
+  // =========================================================================
+  // 1. EXECUTIVE BRIEFING SHEET
+  // =========================================================================
   if (briefing) {
-    const brief = wb.addWorksheet("Briefing", {
-      views: [{ showGridLines: false }],
-      pageSetup: { paperSize: 9, orientation: "portrait", fitToPage: true, fitToWidth: 1 },
-    });
-    setTableColumns(brief, [28, 56]);
-    const headerAt = titleBlock(wb, brief, report, "QA briefing", 2);
-    headerRow(brief, ["Item", "Detail"], headerAt);
-    addTableRow(brief, ["Headline", briefing.headline]);
-    addTableRow(brief, ["Do this", briefing.attention]);
-    if (briefing.previous_period_label) {
-      addTableRow(brief, ["Compared with", briefing.previous_period_label]);
+    const briefSheet = createWorksheet(wb, "Executive Briefing", "portrait");
+    const briefBannerEnd = addBrandBanner(
+      briefSheet,
+      `QA BRIEFING · ${report.period_label}`,
+      sub,
+      4
+    );
+
+    // KPI Summary Cards
+    const d = briefing.deltas;
+    const nextRow = addKpiCards(briefSheet, briefBannerEnd, [
+      {
+        label: "Average Score",
+        value: d.avg_overall.current != null ? `${d.avg_overall.current}%` : "—",
+        note: d.avg_overall.delta != null ? `${signed(d.avg_overall.delta)} pts vs prior` : "First period",
+      },
+      {
+        label: "Calls Audited",
+        value: d.calls_audited.current ?? 0,
+        note: d.calls_audited.delta != null ? `${signed(d.calls_audited.delta)} vs prior` : "First period",
+      },
+      {
+        label: "Compliance Followed",
+        value: s.compliance_followed_pct != null ? `${s.compliance_followed_pct}%` : "—",
+        note: d.compliance_followed.delta != null ? `${signed(d.compliance_followed.delta)} pts vs prior` : "",
+      },
+      {
+        label: "Avg Handle Time",
+        value: formatAht(s.aht_seconds),
+        note: `Total: ${formatAht(s.total_handling_seconds)}`,
+      },
+    ]);
+
+    // Headline & Key Finding
+    let curRow = nextRow;
+    curRow = addSectionHeader(briefSheet, curRow, "Key Operational Findings", 4);
+    const headlineRow = briefSheet.getRow(curRow);
+    headlineRow.height = 24;
+    briefSheet.mergeCells(`A${curRow}:D${curRow}`);
+    const hCell = headlineRow.getCell(1);
+    hCell.value = briefing.headline;
+    hCell.font = { name: "Segoe UI", size: 10.5, bold: true, color: { argb: "FF0F172A" } };
+    hCell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+    curRow++;
+
+    if (briefing.attention) {
+      const attnRow = briefSheet.getRow(curRow);
+      attnRow.height = 22;
+      briefSheet.mergeCells(`A${curRow}:D${curRow}`);
+      const aCell = attnRow.getCell(1);
+      aCell.value = `Recommended Action: ${briefing.attention}`;
+      aCell.font = { name: "Segoe UI", size: 9.5, italic: true, color: { argb: "FF475569" } };
+      aCell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+      curRow++;
     }
-    addTableRow(brief, [
-      "Average score",
-      `${dash(briefing.deltas.avg_overall.current)} (was ${dash(briefing.deltas.avg_overall.previous)})`,
-    ]);
-    addTableRow(brief, [
-      "Calls audited",
-      `${dash(briefing.deltas.calls_audited.current)} (was ${dash(briefing.deltas.calls_audited.previous)})`,
-    ]);
-    addTableRow(brief, [
-      "Compliance followed",
-      `${pct(s.compliance_followed_pct)} (was ${pct(briefing.deltas.compliance_followed.previous)})`,
-    ]);
-    addTableRow(brief, [
-      "Compliance not followed",
-      pct(s.compliance_not_followed_pct),
-    ]);
-    addTableRow(brief, [
-      "Coach now",
-      briefing.coach_now.map((row) => `${row.agent_name}: ${row.reason}`).join(" • ") || "—",
-    ]);
-    addTableRow(brief, [
-      "Review queue",
-      briefing.review_queue.map((row) => `${row.title} (${row.overall_score}%): ${row.reason}`).join(" • ") || "—",
-    ]);
-    addTableRow(brief, [
-      "Customer themes",
-      briefing.customer_themes.map((row) => `${row.theme} ×${row.count}`).join(" • ") || "—",
-    ]);
-    styleBody(brief, headerAt + 1, 2);
-    finishSheet(brief, 2);
+    curRow++; // Spacing
+
+    // Coaching Priority Queue
+    curRow = addSectionHeader(briefSheet, curRow, "Immediate Coaching Queue", 4);
+    const coachCols: ColumnDef[] = [
+      { header: "Agent Name", width: 22, align: "left" },
+      { header: "Avg Score", width: 14, align: "center", isScore: true },
+      { header: "Priority Coaching Focus", width: 55, align: "left", wrapText: true },
+      { header: "Recommended Step", width: 35, align: "left", wrapText: true },
+    ];
+    addTableHeader(briefSheet, curRow, coachCols);
+    const coachHeaderRow = curRow;
+    curRow++;
+
+    if (briefing.coach_now.length) {
+      const startData = curRow;
+      briefing.coach_now.forEach((coach) => {
+        const row = briefSheet.addRow([
+          coach.agent_name,
+          coach.avg_score != null ? coach.avg_score : "",
+          coach.reason,
+          "Conduct 1-on-1 scorecard review",
+        ]);
+        styleTableRow(row, coachCols, curRow, startData);
+        curRow++;
+      });
+    } else {
+      const row = briefSheet.addRow(["No immediate coaching flags in this window.", "", "", ""]);
+      briefSheet.mergeCells(`A${curRow}:D${curRow}`);
+      row.getCell(1).font = { name: "Segoe UI", size: 9.5, italic: true, color: { argb: "FF64748B" } };
+      curRow++;
+    }
+    curRow++; // Spacing
+
+    // Weakest Skills Table
+    if (briefing.weakest_parameters.length) {
+      curRow = addSectionHeader(briefSheet, curRow, "Lowest Scorecard Skill Areas", 4);
+      const skillCols: ColumnDef[] = [
+        { header: "Scorecard Parameter", width: 28, align: "left" },
+        { header: "Average Score", width: 16, align: "center", isScore: true },
+        { header: "Status", width: 20, align: "center" },
+        { header: "Suggested Focus", width: 55, align: "left" },
+      ];
+      addTableHeader(briefSheet, curRow, skillCols);
+      const startData = curRow + 1;
+      curRow++;
+      briefing.weakest_parameters.forEach((param) => {
+        const status = param.avg >= 85 ? "On Target" : param.avg >= 70 ? "Needs Review" : "Critical Focus";
+        const row = briefSheet.addRow([
+          param.name,
+          param.avg,
+          status,
+          `Review policy guidelines and training samples for ${param.name}`,
+        ]);
+        styleTableRow(row, skillCols, curRow, startData);
+        curRow++;
+      });
+    }
+
+    finalizeWorksheet(briefSheet, coachHeaderRow, 4, false);
   }
 
-  const summary = wb.addWorksheet("Summary", {
-    views: [{ showGridLines: false }],
-    pageSetup: { paperSize: 9, orientation: "portrait", fitToPage: true, fitToWidth: 1 },
-  });
-  setTableColumns(summary, [28, 22, 22, 22]);
-  const summaryStart = titleBlock(wb, summary, report, "Quality operations", 4, false);
+  // =========================================================================
+  // 2. SCORES & CALL LOGS SHEET (THE DATA ENGINE)
+  // =========================================================================
+  const scoresSheet = createWorksheet(wb, "Call Scores Log", "landscape");
+  const scoresBannerEnd = addBrandBanner(
+    scoresSheet,
+    `CALL AUDIT SCORES · ${report.period_label}`,
+    sub,
+    16
+  );
 
-  const kpis: [string, string | number][] = [
-    ["Calls audited", s.calls_audited],
-    ["Average overall score", s.avg_overall ?? "—"],
-    ["Average handle time", formatAht(s.aht_seconds)],
-    ["Total talk time", formatAht(s.total_handling_seconds)],
+  const scoreColumns: ColumnDef[] = [
+    { header: "Audited Date", width: 18, align: "center" },
+    { header: "Agent Name", width: 20, align: "left" },
+    { header: "Duration", width: 12, align: "center" },
+    { header: "Overall Score", width: 14, align: "center", isScore: true },
+    { header: "Greeting", width: 12, align: "center", isScore: true },
+    { header: "Empathy", width: 12, align: "center", isScore: true },
+    { header: "Professionalism", width: 15, align: "center", isScore: true },
+    { header: "Resolution", width: 13, align: "center", isScore: true },
+    { header: "Communication", width: 15, align: "center", isScore: true },
+    { header: "Language Mix", width: 14, align: "center", isScore: true },
+    { header: "Verdict", width: 14, align: "center" },
+    { header: "Sentiment", width: 14, align: "center" },
+    { header: "Audit Path", width: 15, align: "center" },
+    { header: "Followed %", width: 14, align: "center", isPct: true },
+    { header: "Not Followed %", width: 16, align: "center", isPct: true },
+    { header: "Executive Summary", width: 45, align: "left", wrapText: true },
   ];
-  const kpiLabels = summary.getRow(summaryStart);
-  const kpiValues = summary.getRow(summaryStart + 1);
-  kpiLabels.height = 20;
-  kpiValues.height = 32;
-  kpis.forEach(([label, value], index) => {
-    const labelCell = kpiLabels.getCell(tableCol(index));
-    labelCell.value = label;
-    labelCell.font = { name: "Calibri", size: 9, bold: true, color: { argb: `FF${hex(BRAND.blue)}` } };
-    labelCell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-    const valueCell = kpiValues.getCell(tableCol(index));
-    valueCell.value = value;
-    valueCell.font = { name: "Calibri", size: 20, bold: true, color: { argb: `FF${hex(BRAND.ink)}` } };
-    valueCell.alignment = { vertical: "middle", horizontal: "center" };
-    valueCell.border = { bottom: { style: "medium", color: { argb: `FF${hex(BRAND.blue)}` } } };
-  });
-  summary.getRow(summaryStart + 2).height = 14;
 
-  headerRow(summary, ["Metric", "Value", "Metric", "Value"], summaryStart + 3);
-  const metrics: [string, string | number][] = [
-    ["Average greeting", s.avg_greeting ?? "—"],
-    ["Average empathy", s.avg_empathy ?? "—"],
-    ["Average professionalism", s.avg_professionalism ?? "—"],
-    ["Average resolution", s.avg_resolution ?? "—"],
-    ["Average communication", s.avg_communication ?? "—"],
-    ["Average language mix", s.avg_language_handling ?? "—"],
-    ["Excellent", s.excellent],
-    ["Good", s.good],
-    ["Needs improvement", s.needs_improvement],
-    ["Poor", s.poor],
-    ["Compliance followed %", s.compliance_followed_pct ?? "—"],
-    ["Compliance not followed %", s.compliance_not_followed_pct ?? "—"],
-    ["Documents audits", s.documents_audits],
-    ["Satisfied customers %", s.customer_satisfied_pct ?? "—"],
-    ["Frustrated customers %", s.customer_frustrated_pct ?? "—"],
-    ["Customer reactions analyzed", s.customer_analyzed],
-  ];
-  const metricMid = Math.ceil(metrics.length / 2);
-  for (let i = 0; i < metricMid; i++) {
-    addTableRow(summary, [...metrics[i], ...(metrics[i + metricMid] || ["", ""])]);
-  }
-  const summaryData = summaryStart + 4;
-  styleBody(summary, summaryData, 4);
-  for (let i = summaryData; i <= summaryData + 5; i++) {
-    paintScoreCell(summary.getRow(i).getCell(tableCol(1)));
-  }
-  finishSheet(summary, 4, false);
+  addTableHeader(scoresSheet, scoresBannerEnd, scoreColumns);
+  const startScoresData = scoresBannerEnd + 1;
+  let scoreRowIdx = startScoresData;
 
-  const scores = wb.addWorksheet("Scores", {
-    views: [{ showGridLines: false }],
-    pageSetup: { paperSize: 9, orientation: "landscape", fitToPage: true, fitToWidth: 1 },
-  });
-  setTableColumns(scores, [20, 16, 10, 10, 11, 11, 15, 12, 15, 14, 18, 14, 13, 12, 14, 36]);
-  titleBlock(wb, scores, report, "Call scores", 16);
-  headerRow(scores, [
-    "Audited at",
-    "Agent",
-    "AHT",
-    "Overall",
-    "Greeting",
-    "Empathy",
-    "Professionalism",
-    "Resolution",
-    "Communication",
-    "Language mix",
-    "Verdict",
-    "Sentiment",
-    "Audit path",
-    "Followed %",
-    "Not followed %",
-    "Summary",
-  ]);
   for (const row of report.calls) {
-    addTableRow(scores, [
+    const r = scoresSheet.addRow([
       formatReportDate(row.audited_at),
       row.agent_name,
       formatAht(row.duration_seconds),
       row.overall_score,
-      row.greeting ?? "—",
-      row.empathy ?? "—",
-      row.professionalism ?? "—",
-      row.resolution ?? "—",
-      row.communication ?? "—",
-      row.language_handling ?? "—",
+      row.greeting != null ? row.greeting : "",
+      row.empathy != null ? row.empathy : "",
+      row.professionalism != null ? row.professionalism : "",
+      row.resolution != null ? row.resolution : "",
+      row.communication != null ? row.communication : "",
+      row.language_handling != null ? row.language_handling : "",
       verdictCell(String(row.verdict)),
-      dash(row.customer_sentiment),
+      row.customer_sentiment || "—",
       auditModeLabel(row.audit_mode),
-      pct(row.compliance_followed_pct),
-      pct(row.compliance_not_followed_pct),
-      dash(row.summary),
+      row.compliance_followed_pct != null ? row.compliance_followed_pct / 100 : "",
+      row.compliance_not_followed_pct != null ? row.compliance_not_followed_pct / 100 : "",
+      row.summary || "—",
+    ]);
+    styleTableRow(r, scoreColumns, scoreRowIdx, startScoresData);
+    scoreRowIdx++;
+  }
+
+  // Summary row with native formulas
+  if (report.calls.length > 0) {
+    const endRow = scoreRowIdx - 1;
+    addTableSummaryRow(scoresSheet, scoreRowIdx, [
+      { col: 1, value: "SUMMARY AVERAGE" },
+      { col: 2, formula: `=COUNTA(B${startScoresData}:B${endRow}) & " Calls"` },
+      { col: 4, formula: `=AVERAGE(D${startScoresData}:D${endRow})`, isScore: true },
+      { col: 5, formula: `=AVERAGE(E${startScoresData}:E${endRow})`, isScore: true },
+      { col: 6, formula: `=AVERAGE(F${startScoresData}:F${endRow})`, isScore: true },
+      { col: 7, formula: `=AVERAGE(G${startScoresData}:G${endRow})`, isScore: true },
+      { col: 8, formula: `=AVERAGE(H${startScoresData}:H${endRow})`, isScore: true },
+      { col: 9, formula: `=AVERAGE(I${startScoresData}:I${endRow})`, isScore: true },
+      { col: 10, formula: `=AVERAGE(J${startScoresData}:J${endRow})`, isScore: true },
+      { col: 14, formula: `=AVERAGE(N${startScoresData}:N${endRow})`, isPct: true },
+      { col: 15, formula: `=AVERAGE(O${startScoresData}:O${endRow})`, isPct: true },
     ]);
   }
-  styleBody(scores, XLSX_DATA_ROW, 16);
-  for (let i = XLSX_DATA_ROW; i <= scores.rowCount; i++) {
-    paintScoreCell(scores.getRow(i).getCell(tableCol(3)));
-  }
-  if (report.calls.length) {
-    scores.autoFilter = {
-      from: { row: XLSX_HEADER_ROW, column: tableCol(0) },
-      to: { row: XLSX_HEADER_ROW, column: tableCol(15) },
-    };
-  }
-  finishSheet(scores, 16);
 
-  const customers = wb.addWorksheet("Customers", {
-    views: [{ showGridLines: false }],
-    pageSetup: { paperSize: 9, orientation: "landscape", fitToPage: true, fitToWidth: 1 },
-  });
-  setTableColumns(customers, [14, 22, 18, 14, 40, 36, 40]);
-  titleBlock(wb, customers, report, "Customer voice", 7);
-  headerRow(customers, ["Type", "Audited at", "Agent", "Stance", "Themes", "Note", "Quote"]);
+  finalizeWorksheet(scoresSheet, scoresBannerEnd, scoreColumns.length, true);
+
+  // =========================================================================
+  // 3. AGENT PERFORMANCE SHEET
+  // =========================================================================
+  const agentsSheet = createWorksheet(wb, "Agent Performance", "landscape");
+  const agentsBannerEnd = addBrandBanner(
+    agentsSheet,
+    `AGENT PERFORMANCE BREAKDOWN · ${report.period_label}`,
+    sub,
+    11
+  );
+
+  const agentColumns: ColumnDef[] = [
+    { header: "Agent Name", width: 22, align: "left" },
+    { header: "Calls Audited", width: 14, align: "center" },
+    { header: "Average Score", width: 15, align: "center", isScore: true },
+    { header: "Avg Handle Time", width: 15, align: "center" },
+    { header: "Total Talk Time", width: 16, align: "center" },
+    { header: "Excellent (≥85)", width: 15, align: "center" },
+    { header: "Good (70-84)", width: 14, align: "center" },
+    { header: "Needs Imp (50-69)", width: 16, align: "center" },
+    { header: "Poor (<50)", width: 12, align: "center" },
+    { header: "Followed %", width: 14, align: "center", isPct: true },
+    { header: "Not Followed %", width: 16, align: "center", isPct: true },
+  ];
+
+  addTableHeader(agentsSheet, agentsBannerEnd, agentColumns);
+  const startAgentsData = agentsBannerEnd + 1;
+  let agentRowIdx = startAgentsData;
+
+  for (const row of report.agents) {
+    const r = agentsSheet.addRow([
+      row.agent_name,
+      row.call_count,
+      row.avg_score != null ? row.avg_score : "",
+      formatAht(row.aht_seconds),
+      formatAht(row.total_handling_seconds),
+      row.excellent,
+      row.good,
+      row.needs_improvement,
+      row.poor,
+      row.compliance_followed_pct != null ? row.compliance_followed_pct / 100 : "",
+      row.compliance_not_followed_pct != null ? row.compliance_not_followed_pct / 100 : "",
+    ]);
+    styleTableRow(r, agentColumns, agentRowIdx, startAgentsData);
+    agentRowIdx++;
+  }
+
+  if (report.agents.length > 0) {
+    const endRow = agentRowIdx - 1;
+    addTableSummaryRow(agentsSheet, agentRowIdx, [
+      { col: 1, value: "TOTALS / AVERAGE" },
+      { col: 2, formula: `=SUM(B${startAgentsData}:B${endRow})` },
+      { col: 3, formula: `=AVERAGE(C${startAgentsData}:C${endRow})`, isScore: true },
+      { col: 6, formula: `=SUM(F${startAgentsData}:F${endRow})` },
+      { col: 7, formula: `=SUM(G${startAgentsData}:G${endRow})` },
+      { col: 8, formula: `=SUM(H${startAgentsData}:H${endRow})` },
+      { col: 9, formula: `=SUM(I${startAgentsData}:I${endRow})` },
+      { col: 10, formula: `=AVERAGE(J${startAgentsData}:J${endRow})`, isPct: true },
+      { col: 11, formula: `=AVERAGE(K${startAgentsData}:K${endRow})`, isPct: true },
+    ]);
+  }
+
+  finalizeWorksheet(agentsSheet, agentsBannerEnd, agentColumns.length, true);
+
+  // =========================================================================
+  // 4. CUSTOMER VOICE & THEMES SHEET
+  // =========================================================================
+  const customerSheet = createWorksheet(wb, "Customer Voice", "landscape");
+  const custBannerEnd = addBrandBanner(
+    customerSheet,
+    `CUSTOMER VOICE & THEMES · ${report.period_label}`,
+    sub,
+    7
+  );
+
+  const customerColumns: ColumnDef[] = [
+    { header: "Type", width: 14, align: "center" },
+    { header: "Audited Date", width: 18, align: "center" },
+    { header: "Agent Name", width: 20, align: "left" },
+    { header: "Customer Stance", width: 16, align: "center" },
+    { header: "Customer Themes", width: 32, align: "left" },
+    { header: "QA Observation Note", width: 42, align: "left", wrapText: true },
+    { header: "Verbatim Customer Quote", width: 45, align: "left", wrapText: true },
+  ];
+
+  addTableHeader(customerSheet, custBannerEnd, customerColumns);
+  const startCustData = custBannerEnd + 1;
+  let custRowIdx = startCustData;
+
   const voiceRows = [
     ...(report.customer_voice?.satisfactions || []).map((row) => ({
       type: "Satisfied",
@@ -235,9 +330,10 @@ export async function excelBuffer(report: QaReport): Promise<Buffer> {
       ...row,
     })),
   ];
+
   if (voiceRows.length) {
     for (const row of voiceRows) {
-      addTableRow(customers, [
+      const r = customerSheet.addRow([
         row.type,
         formatReportDate(row.audited_at),
         row.agent_name,
@@ -246,52 +342,23 @@ export async function excelBuffer(report: QaReport): Promise<Buffer> {
         row.note || "—",
         row.quote || "—",
       ]);
+      styleTableRow(r, customerColumns, custRowIdx, startCustData);
+      custRowIdx++;
     }
   } else {
-    addTableRow(customers, ["—", "—", "—", "—", "No customer voice themes in this period.", "—", "—"]);
-  }
-  styleBody(customers, XLSX_DATA_ROW, 7);
-  finishSheet(customers, 7);
-
-  const agents = wb.addWorksheet("Agents", {
-    views: [{ showGridLines: false }],
-    pageSetup: { paperSize: 9, orientation: "landscape", fitToPage: true, fitToWidth: 1 },
-  });
-  setTableColumns(agents, [18, 14, 14, 12, 14, 12, 10, 20, 10, 18, 18]);
-  titleBlock(wb, agents, report, "Performance by agent", 11);
-  headerRow(agents, [
-    "Agent",
-    "Calls audited",
-    "Average score",
-    "AHT",
-    "Talk time",
-    "Excellent",
-    "Good",
-    "Needs improvement",
-    "Poor",
-    "Followed %",
-    "Not followed %",
-  ]);
-  for (const row of report.agents) {
-    addTableRow(agents, [
-      row.agent_name,
-      row.call_count,
-      row.avg_score ?? "—",
-      formatAht(row.aht_seconds),
-      formatAht(row.total_handling_seconds),
-      row.excellent,
-      row.good,
-      row.needs_improvement,
-      row.poor,
-      pct(row.compliance_followed_pct),
-      pct(row.compliance_not_followed_pct),
+    const r = customerSheet.addRow([
+      "—",
+      "—",
+      "—",
+      "—",
+      "No customer voice themes recorded for this window.",
+      "—",
+      "—",
     ]);
+    styleTableRow(r, customerColumns, custRowIdx, startCustData);
   }
-  styleBody(agents, XLSX_DATA_ROW, 11);
-  for (let i = XLSX_DATA_ROW; i <= agents.rowCount; i++) {
-    paintScoreCell(agents.getRow(i).getCell(tableCol(2)));
-  }
-  finishSheet(agents, 11);
+
+  finalizeWorksheet(customerSheet, custBannerEnd, customerColumns.length, true);
 
   const out = await wb.xlsx.writeBuffer();
   return Buffer.from(out as ArrayBuffer);
@@ -300,3 +367,4 @@ export async function excelBuffer(report: QaReport): Promise<Buffer> {
 export function exportFilename(report: QaReport, ext: "xlsx") {
   return `${reportFileStem(report)}.${ext}`;
 }
+
