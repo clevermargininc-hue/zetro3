@@ -33,7 +33,7 @@ const Icons = {
   ),
 };
 
-type DetailTab = "calls" | "customers" | "agents";
+type DetailTab = "calls" | "agents";
 
 export function ReportsBoard({ compact = false }: { compact?: boolean }) {
   const [period, setPeriod] = useState<ReportPeriod>("monthly");
@@ -220,7 +220,6 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
             {(
               [
                 ["calls", `Calls (${report.calls.length})`],
-                ["customers", "Customers"],
                 ["agents", `Agents (${report.agents.length})`],
               ] as [DetailTab, string][]
             ).map(([id, label]) => (
@@ -308,65 +307,6 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                   ) : null}
                 </tbody>
               </table>
-            ) : null}
-
-            {activeTab === "customers" ? (
-              <div className="grid gap-0 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-line">
-                <div>
-                  <div className="px-6 py-3.5 border-b border-line bg-slate-50/50">
-                    <h3 className="text-[13px] font-semibold text-ink">Satisfied</h3>
-                  </div>
-                  <ul className="divide-y divide-line">
-                    {(report.customer_voice?.satisfactions || []).map((row) => (
-                      <li key={`sat-${row.call_id}`} className="px-6 py-4 space-y-2">
-                        <Link href={`/upload/score/${row.call_id}`} className="font-semibold text-[13px] text-ink hover:text-blue">
-                          {row.agent_name}
-                        </Link>
-                        <ul className="space-y-1">
-                          {row.themes.map((theme) => (
-                            <li key={theme} className="text-[13px] text-slate-700 leading-relaxed">
-                              {theme}
-                            </li>
-                          ))}
-                        </ul>
-                        {row.quote ? (
-                          <p className="text-[12px] text-muted italic leading-relaxed">“{row.quote}”</p>
-                        ) : null}
-                      </li>
-                    ))}
-                    {!report.customer_voice?.satisfactions?.length ? (
-                      <li className="px-6 py-10 text-center text-[13px] text-muted">No satisfaction themes.</li>
-                    ) : null}
-                  </ul>
-                </div>
-                <div>
-                  <div className="px-6 py-3.5 border-b border-line bg-slate-50/50">
-                    <h3 className="text-[13px] font-semibold text-ink">Frustrated</h3>
-                  </div>
-                  <ul className="divide-y divide-line">
-                    {(report.customer_voice?.frustrations || []).map((row) => (
-                      <li key={`fru-${row.call_id}`} className="px-6 py-4 space-y-2">
-                        <Link href={`/upload/score/${row.call_id}`} className="font-semibold text-[13px] text-ink hover:text-blue">
-                          {row.agent_name}
-                        </Link>
-                        <ul className="space-y-1">
-                          {row.themes.map((theme) => (
-                            <li key={theme} className="text-[13px] text-slate-700 leading-relaxed">
-                              {theme}
-                            </li>
-                          ))}
-                        </ul>
-                        {row.quote ? (
-                          <p className="text-[12px] text-muted italic leading-relaxed">“{row.quote}”</p>
-                        ) : null}
-                      </li>
-                    ))}
-                    {!report.customer_voice?.frustrations?.length ? (
-                      <li className="px-6 py-10 text-center text-[13px] text-muted">No frustration themes.</li>
-                    ) : null}
-                  </ul>
-                </div>
-              </div>
             ) : null}
 
             {activeTab === "agents" ? (
