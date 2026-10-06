@@ -14,7 +14,7 @@ import {
   rollupComplianceRate,
 } from "@/lib/compliance-engine";
 
-export const REPORT_PERIODS = ["daily", "weekly", "monthly", "annually"] as const;
+export const REPORT_PERIODS = ["all", "daily", "weekly", "monthly", "annually"] as const;
 export type ReportPeriod = (typeof REPORT_PERIODS)[number];
 
 export const REPORT_TZ = "Africa/Nairobi";
@@ -183,7 +183,7 @@ export function isReportPeriod(value: string | null): value is ReportPeriod {
 }
 
 export function parseReportQuery(url: URL) {
-  const periodRaw = url.searchParams.get("period") || "monthly";
+  const periodRaw = url.searchParams.get("period") || "all";
   const period = isReportPeriod(periodRaw) ? periodRaw : null;
   const dateRaw = url.searchParams.get("date") || todayInNairobi();
   const date = /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? dateRaw : todayInNairobi();
@@ -193,12 +193,18 @@ export function parseReportQuery(url: URL) {
 }
 
 export function todayInNairobi(): string {
+  return reportDay(new Date().toISOString());
+}
+
+function reportDay(iso: string) {
+  const time = new Date(iso).getTime();
+  if (!Number.isFinite(time)) return "";
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: REPORT_TZ,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(new Date());
+  }).format(new Date(time));
 }
 
 function pad(n: number) {
@@ -256,10 +262,14 @@ export function periodRange(period: ReportPeriod, date: string) {
       year: "numeric",
       timeZone: REPORT_TZ,
     }).format(new Date(`${ymdString(parsed.y, parsed.m, 1)}T12:00:00+03:00`))}`;
-  } else {
+  } else if (period === "annually") {
     start = { y: parsed.y, m: 1, d: 1 };
     endExclusive = { y: parsed.y + 1, m: 1, d: 1 };
     period_label = `Annual · ${parsed.y}`;
+  } else {
+    start = { y: 2000, m: 1, d: 1 };
+    endExclusive = addCalendarDays(parsed.y, parsed.m, parsed.d, 1);
+    period_label = "All time";
   }
 
   const last = addCalendarDays(endExclusive.y, endExclusive.m, endExclusive.d, -1);
@@ -532,12 +542,20 @@ export function buildQaReport(
     rows.map((r) => ({ passed: r.compliance_passed, failed: r.compliance_failed })),
   );
 
+  const scoredDays =
+    opts.period === "all"
+      ? rows
+          .map((row) => reportDay(row.audited_at))
+          .filter((day) => /^\d{4}-\d{2}-\d{2}$/.test(day))
+          .sort()
+      : [];
+
   return {
     generated_at: new Date().toISOString(),
     period: opts.period,
     period_label: range.period_label,
-    range_start: range.range_start,
-    range_end: range.range_end,
+    range_start: scoredDays[0] || range.range_start,
+    range_end: scoredDays[scoredDays.length - 1] || range.range_end,
     agent_id: opts.agentId,
     agent_label: opts.agentLabel,
     summary: {

@@ -20,11 +20,11 @@ export default async function LoginPage({
 
   return (
     <div className="grid min-h-screen bg-white lg:grid-cols-2">
-      <div className="hidden flex-col justify-between bg-blue p-10 text-white lg:flex">
+      <div className="hidden flex-col justify-between bg-blue p-10 text-white lg:flex [&_h1]:text-white [&_p]:text-white/80">
         <Logo invert />
         <div>
           <p className="text-sm font-medium text-white/70">Call quality</p>
-          <h1 className="mt-3 max-w-md text-3xl font-semibold leading-snug">
+          <h1 className="mt-3 max-w-md text-3xl font-semibold leading-snug text-white">
             Score calls against the scorecard you already use.
           </h1>
         </div>

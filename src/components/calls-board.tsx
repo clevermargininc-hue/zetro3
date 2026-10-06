@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { fetchAllRows } from "@/lib/fetch-all";
 import { DeleteCallButton } from "@/components/delete-call-button";
 import { CallDownloads } from "@/components/call-downloads";
 import {
@@ -45,12 +46,15 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
     async function refresh() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data } = await supabase
-        .from("calls")
-        .select("*, agents(name), call_scores(overall_score, verdict)")
-        .in("user_id", teamScope)
-        .order("created_at", { ascending: false });
-      if (data) setCalls(data as CallRow[]);
+      const page = await fetchAllRows<CallRow>((from, to) =>
+        supabase
+          .from("calls")
+          .select("*, agents(name), call_scores(overall_score, verdict)")
+          .in("user_id", teamScope)
+          .order("created_at", { ascending: false })
+          .range(from, to),
+      );
+      if (page.data) setCalls(page.data);
     }
 
     const poll = window.setInterval(() => {

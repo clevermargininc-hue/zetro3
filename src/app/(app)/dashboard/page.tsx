@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
 import { agentLabel, formatAht, formatDate, formatDuration, languageLabel } from "@/lib/format";
+import { fetchAllRows } from "@/lib/fetch-all";
 import { getTeamScope } from "@/lib/workspaces";
 import type { Call, CallScore } from "@/lib/types";
-import { summarizeCustomerVoice } from "@/lib/customer-voice";
 import { complianceFollowRateFromScore, rollupComplianceRate } from "@/lib/compliance-engine";
 import { JoinRequestBanner } from "@/components/join-request-banner";
 import { QaMixCharts, QaTrendCharts } from "@/components/qa-chart-grid";
@@ -37,6 +37,10 @@ function formatTotalTime(seconds: number) {
   return `${minutes} mins`;
 }
 
+function scoredAt(call: { completed_at?: string | null; created_at: string }) {
+  return call.completed_at || call.created_at;
+}
+
 function scoreOf(call: Call & { call_scores?: CallScore[] | CallScore | null }) {
   const raw = Array.isArray(call.call_scores) ? call.call_scores[0] : call.call_scores;
   if (!raw) return null;
@@ -61,17 +65,21 @@ export default async function DashboardPage({
 
   const { supabase, user } = await requireUser();
   const teamScope = await getTeamScope(user.id);
-  const { data: calls } = await supabase
-    .from("calls")
-    .select("*, agents(name), call_scores(*)")
-    .in("user_id", teamScope)
-    .order("created_at", { ascending: false });
+  const page = await fetchAllRows<Call & { call_scores?: CallScore[] | CallScore | null }>((from, to) =>
+    supabase
+      .from("calls")
+      .select("*, agents(name), call_scores(*)")
+      .in("user_id", teamScope)
+      .order("created_at", { ascending: false })
+      .range(from, to),
+  );
+  if (page.error) throw new Error(page.error.message);
 
-  const allCalls = calls || [];
+  const allCalls = page.data;
   const inRange =
     days === "all" ? null : new Set(lastNDays(days));
   const rangeCalls = inRange
-    ? allCalls.filter((call) => inRange.has(calendarDay(call.completed_at || call.created_at)))
+    ? allCalls.filter((call) => inRange.has(calendarDay(scoredAt(call))))
     : allCalls;
   const completedCalls = rangeCalls.filter((call) => call.status === "completed");
 
@@ -97,13 +105,12 @@ export default async function DashboardPage({
     }),
   );
 
-  const customerVoice = summarizeCustomerVoice(scoreObjects);
   const agentLeaderboard = rankByAgentId(rangeCalls);
   const rangeText = days === "all" ? "All time" : `Last ${days} days`;
   const points = completedCalls.flatMap((call) => {
     const score = scoreOf(call);
     if (!score) return [];
-    return [{ at: call.completed_at || call.created_at, score: score.overall_score }];
+    return [{ at: scoredAt(call), score: score.overall_score }];
   });
   const windowDays = days === "all" ? [] : lastNDays(days);
   const buckets =
@@ -119,9 +126,9 @@ export default async function DashboardPage({
     <div className="space-y-6 pb-10">
       <PageHeader
         title="Overview"
-        description="Call quality, customer voice, and handling time in this workspace."
+        description="Call quality and handling time in this workspace."
         actions={
-          <div className="flex gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
             <Link href="/dashboard" className={`chip ${days === "all" ? "border-blue bg-blue-soft text-blue" : ""}`}>
               All
             </Link>
@@ -180,10 +187,6 @@ export default async function DashboardPage({
         good={scoreValues.filter((score) => score >= 70 && score < 85).length}
         review={scoreValues.filter((score) => score >= 50 && score < 70).length}
         poor={scoreValues.filter((score) => score < 50).length}
-        satisfied={customerVoice.satisfied_count}
-        frustrated={customerVoice.frustrated_count}
-        mixed={customerVoice.mixed_count}
-        neutral={customerVoice.neutral_count}
         agentRows={agentLeaderboard.slice(0, 8).map((row) => ({
           key: row.id,
           label: row.name,
@@ -217,7 +220,7 @@ export default async function DashboardPage({
                   <div className="min-w-0">
                     <p className="font-semibold text-ink tabular-nums">{agentLabel(call)}</p>
                     <p className="mt-1 text-[12px] text-muted">
-                      {formatDate(call.created_at)} · {languageLabel(call.detected_language || call.language_mode)}
+                      {formatDate(scoredAt(call))} · {languageLabel(call.detected_language || call.language_mode)}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
@@ -252,7 +255,7 @@ export default async function DashboardPage({
             <thead>
               <tr className="border-b border-line bg-bg text-[11px] font-medium uppercase tracking-wider text-muted">
                 <th className="px-6 py-3">Agent</th>
-                <th className="px-6 py-3">Date & Time</th>
+                <th className="px-6 py-3">Scored</th>
                 <th className="px-6 py-3">Language</th>
                 <th className="px-6 py-3 text-right">Followed</th>
                 <th className="px-6 py-3 text-right">QA Score</th>
@@ -272,7 +275,7 @@ export default async function DashboardPage({
                       </div>
                     </td>
                     <td className="px-6 py-3.5 text-muted whitespace-nowrap text-[12px]">
-                      {formatDate(call.created_at)}
+                      {formatDate(scoredAt(call))}
                     </td>
                     <td className="px-6 py-3.5 whitespace-nowrap">
                       <span className="chip">

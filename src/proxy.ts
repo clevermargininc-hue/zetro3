@@ -30,11 +30,26 @@ export async function proxy(request: NextRequest) {
   const { code, simulated } = visitorCountry(request);
   const path = request.nextUrl.pathname;
 
-  if (path !== NOT_AVAILABLE_PATH && code && !isAllowedCountry(code)) {
+  const countryKnown = Boolean(code);
+  const blocked =
+    path !== NOT_AVAILABLE_PATH &&
+    !isAllowedCountry(code) &&
+    (countryKnown || process.env.NODE_ENV === "production");
+  if (blocked) {
+    if (path === "/api/waitlist" || path === "/api/sales") {
+      return withDevGeoCookie(NextResponse.next(), simulated, code);
+    }
+    if (path.startsWith("/api/")) {
+      return withDevGeoCookie(
+        NextResponse.json({ error: "Zetro is only available in Tanzania." }, { status: 403 }),
+        simulated,
+        code,
+      );
+    }
     const dest = request.nextUrl.clone();
     dest.pathname = NOT_AVAILABLE_PATH;
     dest.search = "";
-    dest.searchParams.set("country", code);
+    if (code) dest.searchParams.set("country", code);
     return withDevGeoCookie(NextResponse.redirect(dest), simulated, code);
   }
 
@@ -43,6 +58,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4)$).*)",
   ],
 };

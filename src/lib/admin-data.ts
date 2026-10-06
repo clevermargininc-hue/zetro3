@@ -111,7 +111,10 @@ export async function listWorkspacesForAdmin() {
       contact,
       companyDomain: companyDomainFor((ws.domain as string | null) ?? null, contact?.email),
       billing: billingById.get(id) || defaultBilling(id),
-      scoredCalls: cumulativeScored,
+      scoredCalls: Math.max(
+        cumulativeScored,
+        billingById.get(id)?.lifetimeFirstScores || 0,
+      ),
       firstThisMonth: Number(usage?.first_scores) || 0,
       rescoresThisMonth: Number(usage?.rescores) || 0,
       duplicateCompany: false,

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { looksLikeBotName } from "@/lib/bot-signup";
 import { isPlatformAdmin } from "@/lib/platform-admin";
 
 const WORKSPACE_COOKIE = "zetro-workspace";
@@ -124,6 +125,30 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  const botName = user?.user_metadata?.full_name || user?.user_metadata?.name;
+  if (user && looksLikeBotName(botName) && !isPlatformAdmin(user.email)) {
+    const ready = await userHasWorkspace(request, supabase, user.id);
+    if (ready === false) {
+      await supabase.auth.signOut();
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (serviceKey && base) {
+        await fetch(`${base}/auth/v1/admin/users/${user.id}`, {
+          method: "DELETE",
+          headers: {
+            apikey: serviceKey,
+            Authorization: `Bearer ${serviceKey}`,
+          },
+        }).catch(() => undefined);
+      }
+      const dest = request.nextUrl.clone();
+      dest.pathname = "/signup";
+      dest.search = "";
+      dest.searchParams.set("error", "Use your real first and last name.");
+      return redirectWithCookies(response, dest);
+    }
+  }
 
   const isInvite = path.startsWith("/invite/");
   const isPublic =

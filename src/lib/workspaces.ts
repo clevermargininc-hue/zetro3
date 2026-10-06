@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { displayCountry, parseCountryName } from "@/lib/locale";
+import { TRIAL_CALLS } from "@/lib/billing";
 
 export type WorkspacePlan = "solo" | "team";
 export type WorkspaceRole = "admin" | "member";
@@ -232,6 +233,15 @@ export async function createWorkspace(input: {
   if (memberError) {
     await supabase.from("workspaces").delete().eq("id", workspace.id);
     throw new Error(memberError.message);
+  }
+
+  const { error: billingError } = await supabase.from("workspace_billing").insert({
+    workspace_id: workspace.id,
+    plan: "trial",
+    trial_calls: TRIAL_CALLS,
+  });
+  if (billingError && !/workspace_billing|schema cache/i.test(billingError.message || "")) {
+    console.error("Could not start workspace billing:", billingError.message);
   }
 
   return { ...(workspace as Workspace), country };

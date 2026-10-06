@@ -82,62 +82,54 @@ export default async function HomePage() {
   return (
     <>
       {/* Hero Section */}
-      <section className="hero-mesh relative overflow-hidden border-b border-line">
-        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-6 pb-16 pt-14 lg:grid-cols-12 lg:gap-14 lg:px-8 lg:pb-24 lg:pt-20">
-          <div className="lg:col-span-6">
-            {/* Value Tag */}
-            <div className="inline-flex items-center gap-2 border border-line bg-white px-3 py-1 text-xs font-semibold text-muted">
+      <section className="hero-mesh border-b border-line">
+        <div className="mx-auto grid max-w-7xl items-start gap-10 px-6 pb-14 pt-12 xl:grid-cols-2 xl:items-center xl:gap-16 xl:px-8 xl:pb-20 xl:pt-16">
+          <div className="min-w-0">
+            <div className="inline-flex flex-wrap items-center gap-2 border border-line bg-white px-3 py-1 text-xs font-semibold text-muted">
               <span className="h-2 w-2 rounded-full bg-blue" />
-              <span className="text-ink">Enterprise Contact Center QA</span>
+              <span className="text-ink">Contact center QA</span>
               <span className="text-line">|</span>
               <span>English &amp; Kiswahili</span>
             </div>
 
-            <h1 className="reveal mt-5 max-w-xl font-display text-[2.5rem] font-bold leading-[1.08] tracking-tight text-ink sm:text-5xl lg:text-[3.5rem]">
-              Every conversation, scored against your company scorecard.
+            <h1 className="mt-5 max-w-xl font-display text-[2.15rem] font-bold leading-[1.15] tracking-tight text-ink sm:text-4xl lg:text-[2.75rem]">
+              Every conversation, scored against your scorecard.
             </h1>
 
-            <p className="reveal reveal-delay-1 mt-5 max-w-lg text-[15px] leading-relaxed text-muted sm:text-[16px]">
-              Stop relying on 2% random manual sampling. Upload your existing scorecard documents or
-              compliance manuals, and let Zetro audit 100% of customer calls with your exact criteria
-              weights and timestamped quote citations.
+            <p className="mt-5 max-w-lg text-[15px] leading-relaxed text-muted sm:text-[16px]">
+              Stop sampling 2% of the floor. Upload the scorecard you already use. Zetro scores every
+              call with your weights, rules, and timestamped quotes.
             </p>
 
-            {/* CTAs */}
-            <div className="reveal reveal-delay-2 mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <Link
                 href={signedIn ? "/dashboard" : "/signup"}
-                className="btn btn-lg btn-blue px-7 text-center font-semibold"
+                className="btn btn-lg btn-blue px-6 text-center font-semibold"
               >
                 {signedIn ? "Open workspace" : "Audit your first call free"}
               </Link>
-              <Link
-                href="/how-it-works"
-                className="btn btn-lg btn-outline px-7 text-center"
-              >
+              <Link href="/how-it-works" className="btn btn-lg btn-outline px-6 text-center">
                 See how it works
               </Link>
             </div>
 
-            {/* Micro Trust Proof */}
-            <div className="reveal reveal-delay-2 mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-muted">
-              <div className="flex items-center gap-1.5">
-                <span className="text-good font-bold">✓</span>
-                <span>Upload Excel, PDF, or Word</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-good font-bold">✓</span>
-                <span>Zero prompt truncation</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-good font-bold">✓</span>
-                <span>5 free calls included</span>
-              </div>
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-muted">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="font-bold text-good">✓</span>
+                Excel, PDF, or Word
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="font-bold text-good">✓</span>
+                English and Kiswahili
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="font-bold text-good">✓</span>
+                5 free calls
+              </span>
             </div>
           </div>
 
-          {/* Interactive Product Preview Card */}
-          <div className="reveal reveal-delay-2 lg:col-span-6">
+          <div className="min-w-0">
             <HeroProductPreview />
           </div>
         </div>

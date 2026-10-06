@@ -1,5 +1,6 @@
 import { CallJobList } from "@/components/call-job-list";
 import { requireUser } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/fetch-all";
 import { getTeamScope } from "@/lib/workspaces";
 import type { Call, CallScore } from "@/lib/types";
 import { PageHeader } from "@/components/ui";
@@ -10,12 +11,19 @@ export const dynamic = "force-dynamic";
 export default async function UploadPreparePage() {
   const { supabase, user } = await requireUser();
   const teamScope = await getTeamScope(user.id);
-  const { data: calls } = await supabase
-    .from("calls")
-    .select("*, agents(name), call_scores(overall_score, verdict)")
-    .in("user_id", teamScope)
-    .in("status", PREPARE_QUEUE_STATUSES)
-    .order("created_at", { ascending: false });
+  const page = await fetchAllRows<
+    Call & { agents?: { name: string } | null; call_scores?: CallScore[] | CallScore | null }
+  >((from, to) =>
+    supabase
+      .from("calls")
+      .select("*, agents(name), call_scores(overall_score, verdict)")
+      .in("user_id", teamScope)
+      .in("status", PREPARE_QUEUE_STATUSES)
+      .order("created_at", { ascending: false })
+      .range(from, to),
+  );
+  if (page.error) throw new Error(page.error.message);
+  const calls = page.data;
 
   return (
     <div className="space-y-6">
@@ -26,7 +34,7 @@ export default async function UploadPreparePage() {
       />
       <CallJobList
         action="transcribe"
-        initialCalls={(calls || []) as Array<
+        initialCalls={calls as Array<
           Call & { agents?: { name: string } | null; call_scores?: CallScore[] | CallScore | null }
         >}
         teamScope={teamScope}

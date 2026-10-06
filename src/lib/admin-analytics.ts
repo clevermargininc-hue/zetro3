@@ -1,4 +1,5 @@
 import { listWorkspacesForAdmin } from "@/lib/admin-data";
+import { purgeWorkspaceLessBots } from "@/lib/purge-bots";
 import { BILLING_PLANS, emptyBandCounts, estimateInvoice, type BandCounts, type BillingPlan, type LengthBand } from "@/lib/billing";
 import { isPlatformAdmin } from "@/lib/platform-admin";
 import { billingMonthStart, isMissingBillingSetup } from "@/lib/plans";
@@ -154,6 +155,7 @@ async function loadRealAudience() {
 
 export async function getAdminAnalytics(days: AnalyticsRange) {
   const db = createAdminClient();
+  await purgeWorkspaceLessBots().catch(() => undefined);
   const since = billingMonthStart();
 
   const [audience, allCompanies, live] = await Promise.all([

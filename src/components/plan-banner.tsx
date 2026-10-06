@@ -23,7 +23,7 @@ export function PlanBanner({ status }: { status: PlanStatus | null }) {
     <div className="no-print mb-6 flex flex-col gap-2 border border-blue/20 bg-blue-soft px-5 py-3 text-[13px] sm:flex-row sm:items-center sm:justify-between">
       <p className="text-ink">
         <span className="font-semibold">Free trial:</span> {status.scoredCalls} of {status.trialCalls} calls scored ·{" "}
-        {status.trialRemaining} left. Re-scoring a call does not use the trial.
+        {status.trialRemaining} left. Deleting a call does not restore a free trial slot. Re-scoring a call does not use the trial.
       </p>
       <p className="shrink-0 text-muted">
         <Link href="/pricing" className="font-semibold text-blue hover:underline">

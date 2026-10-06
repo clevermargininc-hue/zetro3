@@ -150,8 +150,11 @@ export function buildQaBriefing(report: QaReport, previous: QaReport | null): Qa
   const p = previous?.summary;
   const deltas = {
     avg_overall: delta(s.avg_overall, p?.avg_overall),
-    calls_audited: delta(s.calls_audited, p?.calls_audited ?? 0),
-    compliance_findings: delta(s.total_compliance_findings, p?.total_compliance_findings ?? 0),
+    calls_audited: delta(s.calls_audited, previous ? (p?.calls_audited ?? 0) : null),
+    compliance_findings: delta(
+      s.total_compliance_findings,
+      previous ? (p?.total_compliance_findings ?? 0) : null,
+    ),
     compliance_followed: delta(s.compliance_followed_pct, p?.compliance_followed_pct),
     frustrated_pct: delta(s.customer_frustrated_pct, p?.customer_frustrated_pct),
   };

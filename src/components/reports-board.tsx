@@ -9,6 +9,7 @@ import { PageHeader, scoreChipClass } from "@/components/ui";
 import { REPORT_PERIODS, todayInNairobi, type QaReport, type ReportPeriod } from "@/lib/reports";
 
 const PERIOD_LABEL: Record<ReportPeriod, string> = {
+  all: "All time",
   daily: "Daily",
   weekly: "Weekly",
   monthly: "Monthly",
@@ -36,7 +37,7 @@ const Icons = {
 type DetailTab = "calls" | "agents";
 
 export function ReportsBoard({ compact = false }: { compact?: boolean }) {
-  const [period, setPeriod] = useState<ReportPeriod>("monthly");
+  const [period, setPeriod] = useState<ReportPeriod>("all");
   const [date, setDate] = useState(todayInNairobi);
   const [agentId, setAgentId] = useState("all");
   const [agents, setAgents] = useState<{ id: string; name: string }[]>([]);
@@ -147,7 +148,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
       )}
 
       <section className="surface p-4 no-print">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className={`grid gap-4 ${period === "all" ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
           <div>
             <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-muted">
               Period
@@ -164,6 +165,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
               ))}
             </select>
           </div>
+          {period === "all" ? null : (
           <div>
             <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-muted">
               Date in period
@@ -177,6 +179,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
               }}
             />
           </div>
+          )}
           <div>
             <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-muted">
               Agent

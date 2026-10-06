@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { hasFirstAndLastName } from "@/lib/bot-signup";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "login" | "signup";
@@ -15,16 +16,19 @@ export function AuthForm({
   mode,
   next,
   email: emailPrefill,
+  initialError,
 }: {
   mode: Mode;
   next?: string;
   email?: string;
+  initialError?: string;
 }) {
   const dest = safeNext(next, "/auth/continue");
   const [email, setEmail] = useState(emailPrefill || "");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [companyWebsite, setCompanyWebsite] = useState("");
+  const [error, setError] = useState<string | null>(initialError || null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -37,21 +41,23 @@ export function AuthForm({
     try {
       const supabase = createClient();
       if (mode === "signup") {
-        const { data, error: signError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { full_name: fullName },
-            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(dest)}`,
-          },
+        if (!hasFirstAndLastName(fullName)) {
+          throw new Error("Enter your first and last name.");
+        }
+        const res = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, fullName, companyWebsite }),
         });
-        if (signError) throw signError;
-        if (data.session) {
-          window.location.href = dest;
+        const body = (await res.json().catch(() => ({}))) as { error?: string; confirm?: boolean };
+        if (!res.ok) throw new Error(body.error || "Could not create the account");
+        if (body.confirm) {
+          setInfo("Check your email to confirm the account, then sign in.");
+          setLoading(false);
           return;
         }
-        setInfo("Check your email to confirm the account, then sign in.");
-        setLoading(false);
+        window.location.href = dest;
+        return;
       } else {
         const { error: signError } = await supabase.auth.signInWithPassword({
           email,
@@ -137,10 +143,22 @@ export function AuthForm({
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
+              placeholder="First and last name"
+              autoComplete="name"
               className="field"
             />
           </label>
         )}
+        {mode === "signup" ? (
+          <input
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden
+            value={companyWebsite}
+            onChange={(e) => setCompanyWebsite(e.target.value)}
+            className="sr-only"
+          />
+        ) : null}
         <label className="flex flex-col gap-1.5 text-sm">
           <span className="font-medium text-ink">Work email</span>
           <input

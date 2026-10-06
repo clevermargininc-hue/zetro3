@@ -3,6 +3,7 @@ import { getRequestUser } from "@/lib/supabase/request-user";
 import { resolvedLanguageMode } from "@/lib/locale";
 import { agentIdFromFile } from "@/lib/format";
 import type { LanguageMode } from "@/lib/types";
+import { fetchAllRows } from "@/lib/fetch-all";
 import { getMembership, getTeamScope } from "@/lib/workspaces";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 
@@ -17,17 +18,20 @@ export async function GET(request: Request) {
   }
 
   const teamScope = await getTeamScope(user.id);
-  const { data, error } = await supabase
-    .from("calls")
-    .select("*, agents(name), call_scores(overall_score, verdict)")
-    .in("user_id", teamScope)
-    .order("created_at", { ascending: false });
+  const page = await fetchAllRows((from, to) =>
+    supabase
+      .from("calls")
+      .select("*, agents(name), call_scores(overall_score, verdict)")
+      .in("user_id", teamScope)
+      .order("created_at", { ascending: false })
+      .range(from, to),
+  );
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (page.error) {
+    return NextResponse.json({ error: page.error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ calls: data });
+  return NextResponse.json({ calls: page.data });
 }
 
 export async function POST(request: Request) {

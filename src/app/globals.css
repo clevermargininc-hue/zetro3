@@ -75,12 +75,14 @@ body {
   font-weight: 400;
 }
 
-h1,
-h2,
-h3 {
-  color: var(--text);
-  font-weight: 600;
-  letter-spacing: -0.02em;
+@layer base {
+  h1,
+  h2,
+  h3 {
+    color: var(--text);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
 }
 
 .font-display,
@@ -554,13 +556,8 @@ textarea {
 }
 
 .marketing-shell .btn-lg {
-  padding: 0.9rem 1.55rem;
+  padding: 0.85rem 1.4rem;
   font-size: 15px;
-}
-
-.marketing-shell p.text-muted,
-.marketing-shell .text-muted {
-  font-weight: 600;
 }
 
 .hero-mesh {
@@ -661,22 +658,21 @@ textarea {
 
 .band-story {
   background: #fafbfe;
-  padding: 4.5rem 0 6.5rem;
-  overflow-x: clip;
+  padding: 3.5rem 0 4.5rem;
 }
 
 .band-story-stack {
   display: flex;
   flex-direction: column;
-  gap: 7.5rem;
+  gap: 4.5rem;
 }
 
 @media (min-width: 1024px) {
   .band-story {
-    padding: 6rem 0 8.5rem;
+    padding: 5rem 0 6rem;
   }
   .band-story-stack {
-    gap: 10.5rem;
+    gap: 6.5rem;
   }
 }
 

@@ -57,12 +57,13 @@ export function monthKeys(year: number) {
 
 export function reportBucketKeys(period: ReportPeriod, rangeStart: string, rangeEnd: string) {
   if (period === "annually") return monthKeys(Number(rangeStart.slice(0, 4)));
+  if (period === "all") return monthKeysBetween(rangeStart.slice(0, 7), rangeEnd.slice(0, 7));
   return dayKeys(rangeStart, rangeEnd);
 }
 
 export function reportBucketKey(iso: string, period: ReportPeriod, tz: string) {
   const day = calendarDay(iso, tz);
-  return period === "annually" ? day.slice(0, 7) : day;
+  return period === "annually" || period === "all" ? day.slice(0, 7) : day;
 }
 
 export type QualityPoint = { at: string; score: number };

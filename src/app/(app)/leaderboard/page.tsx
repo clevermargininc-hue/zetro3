@@ -3,6 +3,7 @@ import { KpiStrip, PageHeader, scoreChipClass } from "@/components/ui";
 import { requireUser } from "@/lib/supabase/server";
 import { agentLabel } from "@/lib/format";
 import type { CallScore } from "@/lib/types";
+import { fetchAllRows } from "@/lib/fetch-all";
 import { getTeamScope } from "@/lib/workspaces";
 
 const Icons = {
@@ -17,21 +18,35 @@ const Icons = {
 export default async function LeaderboardPage() {
   const { supabase, user } = await requireUser();
   const teamScope = await getTeamScope(user.id);
-  const { data: calls } = await supabase
-    .from("calls")
-    .select("id, file_name, title, status, agents(name), call_scores(overall_score, verdict)")
-    .in("user_id", teamScope)
-    .order("created_at", { ascending: false });
+  const page = await fetchAllRows<{
+    id: string;
+    file_name: string | null;
+    title: string | null;
+    status: string;
+    agents: { name?: string } | { name?: string }[] | null;
+    call_scores: { overall_score: number | string | null; verdict: string | null } | { overall_score: number | string | null; verdict: string | null }[] | null;
+  }>((from, to) =>
+    supabase
+      .from("calls")
+      .select("id, file_name, title, status, agents(name), call_scores(overall_score, verdict)")
+      .in("user_id", teamScope)
+      .order("created_at", { ascending: false })
+      .range(from, to),
+  );
+  if (page.error) throw new Error(page.error.message);
+  const calls = page.data;
 
   const groups = new Map<
     string,
     { id: string; name: string; scores: CallScore[] }
   >();
 
-  for (const call of calls || []) {
+  for (const call of calls) {
     if (call.status !== "completed") continue;
     const score = Array.isArray(call.call_scores) ? call.call_scores[0] : call.call_scores;
-    if (!score || typeof score.overall_score !== "number") continue;
+    const overall = Number(score?.overall_score);
+    if (!score || !Number.isFinite(overall)) continue;
+    score.overall_score = overall;
     const name = agentLabel(call);
     const key = name.toLowerCase();
     const existing = groups.get(key);
@@ -61,8 +76,8 @@ export default async function LeaderboardPage() {
 
   const topFile = ranked[0] || null;
   const totalAudits = ranked.reduce((acc, row) => acc + row.call_count, 0);
-  const teamAvgScore = ranked.length
-    ? Math.round(ranked.reduce((acc, row) => acc + row.avg_score, 0) / ranked.length)
+  const teamAvgScore = totalAudits
+    ? Math.round(ranked.reduce((acc, row) => acc + row.avg_score * row.call_count, 0) / totalAudits)
     : null;
 
   return (
@@ -84,7 +99,7 @@ export default async function LeaderboardPage() {
           {
             label: "Average score",
             value: teamAvgScore != null ? `${teamAvgScore}%` : "—",
-            hint: `${ranked.length} ranked agent${ranked.length === 1 ? "" : "s"}`,
+            hint: "Across scored calls",
           },
           {
             label: "Scored calls",

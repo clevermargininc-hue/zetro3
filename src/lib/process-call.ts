@@ -414,7 +414,6 @@ export async function scoreCall(
       );
     }
 
-    await db.from("call_scores").delete().eq("call_id", callId);
     const scoreRow = {
       call_id: callId,
       overall_score: analysis.overall_score,
@@ -434,11 +433,11 @@ export async function scoreCall(
       metric_evidence: analysis.metric_evidence,
       audit_mode: mode,
     };
-    let { error: scoreError } = await db.from("call_scores").insert(scoreRow);
+    let { error: scoreError } = await db.from("call_scores").upsert(scoreRow, { onConflict: "call_id" });
     if (scoreError && /metric_evidence/.test(scoreError.message)) {
       const withoutEvidence = { ...scoreRow };
       delete (withoutEvidence as { metric_evidence?: unknown }).metric_evidence;
-      ({ error: scoreError } = await db.from("call_scores").insert(withoutEvidence));
+      ({ error: scoreError } = await db.from("call_scores").upsert(withoutEvidence, { onConflict: "call_id" }));
     }
     if (scoreError && /compliance_findings|standards_used|audit_mode/.test(scoreError.message)) {
       const legacy = {
@@ -456,7 +455,7 @@ export async function scoreCall(
         strengths: scoreRow.strengths,
         improvements: scoreRow.improvements,
       };
-      ({ error: scoreError } = await db.from("call_scores").insert(legacy));
+      ({ error: scoreError } = await db.from("call_scores").upsert(legacy, { onConflict: "call_id" }));
     }
     if (scoreError) throw new Error(scoreError.message);
 
@@ -470,9 +469,13 @@ export async function scoreCall(
       .eq("id", callId);
   } catch (err) {
     const message = describeAiError(err);
+    const { data: kept } = await db.from("call_scores").select("id").eq("call_id", callId).maybeSingle();
     await db
       .from("calls")
-      .update({ status: "transcribed", error_message: message })
+      .update({
+        status: kept ? "completed" : "transcribed",
+        error_message: message,
+      })
       .eq("id", callId);
     throw err;
   }

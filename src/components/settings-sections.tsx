@@ -59,7 +59,7 @@ function UsagePanel({
               : "No re-scores this month"
           }
         />
-        <UsageTile label="Calls scored in total" value={count(billing.scoredCalls)} hint="Since you joined" />
+        <UsageTile label="Calls scored in total" value={count(billing.scoredCalls)} hint="Deleting calls does not reset this" />
         <UsageTile
           label="Spent this month"
           value={formatTzs(usage.spentTzs)}
@@ -292,7 +292,7 @@ export function WorkspaceSettings() {
             </p>
             <p className="mt-1 text-muted">
               {data.billing.plan === "trial"
-                ? `${data.billing.scoredCalls} of ${data.billing.trialCalls} free calls scored · ${data.billing.trialRemaining ?? 0} left.`
+                ? `${data.billing.scoredCalls} of ${data.billing.trialCalls} free calls scored · ${data.billing.trialRemaining ?? 0} left. Deleting a call does not give the slot back.`
                 : data.billing.plan === "paused"
                   ? `Scoring is paused. Email ${SALES_EMAIL} to restart.`
                   : [

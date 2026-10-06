@@ -20,6 +20,8 @@ export type WorkspaceBilling = {
   notes: string | null;
   updatedBy: string | null;
   updatedAt: string | null;
+  /** First scores ever recorded. Never goes down when a call is deleted. */
+  lifetimeFirstScores: number;
 };
 
 export type PlanStatus = WorkspaceBilling & {
@@ -40,10 +42,13 @@ export type BillingRow = {
   notes: string | null;
   updated_by: string | null;
   updated_at: string | null;
+  lifetime_first_scores?: number | null;
 };
 
 export const BILLING_COLUMNS =
   "workspace_id, plan, trial_calls, committed_calls, contract_start, contract_end, notes, updated_by, updated_at";
+
+const BILLING_COLUMNS_WITH_LIFETIME = `${BILLING_COLUMNS}, lifetime_first_scores`;
 
 export function isMissingBillingSetup(error: { message?: string; code?: string } | null) {
   if (!error) return false;
@@ -53,7 +58,9 @@ export function isMissingBillingSetup(error: { message?: string; code?: string }
     error.code === "42883" ||
     error.code === "PGRST202" ||
     error.code === "PGRST205" ||
-    /workspace_billing|score_events|workspace_scored_calls|workspace_usage|workspace_band_usage/.test(message)
+    /workspace_billing|score_events|workspace_scored_calls|workspace_usage|workspace_band_usage|touch_first_score|lifetime_first_scores/.test(
+      message,
+    )
   );
 }
 
@@ -68,6 +75,7 @@ export function defaultBilling(workspaceId: string): WorkspaceBilling {
     notes: null,
     updatedBy: null,
     updatedAt: null,
+    lifetimeFirstScores: 0,
   };
 }
 
@@ -82,16 +90,25 @@ export function billingFromRow(row: BillingRow): WorkspaceBilling {
     notes: row.notes,
     updatedBy: row.updated_by,
     updatedAt: row.updated_at,
+    lifetimeFirstScores: Math.max(0, Number(row.lifetime_first_scores) || 0),
   };
 }
 
 export async function getWorkspaceBilling(workspaceId: string) {
   const db = createAdminClient();
-  const { data, error } = await db
+  let query = await db
     .from("workspace_billing")
-    .select(BILLING_COLUMNS)
+    .select(BILLING_COLUMNS_WITH_LIFETIME)
     .eq("workspace_id", workspaceId)
     .maybeSingle();
+  if (query.error && /lifetime_first_scores/i.test(query.error.message || "")) {
+    query = await db
+      .from("workspace_billing")
+      .select(BILLING_COLUMNS)
+      .eq("workspace_id", workspaceId)
+      .maybeSingle();
+  }
+  const { data, error } = query;
   if (error) {
     if (isMissingBillingSetup(error)) return { billing: defaultBilling(workspaceId), setupMissing: true };
     throw new Error(error.message);
@@ -123,8 +140,7 @@ export async function getPlanStatus(workspaceId: string): Promise<PlanStatus> {
     } else {
       const rpcCount = (!rpcRes.error && Number(rpcRes.data)) || 0;
       const eventsCount = (!eventsRes.error && Number(eventsRes.count)) || 0;
-      // Scored calls count must be cumulative/monotonic so deleting calls never restores or resets trial/plan quota
-      scoredCalls = Math.max(rpcCount, eventsCount);
+      scoredCalls = Math.max(rpcCount, eventsCount, billing.lifetimeFirstScores);
     }
   }
   const trialRemaining = billing.plan === "trial" ? Math.max(0, billing.trialCalls - scoredCalls) : null;
@@ -202,14 +218,28 @@ export async function recordScoreEvent(input: {
   }
   if (!workspaceId) return;
 
-  const { error } = await createAdminClient().from("score_events").insert({
+  const admin = createAdminClient();
+  if (input.kind === "first") {
+    const touched = await admin.rpc("touch_first_score", {
+      p_workspace: workspaceId,
+      p_call: input.callId,
+      p_user: input.userId,
+      p_duration: input.durationSeconds,
+    });
+    if (!touched.error) return;
+    if (!isMissingBillingSetup(touched.error)) {
+      console.error("Could not record first score:", touched.error.message);
+    }
+  }
+
+  const { error } = await admin.from("score_events").insert({
     workspace_id: workspaceId,
     call_id: input.callId,
     user_id: input.userId,
     kind: input.kind,
     duration_seconds: input.durationSeconds,
   });
-  if (error && !isMissingBillingSetup(error)) {
+  if (error && error.code !== "23505" && !isMissingBillingSetup(error)) {
     console.error("Could not record score event:", error.message);
   }
 }

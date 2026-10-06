@@ -217,15 +217,27 @@ export function SignupCountryGate({
   initialCountry: string | null;
   children: ReactNode;
 }) {
-  const [country, setCountry] = useState(() => knownCode(countries, initialCountry));
-  const isLive = country !== "" && allowed.includes(country);
+  const detected = knownCode(countries, initialCountry);
+  const lockedOut = detected !== "" && !allowed.includes(detected);
+  const [country, setCountry] = useState(detected);
+  const isLive = country !== "" && allowed.includes(country) && !lockedOut;
   const countryName = country ? nameFor(countries, country) : "";
+  const ordered = [
+    ...countries.filter((item) => allowed.includes(item.code)),
+    ...countries.filter((item) => !allowed.includes(item.code)),
+  ];
 
   return (
     <div className="flex flex-col gap-6">
       <label htmlFor="signup-country" className="flex flex-col gap-1.5 text-sm">
         <span className="font-medium text-ink">Where are you from?</span>
-        <CountrySelect id="signup-country" countries={countries} value={country} onChange={setCountry} />
+        <CountrySelect
+          id="signup-country"
+          countries={ordered}
+          value={country}
+          onChange={setCountry}
+          disabled={lockedOut}
+        />
       </label>
 
       {isLive ? children : null}

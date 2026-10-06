@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const { period, date, agentId } = parseReportQuery(new URL(request.url));
   if (!period) {
     return NextResponse.json(
-      { error: "Period must be daily, weekly, monthly, or annually." },
+      { error: "Period must be all, daily, weekly, monthly, or annually." },
       { status: 400 },
     );
   }

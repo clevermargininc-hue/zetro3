@@ -9,9 +9,9 @@ import { allowedCountries, countryFromHeaders } from "@/lib/geo";
 export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; email?: string }>;
+  searchParams: Promise<{ next?: string; email?: string; error?: string }>;
 }) {
-  const { next, email } = await searchParams;
+  const { next, email, error } = await searchParams;
   const dest = next && next.startsWith("/") && !next.startsWith("//") ? next : undefined;
   const invited = dest?.startsWith("/invite/");
   const allowed = [...allowedCountries()];
@@ -19,11 +19,11 @@ export default async function SignupPage({
 
   return (
     <div className="grid min-h-screen bg-white lg:grid-cols-2">
-      <div className="hidden flex-col justify-between bg-blue p-10 text-white lg:flex">
+      <div className="hidden flex-col justify-between bg-blue p-10 text-white lg:flex [&_h1]:text-white [&_p]:text-white/80">
         <Logo invert />
         <div>
           <p className="text-sm font-medium text-white/70">Get started</p>
-          <h1 className="mt-3 max-w-md text-3xl font-semibold leading-snug">
+          <h1 className="mt-3 max-w-md text-3xl font-semibold leading-snug text-white">
             Open a workspace. Score one call today.
           </h1>
         </div>
@@ -44,7 +44,7 @@ export default async function SignupPage({
           </p>
           <div className="mt-8">
             <SignupCountryGate countries={countryOptions()} allowed={allowed} initialCountry={initialCountry}>
-              <AuthForm mode="signup" next={dest} email={email} />
+              <AuthForm mode="signup" next={dest} email={email} initialError={error} />
             </SignupCountryGate>
           </div>
           <p className="mt-6 text-sm text-muted">

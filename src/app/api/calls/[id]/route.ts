@@ -65,7 +65,8 @@ export async function DELETE(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  if (!call || call.user_id !== user.id) {
+  const teamScope = await getTeamScope(user.id);
+  if (!call || !teamScope.includes(call.user_id as string)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
