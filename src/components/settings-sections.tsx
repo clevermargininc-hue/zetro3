@@ -8,9 +8,9 @@ import { SALES_EMAIL } from "@/lib/contact";
 
 function UsageTile({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
-    <div className="border border-line bg-surface px-4 py-3">
+    <div className="stat-tile">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</p>
-      <p className="mt-1 text-[20px] font-bold text-ink tabular-nums">{value}</p>
+      <p className="mt-1 text-[20px] font-semibold text-ink tabular-nums">{value}</p>
       <p className="mt-0.5 text-[12px] text-muted">{hint}</p>
     </div>
   );
@@ -46,7 +46,7 @@ function UsagePanel({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h4 className="text-[13px] font-bold text-ink">Usage · {usage.monthLabel}</h4>
+        <h4 className="text-[13px] font-semibold text-ink">Usage · {usage.monthLabel}</h4>
         <p className="text-[12px] text-muted">Prices exclude VAT</p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -92,7 +92,7 @@ export function AccountSettings() {
     <div className="space-y-6">
       <div className="surface p-6 space-y-6">
         <div>
-          <h2 className="text-[16px] font-bold text-ink">Personal Profile</h2>
+          <h2 className="text-[16px] font-semibold text-ink">Personal Profile</h2>
           <p className="text-[13px] text-muted mt-0.5">Your identity across team audits and comments.</p>
         </div>
 
@@ -109,7 +109,7 @@ export function AccountSettings() {
           }}
         >
           <div className="space-y-1.5">
-            <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500">
+            <label className="text-[12px] font-medium uppercase tracking-wider text-muted">
               Username
             </label>
             <div className="relative">
@@ -129,7 +129,7 @@ export function AccountSettings() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500">
+            <label className="text-[12px] font-medium uppercase tracking-wider text-muted">
               Full Name
             </label>
             <input
@@ -141,7 +141,7 @@ export function AccountSettings() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500">
+            <label className="text-[12px] font-medium uppercase tracking-wider text-muted">
               Work Email Address
             </label>
             <input
@@ -190,7 +190,7 @@ export function WorkspaceSettings() {
       <div className="surface p-6 space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-slate-100">
           <div>
-            <h2 className="text-[16px] font-bold text-ink">General Workspace Details</h2>
+            <h2 className="text-[16px] font-semibold text-ink">General Workspace Details</h2>
             <p className="text-[13px] text-muted mt-0.5">
               Organization profile and regional quality auditing parameters.
             </p>
@@ -207,7 +207,7 @@ export function WorkspaceSettings() {
           }}
         >
           <div className="space-y-1.5">
-            <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500">
+            <label className="text-[12px] font-medium uppercase tracking-wider text-muted">
               Organization / Workspace Name
             </label>
             <input
@@ -221,7 +221,7 @@ export function WorkspaceSettings() {
           </div>
 
           <div className="space-y-2 pt-1">
-            <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500 block">
+            <label className="text-[12px] font-medium uppercase tracking-wider text-muted block">
               Country & Regional Language Protocol
             </label>
             <CountryRegionPicker
@@ -242,7 +242,7 @@ export function WorkspaceSettings() {
 
           {data.workspace.domain && (
             <div className="space-y-1">
-              <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500 block">
+              <label className="text-[12px] font-medium uppercase tracking-wider text-muted block">
                 Company Domain
               </label>
               <p className="text-[13px] font-semibold text-slate-800 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
@@ -278,7 +278,7 @@ export function WorkspaceSettings() {
 
       <div className="surface p-6 space-y-3">
         <div>
-          <h3 className="text-[15px] font-bold text-ink">Billing</h3>
+          <h3 className="text-[15px] font-semibold text-ink">Billing</h3>
           <p className="text-[13px] text-muted mt-0.5">
             You pay per scored call, in TZS, by call length and monthly volume. For contracts and
             payment, email {SALES_EMAIL}. Solo vs Team is who can log in, not this bill.
@@ -321,7 +321,7 @@ export function WorkspaceSettings() {
       {isAdmin && isSolo && (
         <div className="surface p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h3 className="text-[15px] font-bold text-ink">Let teammates in</h3>
+            <h3 className="text-[15px] font-semibold text-ink">Let teammates in</h3>
             <p className="text-[13px] text-muted mt-0.5 max-w-lg">
               Invite people and set roles. Your calls and scorecard stay. This is who can log in, not
               the monthly bill.
@@ -346,7 +346,7 @@ export function AuditingSettings() {
   if (!data) {
     return (
       <div className="surface p-6">
-        <h2 className="text-[16px] font-bold text-ink">Auditing Rules</h2>
+        <h2 className="text-[16px] font-semibold text-ink">Auditing Rules</h2>
         <p className="mt-2 text-sm text-muted">{error ? "Could not load settings." : "Loading…"}</p>
       </div>
     );
@@ -355,7 +355,7 @@ export function AuditingSettings() {
   return (
     <div className="surface p-6 space-y-6">
       <div>
-        <h2 className="text-[16px] font-bold text-ink">Documents audit</h2>
+        <h2 className="text-[16px] font-semibold text-ink">Documents audit</h2>
         <p className="text-[13px] text-muted mt-0.5">
           Scoring never starts on its own. After a transcript is prepared, someone on the team starts an SOP
           audit against your uploaded Standards files.

@@ -236,11 +236,7 @@ export function UploadForm() {
               setDragOver(false);
             }}
             onDrop={(e) => void onDrop(e)}
-            className={`border border-dashed p-8 text-center transition-colors ${
-              dragOver
-                ? "border-blue bg-blue-soft"
-                : "border-line bg-slate-50 hover:bg-slate-100/50"
-            }`}
+            className={`dropzone ${dragOver ? "is-active" : ""}`}
           >
             <div className="mx-auto mb-3.5 flex items-center justify-center text-slate-500">
               {Icons.uploadCloud}

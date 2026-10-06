@@ -39,8 +39,8 @@ function ForgotPasswordForm() {
   }
 
   return (
-    <div className="w-full max-w-md p-8 md:p-12 rounded-3xl bg-surface-2 border border-line shadow-sm">
-      <h1 className="text-3xl font-extrabold text-ink mb-2">Reset password</h1>
+    <div className="surface w-full max-w-md p-6 sm:p-8">
+      <h1 className="mb-2 text-2xl font-semibold text-ink">Reset password</h1>
       <p className="text-muted text-[15px] mb-8">
         Enter your email and we&apos;ll send you a link to reset your password.
       </p>
@@ -52,7 +52,7 @@ function ForgotPasswordForm() {
           </div>
           <Link
             href="/login"
-            className="btn btn-lg bg-white border border-line text-ink hover:bg-surface-2 shadow-sm flex items-center justify-center"
+            className="btn btn-lg btn-ghost"
           >
             Back to login
           </Link>
@@ -93,7 +93,7 @@ function ForgotPasswordForm() {
 
 export default function ForgotPasswordPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface relative">
+    <div className="flex min-h-screen items-center justify-center bg-bg px-5">
       <Suspense>
         <ForgotPasswordForm />
       </Suspense>

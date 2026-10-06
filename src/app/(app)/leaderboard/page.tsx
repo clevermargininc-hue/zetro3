@@ -115,51 +115,51 @@ export default async function LeaderboardPage() {
       />
 
       <section className="surface overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-line flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">
           <h2 className="text-[14px] font-semibold text-ink">Rankings</h2>
           <span className="text-[12px] text-muted">{ranked.length} agents</span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="data-table">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                <th className="px-6 py-3 w-16">Rank</th>
-                <th className="px-6 py-3">Agent</th>
-                <th className="px-6 py-3 text-right">Avg score</th>
-                <th className="px-6 py-3 text-right">Scored calls</th>
-                <th className="px-6 py-3 text-right">Excellent (&gt;85%)</th>
-                <th className="px-6 py-3 text-right">Needs Review</th>
-                <th className="px-6 py-3 text-right">Band</th>
+              <tr>
+                <th className="w-16">Rank</th>
+                <th>Agent</th>
+                <th className="text-right">Avg score</th>
+                <th className="text-right">Scored calls</th>
+                <th className="text-right">Excellent</th>
+                <th className="text-right">Needs review</th>
+                <th className="text-right">Band</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-[13px]">
+            <tbody>
               {ranked.map((row, index) => {
                 const rank = index + 1;
 
                 return (
-                  <tr key={row.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-3.5 whitespace-nowrap tabular-nums text-muted">
+                  <tr key={row.id}>
+                    <td className="whitespace-nowrap tabular-nums text-muted">
                       {rank}
                     </td>
-                    <td className="px-6 py-3.5 max-w-[16rem]">
-                      <span className="block font-medium text-ink tabular-nums break-all">{row.name}</span>
+                    <td className="max-w-[16rem]">
+                      <span className="block break-all font-medium text-ink tabular-nums">{row.name}</span>
                     </td>
-                    <td className="px-6 py-3.5 text-right whitespace-nowrap">
+                    <td className="whitespace-nowrap text-right">
                       <span className={`${scoreChipClass(row.avg_score)} tabular-nums`}>
                         {row.avg_score}%
                       </span>
                     </td>
-                    <td className="px-6 py-3.5 text-right font-medium text-slate-700 tabular-nums">
+                    <td className="text-right font-medium tabular-nums text-ink">
                       {row.call_count}
                     </td>
-                    <td className="px-6 py-3.5 text-right font-medium tabular-nums text-ink">
+                    <td className="text-right font-medium tabular-nums text-ink">
                       {row.excellent}
                     </td>
-                    <td className="px-6 py-3.5 text-right font-medium tabular-nums text-ink">
+                    <td className="text-right font-medium tabular-nums text-ink">
                       {row.poor + row.needs_improvement}
                     </td>
-                    <td className="px-6 py-3.5 text-right whitespace-nowrap">
+                    <td className="whitespace-nowrap text-right">
                       <span className="chip">
                         {row.avg_score >= 85
                           ? "Excellent"
@@ -177,13 +177,11 @@ export default async function LeaderboardPage() {
           </table>
 
           {!ranked.length && (
-            <div className="py-16 text-center">
-              <div className="inline-flex p-4 rounded-full bg-slate-50 mb-3">{Icons.emptyBox}</div>
-              <h3 className="text-[15px] font-bold text-ink">No rankings yet</h3>
-              <p className="mt-1 text-[13px] text-muted max-w-sm mx-auto">
-                Upload and score calls to rank agents.
-              </p>
-              <Link href="/upload" className="mt-5 btn btn-blue text-[13px] px-5 py-2 inline-flex font-semibold">
+            <div className="empty-state">
+              <div className="empty-state-icon">{Icons.emptyBox}</div>
+              <h3>No rankings yet</h3>
+              <p>Upload and score calls to rank agents.</p>
+              <Link href="/upload" className="btn btn-blue mt-4 text-[13px]">
                 Upload a call
               </Link>
             </div>

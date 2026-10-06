@@ -30,8 +30,8 @@ export default async function LoginPage({
         </div>
         <p className="text-sm text-white/70">Tanzania · English and Kiswahili</p>
       </div>
-      <div className="grid place-items-center bg-white px-5 py-16">
-        <div className="w-full max-w-md">
+      <div className="grid place-items-center bg-bg px-5 py-16">
+        <div className="surface w-full max-w-md p-6 sm:p-8">
           <div className="lg:hidden">
             <Logo />
           </div>

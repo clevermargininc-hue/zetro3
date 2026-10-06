@@ -26,29 +26,29 @@ export default async function MarketingLayout({ children }: { children: React.Re
         <div className="mx-auto flex max-w-7xl flex-col gap-10 px-6 sm:flex-row sm:items-start sm:justify-between lg:px-8">
           <div className="max-w-sm space-y-3">
             <Logo size="sm" />
-            <p className="text-[13px] font-semibold leading-relaxed text-ink">
+            <p className="text-[13px] leading-relaxed text-muted">
               Score contact-center calls against your scorecard — in English, Kiswahili, or both.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-8 text-[13px] sm:grid-cols-3">
             <div className="space-y-2">
               <p className="font-semibold text-ink">Product</p>
-              <Link href="/how-it-works" className="block font-semibold text-ink hover:text-blue">
+              <Link href="/how-it-works" className="block text-muted hover:text-ink">
                 How it works
               </Link>
-              <Link href="/solutions" className="block font-semibold text-ink hover:text-blue">
+              <Link href="/solutions" className="block text-muted hover:text-ink">
                 Solutions
               </Link>
-              <Link href="/pricing" className="block font-semibold text-ink hover:text-blue">
+              <Link href="/pricing" className="block text-muted hover:text-ink">
                 Pricing
               </Link>
             </div>
             <div className="space-y-2">
               <p className="font-semibold text-ink">Company</p>
-              <Link href="/about" className="block font-semibold text-ink hover:text-blue">
+              <Link href="/about" className="block text-muted hover:text-ink">
                 About
               </Link>
-              <Link href="/talk-sales" className="block font-semibold text-ink hover:text-blue">
+              <Link href="/talk-sales" className="block text-muted hover:text-ink">
                 Talk to sales
               </Link>
               <a
@@ -63,10 +63,10 @@ export default async function MarketingLayout({ children }: { children: React.Re
             </div>
             <div className="space-y-2">
               <p className="font-semibold text-ink">Account</p>
-              <Link href="/login" className="block font-semibold text-ink hover:text-blue">
+              <Link href="/login" className="block text-muted hover:text-ink">
                 Sign in
               </Link>
-              <Link href="/signup" className="block font-semibold text-ink hover:text-blue">
+              <Link href="/signup" className="block text-muted hover:text-ink">
                 Get started
               </Link>
             </div>
@@ -74,10 +74,10 @@ export default async function MarketingLayout({ children }: { children: React.Re
         </div>
         <div className="mx-auto mt-12 max-w-7xl px-6 lg:px-8">
           <div className="flex flex-col gap-2 border-t border-line/80 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-[12px] font-semibold leading-relaxed text-ink">
+            <p className="text-[12px] leading-relaxed text-muted">
               Zetro is a product of Clevermargins Software Business Solutions (CSBS).
             </p>
-            <p className="text-[12px] font-semibold text-ink">© {new Date().getFullYear()} CSBS. All rights reserved.</p>
+            <p className="text-[12px] text-muted">© {new Date().getFullYear()} CSBS. All rights reserved.</p>
           </div>
         </div>
       </footer>

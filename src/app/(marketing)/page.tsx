@@ -86,7 +86,7 @@ export default async function HomePage() {
       <section className="hero-mesh border-b border-line">
         <div className="mx-auto grid max-w-7xl items-start gap-10 px-6 pb-14 pt-12 xl:grid-cols-2 xl:items-center xl:gap-16 xl:px-8 xl:pb-20 xl:pt-16">
           <div className="min-w-0">
-            <div className="inline-flex flex-wrap items-center gap-2 border border-line bg-white px-3 py-1 text-xs font-semibold text-muted">
+            <div className="inline-flex flex-wrap items-center gap-2 rounded-full border border-line bg-white px-3 py-1 text-xs font-medium text-muted shadow-[var(--shadow)]">
               <span className="h-2 w-2 rounded-full bg-blue" />
               <span className="text-ink">Contact center QA</span>
               <span className="text-line">|</span>
@@ -139,7 +139,7 @@ export default async function HomePage() {
       {/* Stats Proof Bar (Using exact Charges card grid design from Pricing page) */}
       <section className="border-b border-line bg-bg py-8">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="grid gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
             {STATS.map((stat) => (
               <div key={stat.label} className="bg-white px-6 py-6">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
@@ -190,7 +190,7 @@ export default async function HomePage() {
 
             {/* Feature Card 1 (Pricing Card Style) */}
             <div className="split-media">
-              <div className="w-full max-w-md border border-line bg-white shadow-xs">
+              <div className="frame w-full max-w-md overflow-hidden">
                 <div className="flex items-center justify-between border-b border-line bg-bg px-5 py-3.5">
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
                     Scorecard_Floor_2026.xlsx
@@ -272,7 +272,7 @@ export default async function HomePage() {
 
             {/* Feature Card 2 (Pricing Card Style) */}
             <div className="split-media">
-              <div className="w-full max-w-md border border-line bg-white shadow-xs">
+              <div className="frame w-full max-w-md overflow-hidden">
                 <div className="flex items-center justify-between border-b border-line bg-bg px-5 py-3.5">
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
                     Audio Diarization Stream
@@ -350,7 +350,7 @@ export default async function HomePage() {
 
             {/* Feature Card 3 (Pricing Card Style) */}
             <div className="split-media">
-              <div className="w-full max-w-md border border-line bg-white shadow-xs">
+              <div className="frame w-full max-w-md overflow-hidden">
                 <div className="flex items-center justify-between border-b border-line bg-bg px-5 py-3.5">
                   <div>
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
@@ -404,7 +404,7 @@ export default async function HomePage() {
             </p>
           </div>
 
-          <div className="mt-10 overflow-x-auto border border-line bg-white">
+          <div className="frame mt-10 overflow-x-auto">
             <table className="w-full min-w-[36rem] border-collapse text-left">
               <thead>
                 <tr className="border-b border-line bg-bg">
@@ -453,7 +453,7 @@ export default async function HomePage() {
             </h2>
           </div>
 
-          <div className="mt-10 grid border border-line bg-white sm:grid-cols-3">
+          <div className="frame mt-10 grid overflow-hidden sm:grid-cols-3">
             {WORKFLOW_STEPS.map((s, index) => (
               <div
                 key={s.step}

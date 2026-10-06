@@ -7,7 +7,7 @@ const ROWS = [
 
 export function HeroProductPreview() {
   return (
-    <div className="w-full min-w-0 overflow-hidden rounded-[4px] border border-line bg-white">
+    <div className="frame w-full min-w-0 overflow-hidden">
       <div className="flex items-center justify-between gap-3 border-b border-line bg-bg px-4 py-3">
         <div className="min-w-0">
           <p className="truncate text-[13px] font-semibold text-ink">Agent Sarah K.</p>

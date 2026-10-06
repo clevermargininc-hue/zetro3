@@ -65,7 +65,7 @@ function CycleToggle({ cycle, onChange }: { cycle: BillingCycle; onChange: (cycl
     { id: "annual", label: "Billed annually" },
   ];
   return (
-    <div role="radiogroup" aria-label="Billing period" className="inline-flex border border-line bg-white p-1">
+    <div role="radiogroup" aria-label="Billing period" className="segmented">
       {options.map((option) => {
         const active = option.id === cycle;
         return (
@@ -75,17 +75,11 @@ function CycleToggle({ cycle, onChange }: { cycle: BillingCycle; onChange: (cycl
             role="radio"
             aria-checked={active}
             onClick={() => onChange(option.id)}
-            className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold transition-colors ${
-              active ? "bg-blue text-white" : "text-muted hover:text-ink"
-            }`}
+            className={active ? "is-active" : ""}
           >
             {option.label}
             {option.id === "annual" ? (
-              <span
-                className={`px-1.5 py-0.5 text-[11px] font-bold ${
-                  active ? "bg-white/20 text-white" : "bg-blue-soft text-blue"
-                }`}
-              >
+              <span className="rounded-full bg-white px-1.5 py-0.5 text-[11px] font-medium text-blue">
                 Save {DISCOUNT_PERCENT}%
               </span>
             ) : null}
@@ -98,7 +92,7 @@ function CycleToggle({ cycle, onChange }: { cycle: BillingCycle; onChange: (cycl
 
 function PriceTable({ cycle }: { cycle: BillingCycle }) {
   return (
-    <div className="overflow-x-auto border border-line bg-white">
+    <div className="frame overflow-x-auto">
       <table className="w-full min-w-[36rem] border-collapse text-left">
         <thead>
           <tr className="border-b border-line bg-bg">
@@ -181,7 +175,7 @@ function Charges({ cycle }: { cycle: BillingCycle }) {
     },
   ];
   return (
-    <div className="grid gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
       {rows.map((row) => (
         <div key={row.label} className="bg-white px-5 py-5">
           <p className="text-[12px] font-semibold uppercase tracking-wider text-muted">{row.label}</p>
@@ -208,7 +202,7 @@ function Calculator({ cycle }: { cycle: BillingCycle }) {
   }, [calls, minutes]);
 
   return (
-    <section className="border border-line bg-white">
+    <section className="frame overflow-hidden">
       <form
         className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]"
         onSubmit={(event) => event.preventDefault()}
