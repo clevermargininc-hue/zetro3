@@ -8,11 +8,11 @@ import { BILLING_PLAN_LABELS, formatTzs, formatUsdFromTzs } from "@/lib/billing"
 import { billingMonthLabel } from "@/lib/plans";
 
 const COLORS = {
-  blue: "#04B6DA",
-  soft: "#E3EBFB",
-  green: "#15803D",
-  amber: "#B45309",
-  grey: "#061C52",
+  blue: "var(--blue)",
+  soft: "#7ea6f4",
+  green: "var(--good)",
+  amber: "var(--warn)",
+  grey: "#94a3b8",
 };
 
 const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
@@ -41,28 +41,28 @@ export default async function AdminAnalyticsPage({
     <div className="space-y-7">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#04B6DA]">
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue">
             <span>Admin Console</span>
-            <span className="text-[#334155]">/</span>
-            <span className="text-[#334155] font-normal">Real-Time Operations</span>
+            <span className="text-slate-300">/</span>
+            <span className="text-muted font-normal">Real-Time Operations</span>
           </div>
-          <h1 className="mt-1 text-[22px] font-bold tracking-tight text-[#061C52]">
-            Platform Analytics &amp; Overview
+          <h1 className="mt-1 text-[22px] font-bold tracking-tight text-ink">
+            Platform Analytics & Overview
           </h1>
-          <p className="mt-1 max-w-2xl text-[13px] text-[#334155] leading-relaxed">
+          <p className="mt-1 max-w-2xl text-[13px] text-muted leading-relaxed">
             Realtime activity, daily call auditing throughput, active user sessions, and conversion funnel from free trial to paying enterprise accounts.
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5 rounded-none border border-[#E3EBFB] bg-white p-1 shadow-2xs">
+        <div className="flex items-center gap-1.5 rounded-lg border border-line bg-white p-1 shadow-2xs">
           {ANALYTICS_RANGES.map((option) => (
             <Link
               key={option}
               href={option === 30 ? "/admin" : `/admin?range=${option}`}
-              className={`rounded-none px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+              className={`rounded px-3 py-1.5 text-[12px] font-semibold transition-colors ${
                 option === days
-                  ? "bg-[#04B6DA] text-white shadow-2xs"
-                  : "text-[#334155] hover:text-[#061C52] hover:bg-[#F3F6FD]"
+                  ? "bg-blue text-white shadow-2xs"
+                  : "text-muted hover:text-ink hover:bg-slate-50"
               }`}
             >
               {option}d

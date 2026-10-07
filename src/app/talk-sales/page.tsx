@@ -3,9 +3,8 @@ import { Metadata } from "next";
 import { MarketingNav } from "@/components/marketing-nav";
 import { SalesForm } from "@/components/sales-form";
 import { SALES_EMAIL, salesMailto } from "@/lib/contact";
+import { TRIAL_CALLS } from "@/lib/billing";
 import { createClient } from "@/lib/supabase/server";
-import { Icon } from "@/components/icon";
-import { faCheck } from "@fortawesome/free-solid-svg-icons";
 
 export const metadata: Metadata = {
   title: "Talk to Sales | Zetro",
@@ -56,7 +55,7 @@ export default async function TalkSalesPage({
     <div className="marketing-shell flex min-h-full flex-col bg-white">
       <MarketingNav signedIn={signedIn} />
 
-      <main className="flex-1 bg-white py-12 lg:py-20">
+      <main className="flex-1 bg-surface-2/40 py-12 lg:py-20">
         <div className="mx-auto w-full max-w-6xl px-6 lg:px-8">
           {/* Header */}
           <div className="max-w-2xl">
@@ -71,12 +70,12 @@ export default async function TalkSalesPage({
           </div>
 
           <div className="mt-12 grid grid-cols-1 items-start gap-10 lg:grid-cols-12 lg:gap-12">
-            {/* Left Column: Benefit Cards */}
+            {/* Left Column: Benefit Cards matching Pricing Charges Style */}
             <div className="space-y-6 lg:col-span-5">
-              <div className="grid gap-px border border-[#E3EBFB] bg-[#E3EBFB] rounded-none overflow-hidden shadow-xs">
+              <div className="grid gap-px border border-line bg-line shadow-xs">
                 {BENEFITS.map((item) => (
                   <div key={item.step} className="bg-white p-5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#061C52]">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
                       {item.step} · {item.label}
                     </p>
                     <h3 className="mt-1 text-[15px] font-semibold text-ink">{item.title}</h3>
@@ -86,20 +85,20 @@ export default async function TalkSalesPage({
               </div>
 
               {/* Direct email highlight card */}
-              <div className="border border-[#E3EBFB] bg-[#F3F6FD] p-5 rounded-none shadow-xs">
-                <span className="inline-block px-2 py-0.5 rounded-none text-[10px] font-bold uppercase tracking-wider bg-[#04B6DA] text-white">
+              <div className="border border-blue/20 bg-blue-soft p-5 shadow-xs">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-blue">
                   Direct Contract Inquiries
-                </span>
-                <h3 className="mt-2 text-[15px] font-semibold text-ink">Prefer email or phone?</h3>
+                </p>
+                <h3 className="mt-1 text-[15px] font-semibold text-ink">Prefer email or phone?</h3>
                 <p className="mt-1 text-[13px] leading-relaxed text-muted">
                   Email us with your floor requirements. We will review and reply within one business
                   day with an agreement.
                 </p>
                 <a
                   href={salesMailto("Zetro — contract or sales deal")}
-                  className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#04B6DA] hover:text-[#039EBE] underline"
+                  className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-blue hover:underline"
                 >
-                  <svg className="h-4 w-4 shrink-0 text-[#04B6DA]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -112,16 +111,16 @@ export default async function TalkSalesPage({
               </div>
 
               <div className="flex items-center gap-2 text-[12px] text-muted">
-                <Icon icon={faCheck} size="xs" chip="accent" className="w-2.5 h-2.5" />
-                <span>Includes 5 free trial calls scored on your own scorecard</span>
+                <span className="font-semibold text-good">✓</span>
+                <span>Includes {TRIAL_CALLS} free trial calls scored on your own scorecard</span>
               </div>
             </div>
 
-            {/* Right Column: Sales Quote Form Card */}
+            {/* Right Column: Sales Quote Form Card matching Pricing Calculator */}
             <div className="lg:col-span-7">
-              <div className="border border-[#E3EBFB] bg-white rounded-none overflow-hidden shadow-md">
-                <div className="border-b border-[#E3EBFB] bg-[#F3F6FD] px-6 py-4">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#061C52]">
+              <div className="border border-line bg-white shadow-xs">
+                <div className="border-b border-line bg-bg px-6 py-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
                     Quote Request
                   </p>
                   <h2 className="mt-0.5 text-[18px] font-semibold text-ink">
@@ -146,19 +145,19 @@ export default async function TalkSalesPage({
       </main>
 
       {/* Footer matching standard marketing layout */}
-      <footer className="mt-auto border-t border-[#039EBE] bg-[#061C52] text-white py-12">
+      <footer className="mt-auto border-t border-line bg-bg py-12">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-          <p className="text-[12px] font-semibold text-[#E3EBFB]">
+          <p className="text-[12px] font-semibold text-muted">
             Zetro is a product of Clevermargins Software Business Solutions (CSBS).
           </p>
-          <div className="flex items-center gap-6 text-[13px] font-semibold text-[#E3EBFB]">
-            <Link href="/pricing" className="hover:text-white">
+          <div className="flex items-center gap-6 text-[13px] font-semibold text-muted">
+            <Link href="/pricing" className="hover:text-ink">
               Pricing
             </Link>
-            <Link href="/how-it-works" className="hover:text-white">
+            <Link href="/how-it-works" className="hover:text-ink">
               How it works
             </Link>
-            <Link href="/login" className="hover:text-white">
+            <Link href="/login" className="hover:text-ink">
               Sign in
             </Link>
           </div>

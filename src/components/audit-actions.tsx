@@ -87,7 +87,7 @@ export function AuditActions({
             type="button"
             disabled={busy}
             onClick={() => void start("documents")}
-            className="btn bg-[#061C52] hover:bg-[#039EBE] text-white text-[12px] px-3 py-1.5 font-medium relative z-10"
+            className="btn bg-blue hover:bg-blue-2 text-white text-[12px] px-3 py-1.5 font-medium relative z-10"
           >
             {pending === "documents" || status === "analyzing" ? "Reading files…" : force ? "Try scoring again" : "Score this call"}
           </button>
@@ -107,7 +107,7 @@ export function AuditActions({
           </div>
           {busy ? (
             <div className="flex items-center gap-2.5 text-ink text-[13px] font-medium border border-line px-4 py-3">
-              <div className="h-4 w-4 rounded-full border-2 border-[#E3EBFB] border-t-[#04B6DA] animate-spin shrink-0" />
+              <div className="h-4 w-4 rounded-full border-2 border-blue/30 border-t-blue animate-spin shrink-0" />
               <span>Reading your scorecard, then scoring…</span>
             </div>
           ) : null}
@@ -115,7 +115,7 @@ export function AuditActions({
             type="button"
             disabled={busy}
             onClick={() => void start("documents")}
-            className="btn bg-[#04B6DA] hover:bg-[#039EBE] text-white text-[13px] font-semibold w-full justify-center py-2.5 relative z-10"
+            className="btn btn-blue text-[13px] font-semibold w-full justify-center py-2.5 relative z-10"
           >
             <span>
               {busy

@@ -129,17 +129,14 @@ export default async function DashboardPage({
         description="Call quality and handling time in this workspace."
         actions={
           <div className="flex flex-wrap gap-1.5">
-            <Link
-              href="/dashboard"
-              className={`pill ${days === "all" ? "pill-active" : "pill-inactive"}`}
-            >
+            <Link href="/dashboard" className={`chip ${days === "all" ? "border-blue bg-blue-soft text-blue" : ""}`}>
               All
             </Link>
             {QUALITY_RANGES.map((option) => (
               <Link
                 key={option}
                 href={`/dashboard?range=${option}`}
-                className={`pill ${option === days ? "pill-active" : "pill-inactive"}`}
+                className={`chip ${option === days ? "border-blue bg-blue-soft text-blue" : ""}`}
               >
                 {option} days
               </Link>
@@ -156,7 +153,6 @@ export default async function DashboardPage({
             label: "Quality score",
             value: avgScore != null ? `${avgScore}%` : "—",
             hint: passRate != null ? `${passRate}% pass rate (≥70)` : "No scored calls yet",
-            featured: true,
           },
           {
             label: "Audited calls",
@@ -307,7 +303,7 @@ export default async function DashboardPage({
                     <td className="px-6 py-3.5 text-right whitespace-nowrap">
                       <Link
                         href={score ? `/upload/score/${call.id}` : `/upload/prepare/${call.id}`}
-                        className="inline-flex items-center gap-1 font-semibold text-[12px] text-[#04B6DA] hover:text-[#039EBE] transition-colors"
+                        className="inline-flex items-center gap-1 font-semibold text-[12px] text-blue hover:text-blue-2 transition-colors"
                       >
                         <span>{score ? "View Scorecard" : "View Progress"}</span>
                         <span>→</span>

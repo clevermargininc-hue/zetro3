@@ -23,8 +23,8 @@ export function AdminNav() {
           <Link
             key={tab.href}
             href={tab.href}
-            className={`rounded px-3 py-1.5 text-[13px] font-semibold transition-colors ${
-              active ? "bg-[#04B6DA] text-white font-semibold" : "text-[#E3EBFB] hover:text-white hover:bg-[#039EBE]"
+            className={`rounded px-3 py-1.5 text-[13px] font-semibold ${
+              active ? "bg-blue-soft text-blue" : "text-muted hover:text-ink"
             }`}
           >
             {tab.label}

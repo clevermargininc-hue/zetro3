@@ -109,17 +109,17 @@ export function AccountSettings() {
           }}
         >
           <div className="space-y-1.5">
-            <label className="text-[12px] font-bold uppercase tracking-wider text-[#061C52]">
+            <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500">
               Username
             </label>
             <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#061C52] font-semibold">@</span>
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">@</span>
               <input
                 minLength={3}
                 maxLength={24}
                 value={username}
                 onChange={(event) => setUsername(event.target.value.replace(/^@+/, ""))}
-                className="field bg-white border-[#E3EBFB] text-ink text-[13px]"
+                className="field bg-slate-50/70 border-slate-200 text-ink text-[13px]"
                 style={{ paddingLeft: "2rem" }}
                 autoComplete="username"
                 placeholder="optional username"
@@ -129,25 +129,25 @@ export function AccountSettings() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[12px] font-bold uppercase tracking-wider text-[#061C52]">
+            <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500">
               Full Name
             </label>
             <input
               required
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
-              className="field bg-white border-[#E3EBFB] text-ink text-[13px]"
+              className="field bg-slate-50/70 border-slate-200 text-ink text-[13px]"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[12px] font-bold uppercase tracking-wider text-[#061C52]">
+            <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500">
               Work Email Address
             </label>
             <input
               value={data.profile.email}
               readOnly
-              className="field bg-[#F3F6FD] border-[#E3EBFB] text-[#061C52] text-[13px] cursor-not-allowed"
+              className="field bg-slate-100 border-slate-200 text-slate-600 text-[13px] cursor-not-allowed"
             />
             <p className="text-[11px] text-muted">Email is managed through your authentication provider.</p>
           </div>
@@ -156,7 +156,7 @@ export function AccountSettings() {
             <button
               type="submit"
               disabled={saving === "profile"}
-              className="btn bg-[#04B6DA] hover:bg-[#039EBE] text-white text-[13px] px-5 py-2 font-semibold"
+              className="btn bg-blue hover:bg-blue-2 text-white text-[13px] px-5 py-2 font-semibold"
             >
               {saving === "profile" ? "Saving changes…" : "Save Profile"}
             </button>
@@ -188,7 +188,7 @@ export function WorkspaceSettings() {
   return (
     <div className="space-y-6">
       <div className="surface p-6 space-y-6">
-        <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-[#E3EBFB]">
+        <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-slate-100">
           <div>
             <h2 className="text-[16px] font-bold text-ink">General Workspace Details</h2>
             <p className="text-[13px] text-muted mt-0.5">
@@ -207,7 +207,7 @@ export function WorkspaceSettings() {
           }}
         >
           <div className="space-y-1.5">
-            <label className="text-[12px] font-bold uppercase tracking-wider text-[#061C52]">
+            <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500">
               Organization / Workspace Name
             </label>
             <input
@@ -216,12 +216,12 @@ export function WorkspaceSettings() {
               value={workspaceName}
               disabled={!isAdmin}
               onChange={(event) => setWorkspaceName(event.target.value)}
-              className="field bg-white border-[#E3EBFB] text-ink text-[13px]"
+              className="field bg-slate-50/70 border-slate-200 text-ink text-[13px]"
             />
           </div>
 
           <div className="space-y-2 pt-1">
-            <label className="text-[12px] font-bold uppercase tracking-wider text-[#061C52] block">
+            <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500 block">
               Country & Regional Language Protocol
             </label>
             <CountryRegionPicker
@@ -234,7 +234,7 @@ export function WorkspaceSettings() {
               }}
               onOtherCountryChange={setCountryDraft}
             />
-            <p className="text-[12px] text-muted bg-white p-2.5 rounded-lg border border-[#E3EBFB]">
+            <p className="text-[12px] text-muted bg-slate-50 p-2.5 rounded-lg border border-slate-200">
               Active Language Models: <span className="font-semibold text-ink">{languages.label}</span>
               {data.workspace.country ? ` · ${data.workspace.country}` : null}
             </p>
@@ -242,10 +242,10 @@ export function WorkspaceSettings() {
 
           {data.workspace.domain && (
             <div className="space-y-1">
-              <label className="text-[12px] font-bold uppercase tracking-wider text-[#061C52] block">
+              <label className="text-[12px] font-bold uppercase tracking-wider text-slate-500 block">
                 Company Domain
               </label>
-              <p className="text-[13px] font-semibold text-[#061C52] bg-white px-3 py-2 rounded-lg border border-[#E3EBFB]">
+              <p className="text-[13px] font-semibold text-slate-800 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
                 {data.workspace.domain}
               </p>
             </div>
@@ -257,7 +257,7 @@ export function WorkspaceSettings() {
               {data.workspace.memberCount} {data.workspace.memberCount === 1 ? "member" : "members"}
             </span>
             <span> · Your role: </span>
-            <span className="font-semibold text-[#061C52] capitalize">{data.workspace.role}</span>
+            <span className="font-semibold text-blue capitalize">{data.workspace.role}</span>
           </div>
 
           <div className="pt-2">
@@ -265,7 +265,7 @@ export function WorkspaceSettings() {
               <button
                 type="submit"
                 disabled={saving === "workspace"}
-                className="btn bg-[#04B6DA] hover:bg-[#039EBE] text-white text-[13px] px-5 py-2 font-semibold"
+                className="btn bg-blue hover:bg-blue-2 text-white text-[13px] px-5 py-2 font-semibold"
               >
                 {saving === "workspace" ? "Saving changes…" : "Save Workspace"}
               </button>
@@ -331,7 +331,7 @@ export function WorkspaceSettings() {
             type="button"
             disabled={saving === "plan"}
             onClick={() => void patch({ plan: "team" }, "plan", "This workspace is now on the team plan.")}
-            className="btn bg-[#04B6DA] hover:bg-[#039EBE] text-white text-[13px] px-4 py-2 font-semibold shrink-0"
+            className="btn bg-slate-900 hover:bg-slate-800 text-white text-[13px] px-4 py-2 font-semibold shrink-0"
           >
             {saving === "plan" ? "Updating…" : "Turn on team access"}
           </button>
@@ -365,7 +365,7 @@ export function AuditingSettings() {
         </p>
       </div>
 
-      <div className="space-y-3 p-4 rounded-lg border border-[#E3EBFB] bg-white">
+      <div className="space-y-3 p-4 rounded-lg border border-slate-200 bg-slate-50/70">
         <p className="font-semibold text-ink text-[14px]">Manual scoring only</p>
         <p className="text-[12px] text-muted leading-relaxed">
           Upload recordings, wait until the call is ready to audit, then run <strong>SOP &amp; Scorecard Audit</strong>.

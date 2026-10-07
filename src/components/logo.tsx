@@ -13,13 +13,11 @@ export function ZetroMark({
 }) {
   return (
     <span
-      className={`shrink-0 grid place-items-center rounded-none border ${
-        invert
-          ? "border-[#E3EBFB] bg-[#FFFFFF] text-[#061C52]"
-          : "border-[#039EBE] bg-[#061C52] text-white"
+      className={`shrink-0 grid place-items-center rounded-[4px] ${
+        invert ? "bg-white text-blue" : "bg-blue text-white"
       } ${className}`}
     >
-      <svg viewBox="0 0 24 24" className="h-full w-full p-1" aria-hidden>
+      <svg viewBox="0 0 24 24" className="h-full w-full" aria-hidden>
         <path d={Z_PATH} fill="currentColor" />
       </svg>
     </span>
@@ -44,7 +42,7 @@ export function Logo({
       {!collapsed && (
         <span
           className={`${type} font-brand font-bold leading-none tracking-[-0.01em] ${
-            invert ? "text-white" : "text-[#061C52]"
+            invert ? "text-white" : "text-ink"
           }`}
         >
           Zetro

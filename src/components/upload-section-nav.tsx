@@ -123,7 +123,7 @@ export function UploadSectionNav({
           <p className="page-kicker">Score calls</p>
           <p className="mt-0.5 text-[13px] font-semibold text-ink">Upload → Prepare → Score</p>
         </div>
-        <Link href="/standards" className="text-[12px] font-semibold text-[#04B6DA] hover:text-[#039EBE] hover:underline">
+        <Link href="/standards" className="text-[12px] font-semibold text-blue hover:underline">
           Your scorecard
         </Link>
       </div>

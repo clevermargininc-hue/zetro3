@@ -29,7 +29,7 @@ export function JoinRequestBanner() {
   return (
     <p className="surface px-4 py-3 text-sm text-ink">
       {count === 1 ? "1 person wants to join this workspace." : `${count} people want to join this workspace.`}{" "}
-      <Link href="/settings/team" className="font-semibold text-[#04B6DA] hover:text-[#039EBE] underline">
+      <Link href="/settings/team" className="font-medium text-blue hover:underline">
         Review requests
       </Link>
     </p>

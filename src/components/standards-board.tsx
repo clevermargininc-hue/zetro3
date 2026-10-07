@@ -149,7 +149,7 @@ function KindSection({
                 >
                   <span
                     className={`font-medium truncate max-w-[220px] ${
-                      doc.has_text ? "text-ink" : "text-[#B91C1C] line-through"
+                      doc.has_text ? "text-ink" : "text-rose line-through"
                     }`}
                     title={`${doc.title} ${!doc.has_text ? "(Unreadable content)" : doc.chars ? `(${doc.chars.toLocaleString()} characters)` : ""}`}
                   >
@@ -163,7 +163,7 @@ function KindSection({
                   <button
                     type="button"
                     onClick={() => onRemove(doc.id)}
-                    className="text-muted hover:text-[#B91C1C] p-0.5"
+                    className="text-muted hover:text-rose p-0.5"
                     title="Remove document"
                   >
                     {Icons.trash}
@@ -175,7 +175,7 @@ function KindSection({
         </div>
 
         <div className="md:w-48 shrink-0 md:pl-0 pl-10">
-          <label className="flex min-h-[44px] cursor-pointer items-center justify-center border border-dashed border-[#E3EBFB] bg-white px-3 py-2.5 text-center hover:border-[#04B6DA] hover:bg-[#F3F6FD] group transition-colors">
+          <label className="flex min-h-[44px] cursor-pointer items-center justify-center border border-dashed border-line bg-bg px-3 py-2.5 text-center hover:border-blue hover:bg-blue-soft group">
             <input
               type="file"
               accept={FILE_ACCEPT}
@@ -187,7 +187,7 @@ function KindSection({
                 if (file) onUpload(kind, file);
               }}
             />
-            <div className="flex items-center gap-2 text-[12px] font-semibold text-ink group-hover:text-[#061C52] transition-colors">
+            <div className="flex items-center gap-2 text-[12px] font-semibold text-ink group-hover:text-blue transition-colors">
               {Icons.upload}
               <span>{pendingKind === kind ? "Processing…" : "Upload"}</span>
             </div>
@@ -254,9 +254,9 @@ export function StandardsBoard() {
         <div className="surface p-5">
           <span className="chip chip-wait mb-2">Database setup required</span>
           <h2 className="text-[15px] font-bold text-ink mt-2">Enable standards storage</h2>
-          <p className="mt-1 text-[13px] text-[#334155] leading-relaxed">
-            Run <code className="text-[#061C52] font-mono bg-white px-1.5 py-0.5 rounded border border-[#E3EBFB]">supabase/qa-standards.sql</code> and{" "}
-            <code className="text-[#061C52] font-mono bg-white px-1.5 py-0.5 rounded border border-[#E3EBFB]">supabase/holding-procedure.sql</code> in the
+          <p className="mt-1 text-[13px] text-slate-600 leading-relaxed">
+            Run <code className="text-ink font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">supabase/qa-standards.sql</code> and{" "}
+            <code className="text-ink font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">supabase/holding-procedure.sql</code> in the
             Supabase SQL Editor, then refresh this page.
           </p>
         </div>

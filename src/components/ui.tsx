@@ -26,16 +26,12 @@ export function PageHeader({
 export function KpiStrip({
   items,
 }: {
-  items: { label: string; value: string; hint?: string; featured?: boolean }[];
+  items: { label: string; value: string; hint?: string }[];
 }) {
   return (
     <div className="kpi-strip">
       {items.map((item) => (
-        <div
-          key={item.label}
-          className={`kpi ${item.featured ? "kpi-featured" : ""}`}
-          title={item.hint ? `${item.value} · ${item.hint}` : item.value}
-        >
+        <div key={item.label} className="kpi" title={item.hint ? `${item.value} · ${item.hint}` : item.value}>
           <span className="kpi-label">{item.label}</span>
           <span className="kpi-value">{item.value}</span>
           {item.hint ? <span className="kpi-hint">{item.hint}</span> : null}

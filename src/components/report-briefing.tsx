@@ -32,7 +32,7 @@ export function ReportBriefing({
             <ZetroMark className="h-9 w-9" />
             <div>
               <p className="font-brand text-[16px] font-bold tracking-[-0.01em] text-ink">Zetro</p>
-              <span className="inline-block mt-0.5 rounded-none px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] bg-[#04B6DA] text-white">QA briefing</span>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue">QA briefing</p>
             </div>
           </div>
           <p className="text-[12px] text-muted">
@@ -105,7 +105,7 @@ export function ReportBriefing({
               {briefing.review_queue.map((row) => (
                 <li key={row.call_id} className="py-3 first:pt-0 last:pb-0">
                   <div className="flex items-baseline justify-between gap-3">
-                    <Link href={`/upload/score/${row.call_id}`} className="min-w-0 text-[13px] font-semibold text-ink hover:underline">
+                    <Link href={`/upload/score/${row.call_id}`} className="min-w-0 text-[13px] font-semibold text-ink hover:text-blue">
                       {row.agent_name}
                       <span className="ml-2 font-normal tabular-nums text-muted">{row.title}</span>
                     </Link>

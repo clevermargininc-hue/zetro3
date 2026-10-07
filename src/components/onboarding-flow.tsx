@@ -251,7 +251,7 @@ export function OnboardingFlow() {
               This sets up the right workspace. You can change it later.
             </p>
             {locationMode ? (
-              <p className="mt-3 inline-flex items-center gap-2 rounded-none border border-line bg-[#F3F6FD] px-3 py-1.5 text-sm text-muted">
+              <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1.5 text-sm text-muted">
                 {locationMode === "tz" ? (
                   <TanzaniaFlagIcon className="h-5 w-5 rounded-sm" />
                 ) : (
@@ -267,9 +267,9 @@ export function OnboardingFlow() {
             <button
               type="button"
               onClick={() => setStep("team")}
-              className="flex w-full items-start gap-4 border border-[#E3EBFB] bg-white p-5 text-left hover:border-[#04B6DA] transition-colors"
+              className="flex w-full items-start gap-4 border border-line bg-white p-5 text-left hover:border-blue"
             >
-              <span className="grid h-11 w-11 shrink-0 place-items-center border border-[#E3EBFB] text-[#061C52]">
+              <span className="grid h-11 w-11 shrink-0 place-items-center border border-line text-slate-500">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path d="M3 21V8a2 2 0 0 1 2-2h4v15" />
                   <path d="M9 21V4h8a2 2 0 0 1 2 2v15" />
@@ -290,9 +290,9 @@ export function OnboardingFlow() {
               type="button"
               disabled={loading}
               onClick={() => post({ action: "solo" })}
-              className="flex w-full items-start gap-4 border border-[#E3EBFB] bg-white p-5 text-left hover:border-[#04B6DA] transition-colors"
+              className="flex w-full items-start gap-4 border border-line bg-white p-5 text-left hover:border-blue"
             >
-              <span className="grid h-11 w-11 shrink-0 place-items-center border border-[#E3EBFB] text-[#061C52]">
+              <span className="grid h-11 w-11 shrink-0 place-items-center border border-line text-slate-500">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <circle cx="12" cy="8" r="3.5" />
                   <path d="M5.5 19.5c.8-3.2 3.3-5 6.5-5s5.7 1.8 6.5 5" />
@@ -455,7 +455,7 @@ export function OnboardingFlow() {
                 {emails.map((value) => (
                   <li
                     key={value}
-                    className="flex items-center gap-2 rounded-none border border-line bg-[#F3F6FD] px-3 py-1 text-sm"
+                    className="flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1 text-sm"
                   >
                     {value}
                     <button

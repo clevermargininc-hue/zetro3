@@ -3,13 +3,11 @@ import type { ReactNode } from "react";
 export type ChartSeries = { label: string; color: string; values: number[] };
 
 export const CHART_COLORS = {
-  blue: "#04B6DA", // Brand 600
-  soft: "#E3EBFB", // Brand 100
-  green: "#15803D", // Semantic green
-  amber: "#B45309", // Semantic amber
-  grey: "#64748B", // Slate 500
-  rust: "#B91C1C", // Semantic danger
-  dark: "#061C52", // Brand 900
+  blue: "var(--blue)",
+  soft: "#7ea6f4",
+  green: "var(--good)",
+  amber: "var(--warn)",
+  grey: "#94a3b8",
 };
 
 const WIDTH = 640;
@@ -106,8 +104,6 @@ export function BarChart({
               if (!value) return null;
               const h = (value / max) * plotH;
               offset += h;
-              const isLatest = i === labels.length - 1;
-              const barColor = isLatest && (s.color === CHART_COLORS.blue) ? CHART_COLORS.amber : s.color;
               return (
                 <rect
                   key={s.label}
@@ -115,8 +111,8 @@ export function BarChart({
                   y={PAD.top + plotH - offset}
                   width={barW}
                   height={Math.max(h, 1)}
-                  rx={0}
-                  fill={barColor}
+                  rx={1.5}
+                  fill={s.color}
                 />
               );
             })}
@@ -180,14 +176,7 @@ export function LineChart({
           </title>
           <rect x={p.x - band / 2} y={PAD.top} width={band} height={plotH} fill="transparent" />
           {p.y != null ? (
-            <circle
-              cx={p.x}
-              cy={p.y}
-              r={i === points.length - 1 ? 4.5 : labels.length <= 14 ? 3.5 : 2.75}
-              fill={i === points.length - 1 ? CHART_COLORS.amber : color}
-              stroke={i === points.length - 1 ? CHART_COLORS.dark : "none"}
-              strokeWidth={i === points.length - 1 ? 1.5 : 0}
-            />
+            <circle cx={p.x} cy={p.y} r={labels.length <= 14 || i === points.length - 1 ? 3.5 : 2.75} fill={color} />
           ) : null}
         </g>
       ))}
@@ -246,7 +235,7 @@ export function Donut({
         {slices.map((s) => (
           <li key={s.label} className="flex items-center justify-between gap-3">
             <span className="flex items-center gap-2 text-ink">
-              <span className="h-2.5 w-2.5 rounded-none" style={{ background: s.color }} />
+              <span className="h-2.5 w-2.5 rounded-sm" style={{ background: s.color }} />
               {s.label}
             </span>
             <span className="tabular-nums text-muted">
@@ -285,9 +274,9 @@ export function HBars({
               {row.hint ? ` · ${row.hint}` : ""}
             </span>
           </div>
-          <div className="h-2 w-full rounded-none bg-bg-2">
+          <div className="h-2 w-full rounded-sm bg-bg-2">
             <div
-              className="h-2 rounded-none"
+              className="h-2 rounded-sm"
               style={{ width: `${Math.max(2, (row.value / max) * 100)}%`, background: color }}
             />
           </div>
@@ -323,7 +312,7 @@ export function ChartCard({
             <div className="flex flex-wrap justify-end gap-3 text-[11px] text-muted">
               {legend.map((item) => (
                 <span key={item.label} className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-none" style={{ background: item.color }} />
+                  <span className="h-2 w-2 rounded-sm" style={{ background: item.color }} />
                   {item.label}
                 </span>
               ))}

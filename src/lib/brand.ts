@@ -5,7 +5,7 @@ export const BRAND = {
   navy: { r: 6, g: 28, b: 82 },      // #061C52
   ink: { r: 6, g: 28, b: 82 },       // #061C52
   blue: { r: 4, g: 182, b: 218 },    // #04B6DA
-  mark: { r: 6, g: 28, b: 82 },      // #061C52
+  mark: { r: 4, g: 182, b: 218 },    // #04B6DA
   accent: { r: 4, g: 182, b: 218 },  // #04B6DA
   blueSoft: { r: 227, g: 235, b: 251 }, // #E3EBFB
   slate: { r: 51, g: 65, b: 85 },    // #334155
@@ -47,7 +47,7 @@ const Z_STROKE: Point[] = [
   [17.5, 16.5],
 ];
 const Z_WIDTH = 2.5;
-const TILE_RADIUS = 0;
+const TILE_RADIUS = 4;
 
 function mapLogoPoint(x: number, y: number, size: number, [px, py]: Point) {
   const s = size / 24;

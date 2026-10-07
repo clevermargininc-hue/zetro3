@@ -16,12 +16,12 @@ const FAQS: FaqItem[] = [
   {
     question: "How does Zetro handle mixed English and Kiswahili?",
     answer:
-      "East African contact center agents and customers naturally code-switch between English and Kiswahili in the same sentence. Zetro's dual-language speech and evaluation models process both languages simultaneously, ensuring greetings, compliance promises, and dispute resolutions are captured without translation loss.",
+      "Tanzanian agents and customers often mix English and Kiswahili in the same sentence. Zetro scores that talk as one call, so greetings, compliance lines, and dispute work are not dropped just because the language switched.",
   },
   {
     question: "Do we need to replace our telephony or CRM system?",
     answer:
-      "Not at all. Zetro works with your existing setup. You can drag and drop call recordings (.mp3, .wav, .m4a, .webm), connect directly via API, or integrate with storage buckets from systems like Genesys, Avaya, Asterisk, or cloud telephony providers.",
+      "No. Keep your phone system. Upload recordings (.mp3, .wav, .m4a, .webm, or video). If your floor already stores calls, sales can talk about auto-send — that is not a switch in the app today.",
   },
   {
     question: "How is sensitive customer data (PII) protected?",
@@ -59,7 +59,7 @@ export function FaqAccordion() {
               </span>
               <span
                 className={`grid h-6 w-6 shrink-0 place-items-center border border-line bg-surface-2 text-ink transition-transform duration-150 ${
-                  isOpen ? "rotate-180 bg-[#061C52] text-white border-[#061C52]" : ""
+                  isOpen ? "rotate-180 bg-blue text-white border-blue" : ""
                 }`}
               >
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -154,7 +154,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
               Period
             </label>
             <select
-              className="field bg-white border-[#E3EBFB] text-ink text-[13px] font-medium"
+              className="field bg-slate-50/70 border-slate-200 text-ink text-[13px] font-medium"
               value={period}
               onChange={(event) => setPeriod(event.target.value as ReportPeriod)}
             >
@@ -172,7 +172,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
             </label>
             <input
               type="date"
-              className="field bg-white border-[#E3EBFB] text-ink text-[13px]"
+              className="field bg-slate-50/70 border-slate-200 text-ink text-[13px]"
               value={date}
               onChange={(event) => {
                 if (event.target.value) setDate(event.target.value);
@@ -185,7 +185,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
               Agent
             </label>
             <select
-              className="field bg-white border-[#E3EBFB] text-ink text-[13px] font-medium"
+              className="field bg-slate-50/70 border-slate-200 text-ink text-[13px] font-medium"
               value={agentId}
               onChange={(event) => setAgentId(event.target.value)}
             >
@@ -204,7 +204,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
 
       {loading ? (
         <div className="surface flex items-center justify-center p-10 no-print">
-          <div className="mr-3 h-5 w-5 animate-spin rounded-full border-2 border-[#E3EBFB] border-t-[#04B6DA]" />
+          <div className="mr-3 h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-blue" />
           <span className="text-[13px] font-medium text-muted">Building the briefing…</span>
         </div>
       ) : null}
@@ -232,8 +232,8 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                 onClick={() => setActiveTab(id)}
                 className={`py-3.5 font-bold text-[13px] transition-colors border-b-2 ${
                   activeTab === id
-                    ? "border-[#04B6DA] text-[#061C52]"
-                    : "border-transparent text-[#334155] hover:text-[#061C52]"
+                    ? "border-blue text-blue"
+                    : "border-transparent text-slate-500 hover:text-ink"
                 }`}
               >
                 {label}
@@ -245,7 +245,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
             {activeTab === "calls" ? (
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-[#E3EBFB] bg-[#F3F6FD] text-[11px] font-semibold uppercase tracking-wider text-[#061C52]">
+                  <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                     <th className="px-6 py-3">When</th>
                     <th className="px-6 py-3">Agent</th>
                     <th className="px-6 py-3 text-right">AHT</th>
@@ -254,10 +254,10 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                     <th className="px-6 py-3 text-right">Followed</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E3EBFB] text-[13px]">
+                <tbody className="divide-y divide-slate-100 text-[13px]">
                   {report.calls.map((row) => (
-                    <tr key={row.call_id} className="hover:bg-[#F3F6FD] transition-colors">
-                      <td className="px-6 py-3.5 text-[#334155] whitespace-nowrap text-[12px]">
+                    <tr key={row.call_id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-3.5 text-slate-500 whitespace-nowrap text-[12px]">
                         {new Intl.DateTimeFormat("en-KE", {
                           dateStyle: "medium",
                           timeStyle: "short",
@@ -266,13 +266,13 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                       <td className="px-6 py-3.5">
                         <Link
                           href={`/upload/score/${row.call_id}`}
-                          className="font-semibold text-ink hover:underline"
+                          className="font-semibold text-ink hover:text-blue"
                         >
                           {row.agent_name}
                         </Link>
                         <p className="text-[11px] tabular-nums text-muted">{row.title}</p>
                       </td>
-                      <td className="px-6 py-3.5 text-right whitespace-nowrap tabular-nums text-[#334155] text-[12px]">
+                      <td className="px-6 py-3.5 text-right whitespace-nowrap tabular-nums text-slate-600 text-[12px]">
                         {formatAht(row.duration_seconds)}
                       </td>
                       <td className="px-6 py-3.5 text-right whitespace-nowrap">
@@ -312,11 +312,10 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
               </table>
             ) : null}
 
-
             {activeTab === "agents" ? (
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-[#E3EBFB] bg-[#F3F6FD] text-[11px] font-semibold uppercase tracking-wider text-[#061C52]">
+                  <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                     <th className="px-6 py-3">Agent</th>
                     <th className="px-6 py-3 text-right">Calls</th>
                     <th className="px-6 py-3 text-right">Avg</th>
@@ -325,7 +324,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                     <th className="px-6 py-3 text-right">Not followed</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E3EBFB] text-[13px]">
+                <tbody className="divide-y divide-slate-100 text-[13px]">
                   {report.agents.map((row) => (
                     <tr key={row.agent_id || row.agent_name}>
                       <td className="px-6 py-3.5 font-semibold text-ink">{row.agent_name}</td>
@@ -337,7 +336,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                           "—"
                         )}
                       </td>
-                      <td className="px-6 py-3.5 text-right tabular-nums text-[#334155]">
+                      <td className="px-6 py-3.5 text-right tabular-nums text-slate-600">
                         {formatAht(row.aht_seconds)}
                       </td>
                       <td className="px-6 py-3.5 text-right">
@@ -349,7 +348,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
                           "—"
                         )}
                       </td>
-                      <td className="px-6 py-3.5 text-right tabular-nums text-[#334155]">
+                      <td className="px-6 py-3.5 text-right tabular-nums text-slate-600">
                         {row.compliance_not_followed_pct != null ? `${row.compliance_not_followed_pct}%` : "—"}
                       </td>
                     </tr>

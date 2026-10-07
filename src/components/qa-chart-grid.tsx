@@ -50,10 +50,10 @@ export function QaMixCharts({
 }) {
   const scored = excellent + good + review + poor;
   const bandSlices = [
-    { label: "Excellent (85+)", value: excellent, color: C.amber },
+    { label: "Excellent (85+)", value: excellent, color: C.green },
     { label: "Good (70–84)", value: good, color: C.blue },
-    { label: "Review (50–69)", value: review, color: C.soft },
-    { label: "Poor (under 50)", value: poor, color: C.rust },
+    { label: "Review (50–69)", value: review, color: C.amber },
+    { label: "Poor (under 50)", value: poor, color: C.grey },
   ].filter((slice) => slice.value > 0);
   return (
     <div className="grid gap-5 lg:grid-cols-2">

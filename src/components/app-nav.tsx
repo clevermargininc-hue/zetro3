@@ -159,17 +159,17 @@ export function AppNav({
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden shrink-0 flex-col border-r border-[#039EBE] bg-[#061C52] text-white print:hidden lg:sticky lg:top-0 lg:flex lg:h-screen transition-[width] duration-200 relative ${
+        className={`hidden shrink-0 flex-col border-r border-line bg-white print:hidden lg:sticky lg:top-0 lg:flex lg:h-screen transition-[width] duration-200 relative ${
           collapsed ? "w-16" : "w-60"
         }`}
       >
         {/* Logo + edge collapse control */}
-        <div className={`relative flex h-14 shrink-0 items-center border-b border-[#039EBE] bg-[#061C52] ${collapsed ? "justify-center px-0" : "px-5"}`}>
-          <Logo size="sm" collapsed={collapsed} invert />
+        <div className={`relative flex h-14 shrink-0 items-center border-b border-line bg-white ${collapsed ? "justify-center px-0" : "px-5"}`}>
+          <Logo size="sm" collapsed={collapsed} />
           <button
             type="button"
             onClick={() => setCollapsed(!collapsed)}
-            className="absolute -right-3 top-1/2 z-20 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-none border border-[#039EBE] bg-[#039EBE] text-white hover:border-[#04B6DA] hover:bg-[#04B6DA] hover:text-white transition-colors"
+            className="absolute -right-3 top-1/2 z-20 flex h-6 w-6 -translate-y-1/2 items-center justify-center border border-line bg-white text-muted hover:text-ink"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
@@ -195,12 +195,12 @@ export function AppNav({
             {groups.map((group) => (
               <div key={group.label} className="space-y-1">
                 {!collapsed ? (
-                  <span className="px-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#E3EBFB] block mb-1.5">
+                  <span className="px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400 block mb-1.5">
                     {group.label}
                   </span>
                 ) : (
                   <div className="flex justify-center mb-2">
-                    <div className="h-px w-5 bg-[#039EBE]" />
+                    <div className="h-px w-5 bg-line" />
                   </div>
                 )}
                 <div className="space-y-0.5">
@@ -211,17 +211,17 @@ export function AppNav({
                         key={item.href}
                         href={item.href}
                         title={collapsed ? item.label : undefined}
-                        className={`flex items-center rounded-none text-[13px] font-medium transition-colors ${
+                        className={`flex items-center rounded text-[13px] font-medium ${
                           collapsed
                             ? "justify-center h-9 w-full px-0"
                             : "gap-2.5 px-3 py-2"
                         } ${
                           active
-                            ? "bg-[#04B6DA] text-white font-semibold shadow-xs"
-                            : "text-white/80 hover:bg-[#039EBE] hover:text-white"
+                            ? "bg-blue-soft text-blue"
+                            : "text-slate-600 hover:bg-slate-50 hover:text-ink"
                         }`}
                       >
-                        <span className={`shrink-0 ${active ? "text-white" : "text-[#E3EBFB]"}`}>
+                        <span className={`shrink-0 ${active ? "text-blue" : "text-slate-400"}`}>
                           {item.icon}
                         </span>
                         {!collapsed && <span className="truncate">{item.label}</span>}
@@ -235,16 +235,16 @@ export function AppNav({
         </div>
 
         {/* Bottom User Profile Section */}
-        <div className="p-3 border-t border-[#039EBE] bg-[#061C52] shrink-0">
+        <div className="p-3 border-t border-line bg-white shrink-0">
           {!collapsed ? (
             <div className="flex items-center justify-between gap-2 px-1 py-1">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-7 h-7 rounded-none bg-[#039EBE] text-white border border-[#039EBE] flex items-center justify-center text-[11px] font-bold shrink-0">
+                <div className="w-7 h-7 rounded bg-navy text-white flex items-center justify-center text-[11px] font-medium shrink-0">
                   {personInitial}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[12px] font-semibold text-white truncate leading-tight">{personLabel}</p>
-                  <p className="text-[11px] text-[#E3EBFB] truncate leading-tight mt-0.5">
+                  <p className="text-[12px] font-medium text-ink truncate leading-tight">{personLabel}</p>
+                  <p className="text-[11px] text-muted truncate leading-tight mt-0.5">
                     {plan === "solo" ? "Solo · " : plan === "team" ? "Team · " : ""}
                     {workspaceName || "Zetro"}
                   </p>
@@ -254,7 +254,7 @@ export function AppNav({
                 type="button"
                 onClick={signOut}
                 title="Sign out"
-                className="text-[#E3EBFB] hover:text-white p-1.5 rounded-none hover:bg-[#039EBE] shrink-0"
+                className="text-slate-400 hover:text-ink p-1.5 rounded hover:bg-slate-50 shrink-0"
               >
                 {Icons.logout}
               </button>
@@ -265,7 +265,7 @@ export function AppNav({
                 type="button"
                 onClick={signOut}
                 title="Sign out"
-                className="w-7 h-7 rounded-none bg-[#039EBE] text-white border border-[#039EBE] flex items-center justify-center text-[11px] font-bold"
+                className="w-7 h-7 rounded bg-navy text-white flex items-center justify-center text-[11px] font-medium"
               >
                 {personInitial}
               </button>
@@ -275,12 +275,12 @@ export function AppNav({
       </aside>
 
       {/* Mobile Header */}
-      <header className="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-[#039EBE] bg-[#061C52] px-4 print:hidden lg:hidden text-white">
-        <Logo size="sm" invert />
+      <header className="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-line bg-white px-4 print:hidden lg:hidden">
+        <Logo size="sm" />
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="p-2 text-white hover:text-[#E3EBFB]"
+          className="p-2 text-slate-600 hover:text-ink"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="4" y1="12" x2="20" y2="12" />
@@ -293,15 +293,15 @@ export function AppNav({
       {/* Mobile Menu Drawer */}
       {open ? (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-[#061C52]/60 backdrop-blur-xs transition-opacity" onClick={() => setOpen(false)} />
-          <div className="absolute top-0 right-0 h-full w-72 bg-[#061C52] border-l border-[#039EBE] p-6 shadow-2xl flex flex-col justify-between text-white">
+          <div className="absolute inset-0 bg-ink/40 none-xs transition-opacity" onClick={() => setOpen(false)} />
+          <div className="absolute top-0 right-0 h-full w-72 bg-white p-6 shadow-md flex flex-col justify-between">
             <div className="space-y-6">
-              <div className="flex items-center justify-between pb-4 border-b border-[#039EBE]">
-                <Logo size="sm" invert />
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                <Logo size="sm" />
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="p-1.5 text-[#E3EBFB] hover:text-white"
+                  className="p-1.5 text-slate-400 hover:text-ink"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" />
@@ -313,7 +313,7 @@ export function AppNav({
               <nav className="space-y-7">
                 {groups.map((group) => (
                   <div key={group.label} className="space-y-2">
-                    <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-[#E3EBFB] block mb-1.5">
+                    <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
                       {group.label}
                     </span>
                     <div className="space-y-1.5">
@@ -324,13 +324,13 @@ export function AppNav({
                             key={item.href}
                             href={item.href}
                             onClick={() => setOpen(false)}
-                            className={`flex items-center gap-2.5 px-3 py-2 rounded-none text-[13px] font-medium transition-colors ${
+                            className={`flex items-center gap-2.5 px-3 py-2 rounded text-[13px] font-medium ${
                               active
-                                ? "bg-[#04B6DA] text-white font-semibold"
-                                : "text-white/80 hover:bg-[#039EBE] hover:text-white"
+                                ? "bg-blue-soft text-blue"
+                                : "text-slate-600 hover:bg-slate-50 hover:text-ink"
                             }`}
                           >
-                            <span className={active ? "text-white" : "text-[#E3EBFB]"}>
+                            <span className={active ? "text-blue" : "text-slate-400"}>
                               {item.icon}
                             </span>
                             <span>{item.label}</span>
@@ -344,20 +344,20 @@ export function AppNav({
             </div>
 
             {/* Mobile User Bottom */}
-            <div className="pt-4 border-t border-[#039EBE] flex items-center justify-between">
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-7 h-7 rounded-none bg-[#039EBE] text-white border border-[#039EBE] flex items-center justify-center text-[11px] font-bold shrink-0">
+                <div className="w-7 h-7 rounded bg-navy text-white flex items-center justify-center text-[11px] font-medium shrink-0">
                   {personInitial}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-white truncate">{personLabel}</p>
-                  <p className="text-[11px] text-[#E3EBFB] truncate">{email}</p>
+                  <p className="text-[13px] font-semibold text-ink truncate">{personLabel}</p>
+                  <p className="text-[11px] text-muted truncate">{email}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={signOut}
-                className="text-[12px] font-medium text-[#E3EBFB] hover:text-white"
+                className="text-[12px] font-medium text-slate-600 hover:text-ink"
               >
                 Sign out
               </button>

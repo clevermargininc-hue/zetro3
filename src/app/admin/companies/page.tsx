@@ -95,11 +95,7 @@ export default async function AdminCompaniesPage({
             <Link
               key={item.id}
               href={filterHref(item.id, q)}
-              className={`chip ${
-                filter === item.id
-                  ? "border-[#04B6DA] bg-[#04B6DA] text-white font-semibold"
-                  : "border-[#E3EBFB] bg-white text-[#061C52] hover:bg-[#F3F6FD]"
-              }`}
+              className={`chip ${filter === item.id ? "border-blue bg-blue-soft text-blue" : ""}`}
             >
               {item.label} · {item.n}
             </Link>

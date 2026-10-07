@@ -64,13 +64,13 @@ export function DeleteCallButton({
         title={busy ? "Wait until transcription or scoring finishes" : "Delete this call"}
         className={
           compact
-            ? "text-[13px] font-bold text-[#B91C1C]/80 hover:text-[#B91C1C] disabled:cursor-not-allowed disabled:opacity-40"
-            : "btn btn-ghost border-[#B91C1C]/30 text-[#B91C1C] hover:bg-[#B91C1C]/10"
+            ? "text-[13px] font-bold text-rose/70 hover:text-rose disabled:cursor-not-allowed disabled:opacity-40"
+            : "btn btn-ghost border-rose/20 text-rose hover:bg-rose/10"
         }
       >
         {pending ? "Deleting…" : compact ? "Delete" : "Delete call"}
       </button>
-      {error ? <p className="text-xs text-[#B91C1C]">{error}</p> : null}
+      {error ? <p className="text-xs text-rose">{error}</p> : null}
     </div>
   );
 }

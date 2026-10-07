@@ -30,14 +30,14 @@ export function ScoreCard({ score }: { score: CallScore }) {
                   "--p": score.overall_score,
                   "--ring-color":
                     score.overall_score >= 70
-                      ? "#15803D"
+                      ? "var(--good)"
                       : score.overall_score >= 50
-                        ? "#B45309"
-                        : "#B91C1C",
+                        ? "var(--warn)"
+                        : "var(--rose)",
                 } as CSSProperties
               }
             >
-              <span className="grid h-14 w-14 place-items-center rounded-full bg-white border border-[#E3EBFB] text-[18px] font-bold tabular-nums text-[#061C52]">
+              <span className="grid h-14 w-14 place-items-center rounded-full bg-white text-[18px] font-bold tabular-nums text-ink">
                 {score.overall_score}
               </span>
             </div>
@@ -71,7 +71,7 @@ export function ScoreCard({ score }: { score: CallScore }) {
               <span className="chip capitalize">Sentiment: {score.customer_sentiment}</span>
             ) : null}
           </div>
-          <p className="text-[14px] leading-relaxed text-[#334155]">{score.summary}</p>
+          <p className="text-[14px] leading-relaxed text-slate-700">{score.summary}</p>
         </div>
       </section>
 
@@ -84,7 +84,7 @@ export function ScoreCard({ score }: { score: CallScore }) {
             </p>
           </div>
           {customerVoice.note ? (
-            <p className="text-[13px] leading-relaxed text-[#334155]">{customerVoice.note}</p>
+            <p className="text-[13px] leading-relaxed text-slate-700">{customerVoice.note}</p>
           ) : null}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -94,7 +94,7 @@ export function ScoreCard({ score }: { score: CallScore }) {
               {customerVoice.satisfaction_themes.length ? (
                 <ul className="space-y-1.5">
                   {customerVoice.satisfaction_themes.map((theme) => (
-                    <li key={theme} className="text-[13px] text-[#334155] leading-relaxed">
+                    <li key={theme} className="text-[13px] text-slate-700 leading-relaxed">
                       {theme}
                     </li>
                   ))}
@@ -110,7 +110,7 @@ export function ScoreCard({ score }: { score: CallScore }) {
               {customerVoice.frustration_themes.length ? (
                 <ul className="space-y-1.5">
                   {customerVoice.frustration_themes.map((theme) => (
-                    <li key={theme} className="text-[13px] text-[#334155] leading-relaxed">
+                    <li key={theme} className="text-[13px] text-slate-700 leading-relaxed">
                       {theme}
                     </li>
                   ))}
@@ -221,20 +221,20 @@ export function ScoreCard({ score }: { score: CallScore }) {
                     </span>
                   </div>
                   {row.note ? (
-                    <p className="text-[13px] leading-relaxed text-[#334155]">
-                      <span className="font-semibold text-ink">Why {row.score}%: </span>
+                    <p className="text-[13px] leading-relaxed text-slate-700">
+                      <span className="font-medium text-ink">Why {row.score}%: </span>
                       {row.note}
                     </p>
                   ) : null}
                   {cut > 0 ? (
-                    <p className="text-[13px] leading-relaxed text-[#334155]">
-                      <span className="font-semibold text-ink">Why {cut}% was cut: </span>
+                    <p className="text-[13px] leading-relaxed text-slate-700">
+                      <span className="font-medium text-ink">Why {cut}% was cut: </span>
                       {row.gap_note ||
                         "Score the call again to explain the points held back."}
                     </p>
                   ) : row.gap_note ? (
-                    <p className="text-[13px] leading-relaxed text-[#334155]">
-                      <span className="font-semibold text-ink">Deductions: </span>
+                    <p className="text-[13px] leading-relaxed text-slate-700">
+                      <span className="font-medium text-ink">Deductions: </span>
                       {row.gap_note}
                     </p>
                   ) : null}

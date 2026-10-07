@@ -6,9 +6,9 @@ export const metadata: Metadata = {
   description: "Zetro helps QA leads, operations, and agents score calls fairly — against the scorecard you already use.",
 };
 
-function Check({ inverted }: { inverted?: boolean }) {
+function Check() {
   return (
-    <svg className={`mt-0.5 h-4 w-4 shrink-0 ${inverted ? "text-white" : "text-[#04B6DA]"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+    <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
     </svg>
   );
@@ -71,24 +71,24 @@ export default function SolutionsPage() {
         </p>
       </header>
 
-      <div className="mt-12 grid border border-[#E3EBFB] bg-white rounded-none overflow-hidden lg:grid-cols-3 shadow-xs">
+      <div className="mt-12 grid border border-line bg-white lg:grid-cols-3">
         {ROLES.map((role) => (
           <article
             key={role.title}
-            className={`flex flex-col border-b border-[#E3EBFB] p-6 last:border-b-0 lg:border-b-0 lg:border-r lg:last:border-r-0 ${
-              role.featured ? "bg-[#04B6DA] text-white shadow-md relative" : "bg-white text-[#061C52]"
+            className={`flex flex-col border-b border-line p-6 last:border-b-0 lg:border-b-0 lg:border-r lg:last:border-r-0 ${
+              role.featured ? "bg-blue-soft ring-2 ring-inset ring-blue" : ""
             }`}
           >
             <div className="flex items-center justify-between gap-2">
-              <h2 className={`font-display text-[16px] font-bold ${role.featured ? "text-white" : "text-ink"}`}>{role.title}</h2>
-              {role.featured ? <span className="chip bg-white text-[#061C52] border-white font-bold">Featured</span> : null}
+              <h2 className="font-display text-[16px] font-semibold text-ink">{role.title}</h2>
+              {role.featured ? <span className="chip chip-ok">Operations</span> : null}
             </div>
-            <p className={`mt-2 text-[13px] font-bold ${role.featured ? "text-[#E3EBFB]" : "text-[#061C52]"}`}>{role.kicker}</p>
-            <p className={`mt-3 flex-1 text-[13px] leading-relaxed ${role.featured ? "text-[#E3EBFB]" : "text-muted"}`}>{role.body}</p>
-            <ul className={`mt-5 space-y-2.5 border-t ${role.featured ? "border-white/20" : "border-[#E3EBFB]"} pt-5`}>
+            <p className="mt-2 text-[13px] font-medium text-ink">{role.kicker}</p>
+            <p className="mt-3 flex-1 text-[13px] leading-relaxed text-muted">{role.body}</p>
+            <ul className="mt-5 space-y-2.5 border-t border-line pt-5">
               {role.points.map((item) => (
-                <li key={item} className={`flex items-start gap-2.5 text-[13px] ${role.featured ? "text-white" : "text-ink"}`}>
-                  <Check inverted={role.featured} />
+                <li key={item} className="flex items-start gap-2.5 text-[13px] text-ink">
+                  <Check />
                   <span>{item}</span>
                 </li>
               ))}
@@ -97,30 +97,30 @@ export default function SolutionsPage() {
         ))}
       </div>
 
-      <section className="mt-12">
-        <h2 className="text-[16px] font-bold text-ink">Where it fits</h2>
+      <section className="mt-10">
+        <h2 className="text-[15px] font-semibold text-ink">Where it fits</h2>
         <p className="mt-1 text-[13px] text-muted">The same three steps — upload, prepare, score — on busy service lines.</p>
-        <div className="mt-4 grid border border-[#E3EBFB] bg-white rounded-none overflow-hidden sm:grid-cols-2 shadow-xs">
+        <div className="mt-4 grid border border-line bg-white sm:grid-cols-2">
           {INDUSTRIES.map((item, index) => (
             <article
               key={item.title}
-              className={`p-6 ${index % 2 === 0 ? "sm:border-r border-[#E3EBFB]" : ""} ${
-                index < 2 ? "border-b border-[#E3EBFB]" : ""
+              className={`p-6 ${index % 2 === 0 ? "sm:border-r border-line" : ""} ${
+                index < 2 ? "border-b border-line" : ""
               }`}
             >
-              <h3 className="text-[15px] font-bold text-ink">{item.title}</h3>
+              <h3 className="text-[15px] font-semibold text-ink">{item.title}</h3>
               <p className="mt-2 text-[13px] leading-relaxed text-muted">{item.body}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <div className="mt-12 flex flex-col items-center justify-between gap-4 border border-[#039EBE] bg-[#04B6DA] text-white rounded-none px-6 py-6 sm:flex-row shadow-md">
+      <div className="mt-10 flex flex-col items-center justify-between gap-4 border border-line bg-white px-6 py-6 sm:flex-row">
         <div>
-          <p className="text-[16px] font-bold text-white">Not sure it fits your floor?</p>
-          <p className="mt-1 text-[13px] text-[#E3EBFB]">Tell us the languages, the volume, and how you score today.</p>
+          <p className="text-[15px] font-semibold text-ink">Not sure it fits your floor?</p>
+          <p className="mt-1 text-[13px] text-muted">Tell us the languages, the volume, and how you score today.</p>
         </div>
-        <Link href="/talk-sales" className="btn bg-white text-[#061C52] hover:bg-[#F3F6FD] font-bold border-none shrink-0">
+        <Link href="/talk-sales" className="btn btn-blue shrink-0">
           Talk to sales
         </Link>
       </div>
