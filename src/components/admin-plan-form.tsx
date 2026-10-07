@@ -72,8 +72,8 @@ export function AdminPlanForm({
           {BILLING_PLANS.map((id) => (
             <label
               key={id}
-              className={`flex cursor-pointer flex-col gap-1 border px-4 py-3 ${
-                plan === id ? "border-blue bg-blue-soft" : "border-line bg-white hover:border-slate-300"
+              className={`flex cursor-pointer flex-col gap-1 border px-4 py-3 transition-colors ${
+                plan === id ? "border-[#04B6DA] bg-[#04B6DA]/10 text-[#061C52]" : "border-[#E3EBFB] bg-white hover:border-[#04B6DA] text-[#334155]"
               }`}
             >
               <span className="flex items-center gap-2 text-[14px] font-semibold text-ink">

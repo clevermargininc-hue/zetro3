@@ -22,8 +22,8 @@ export default async function NotAvailablePage({
   const detectedName = detected && !allowed.includes(detected) ? countryNameFor(detected) : null;
 
   return (
-    <div className="flex min-h-screen flex-col bg-cream">
-      <header className="border-b border-line bg-white">
+    <div className="flex min-h-screen flex-col bg-bg">
+      <header className="border-b border-[var(--border)] bg-surface">
         <div className="mx-auto flex max-w-5xl items-center px-6 py-4">
           <Logo />
         </div>
@@ -56,7 +56,7 @@ export default async function NotAvailablePage({
             <SalesEmailNote className="mt-8" />
           </div>
 
-          <div className="border border-line bg-white p-6 sm:p-8">
+          <div className="surface p-6 sm:p-8">
             <NotAvailablePanel
               countries={countryOptions()}
               allowed={allowed}
@@ -66,7 +66,7 @@ export default async function NotAvailablePage({
         </div>
       </main>
 
-      <footer className="border-t border-line bg-white py-6">
+      <footer className="border-t border-[#E3EBFB] bg-[#F3F6FD] py-6">
         <p className="mx-auto max-w-5xl px-6 text-[12px] font-semibold text-ink">
           Zetro is a product of Clevermargins Software Business Solutions (CSBS).
         </p>

@@ -2,18 +2,19 @@ import zlib from "node:zlib";
 
 /** Zetro palette. Keep these in sync with the app theme. */
 export const BRAND = {
-  navy: { r: 17, g: 24, b: 39 },
-  ink: { r: 16, g: 35, b: 63 },
-  blue: { r: 26, g: 86, b: 219 },
-  mark: { r: 0, g: 102, b: 255 },
-  blueSoft: { r: 219, g: 234, b: 254 },
-  slate: { r: 100, g: 116, b: 139 },
-  line: { r: 226, g: 232, b: 240 },
-  zebra: { r: 248, g: 250, b: 252 },
+  navy: { r: 6, g: 28, b: 82 },      // #061C52
+  ink: { r: 6, g: 28, b: 82 },       // #061C52
+  blue: { r: 4, g: 182, b: 218 },    // #04B6DA
+  mark: { r: 6, g: 28, b: 82 },      // #061C52
+  accent: { r: 4, g: 182, b: 218 },  // #04B6DA
+  blueSoft: { r: 227, g: 235, b: 251 }, // #E3EBFB
+  slate: { r: 51, g: 65, b: 85 },    // #334155
+  line: { r: 227, g: 235, b: 251 },   // #E3EBFB
+  zebra: { r: 243, g: 246, b: 253 },  // #F3F6FD
   white: { r: 255, g: 255, b: 255 },
-  green: { r: 22, g: 128, b: 61 },
+  green: { r: 21, g: 128, b: 61 },
   amber: { r: 180, g: 83, b: 9 },
-  rose: { r: 190, g: 24, b: 93 },
+  rose: { r: 185, g: 28, b: 28 },
 } as const;
 
 export type Rgb = { r: number; g: number; b: number };
@@ -46,7 +47,7 @@ const Z_STROKE: Point[] = [
   [17.5, 16.5],
 ];
 const Z_WIDTH = 2.5;
-const TILE_RADIUS = 4;
+const TILE_RADIUS = 0;
 
 function mapLogoPoint(x: number, y: number, size: number, [px, py]: Point) {
   const s = size / 24;

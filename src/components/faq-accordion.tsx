@@ -59,7 +59,7 @@ export function FaqAccordion() {
               </span>
               <span
                 className={`grid h-6 w-6 shrink-0 place-items-center border border-line bg-surface-2 text-ink transition-transform duration-150 ${
-                  isOpen ? "rotate-180 bg-blue text-white border-blue" : ""
+                  isOpen ? "rotate-180 bg-[#061C52] text-white border-[#061C52]" : ""
                 }`}
               >
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -97,13 +97,13 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
     <div className="space-y-5">
       <KpiStrip
         items={[
-          { label: "Logged calls", value: String(calls.length), hint: "Workspace inventory" },
+          { label: "Logged calls", value: String(calls.length), hint: "Workspace inventory", featured: true },
           { label: "Audited", value: String(counts.audited), hint: "Already scored" },
           { label: "Not yet", value: String(counts.notYet), hint: "Still in prepare or score" },
         ]}
       />
 
-      <div className="flex flex-wrap items-center gap-1 border-b border-line">
+      <div className="flex flex-wrap items-center gap-2">
         {(
           [
             ["all", `All (${calls.length})`],
@@ -115,10 +115,8 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
             key={id}
             type="button"
             onClick={() => setFilter(id)}
-            className={`px-3 py-2 text-[12px] font-medium border-b-2 -mb-px ${
-              filter === id
-                ? "border-blue text-ink"
-                : "border-transparent text-slate-500 hover:text-ink"
+            className={`pill ${
+              filter === id ? "pill-active" : "pill-inactive"
             }`}
           >
             {label}
@@ -131,7 +129,7 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-line bg-slate-50 text-[11px] font-medium uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-[#E3EBFB] bg-[#F3F6FD] text-[11px] font-bold uppercase tracking-wider text-[#061C52]">
                 <th className="px-6 py-3">Agent ID</th>
                 <th className="px-6 py-3">Language</th>
                 <th className="px-6 py-3">Audit status</th>
@@ -139,11 +137,11 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                 <th className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-[13px]">
+            <tbody className="divide-y divide-[#E3EBFB] text-[13px]">
               {visible.map((call) => {
                 const score = scoreOf(call);
                 return (
-                  <tr key={call.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={call.id} className="hover:bg-[#F3F6FD] transition-colors">
                     {/* Agent ID & Date */}
                     <td className="px-6 py-3.5">
                       <div className="font-semibold text-ink tabular-nums">
@@ -180,7 +178,7 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                           {score.overall_score}%
                         </span>
                       ) : (
-                        <span className="text-slate-400 text-[12px]">—</span>
+                        <span className="text-muted text-[12px]">—</span>
                       )}
                     </td>
 
@@ -195,7 +193,7 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                             />
                             <Link
                               href={`/upload/score/${call.id}`}
-                              className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[12px] px-3 py-1.5 font-medium"
+                              className="btn border border-[#E3EBFB] bg-white hover:bg-[#F3F6FD] text-[#061C52] text-[12px] px-3 py-1.5 font-medium"
                             >
                               Scorecard
                             </Link>
@@ -208,13 +206,13 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                             />
                             <Link
                               href={`/upload/prepare/${call.id}`}
-                              className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[12px] px-3 py-1.5 font-medium"
+                              className="btn border border-[#E3EBFB] bg-white hover:bg-[#F3F6FD] text-[#061C52] text-[12px] px-3 py-1.5 font-medium"
                             >
                               Recording
                             </Link>
                             <Link
                               href={`/upload/score/${call.id}`}
-                              className="btn bg-blue hover:bg-blue-2 text-white text-[12px] px-3 py-1.5 font-semibold"
+                              className="btn btn-primary text-white text-[12px] px-3 py-1.5 font-semibold"
                             >
                               Score
                             </Link>
@@ -224,7 +222,7 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                             <CallDownloads callId={call.id} compact />
                             <Link
                               href={`/upload/prepare/${call.id}`}
-                              className="btn bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 text-[12px] px-3 py-1.5"
+                              className="btn border border-[#E3EBFB] bg-white hover:bg-[#F3F6FD] text-[#061C52] text-[12px] px-3 py-1.5"
                             >
                               View Progress
                             </Link>
@@ -234,7 +232,7 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                             <CallDownloads callId={call.id} compact />
                             <Link
                               href={`/upload/prepare/${call.id}`}
-                              className="btn bg-blue hover:bg-blue-2 text-white text-[12px] px-3 py-1.5 font-semibold"
+                              className="btn btn-primary text-white text-[12px] px-3 py-1.5 font-semibold"
                             >
                               Prepare
                             </Link>
@@ -259,14 +257,14 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
 
           {!visible.length && (
             <div className="py-16 text-center">
-              <div className="inline-flex p-4 rounded-full bg-slate-50 mb-3">{Icons.emptyBox}</div>
+              <div className="inline-flex p-4 rounded-none bg-[#F3F6FD] mb-3">{Icons.emptyBox}</div>
               <h3 className="text-[15px] font-bold text-ink">
                 {calls.length ? "No recordings match this filter" : "No calls yet"}
               </h3>
               <p className="mt-1 text-[13px] text-muted max-w-sm mx-auto">
                 Upload a recording, prepare it, then score it when you are ready.
               </p>
-              <Link href="/upload" className="mt-5 btn btn-blue text-[13px] px-5 py-2 inline-flex font-semibold">
+              <Link href="/upload" className="mt-5 btn btn-primary text-white text-[13px] px-5 py-2 inline-flex font-semibold">
                 Upload calls
               </Link>
             </div>

@@ -65,7 +65,7 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="min-h-full bg-bg print:block lg:flex print:bg-white">
+    <div className="min-h-full bg-bg print:block lg:flex print:bg-[#FFFFFF]">
       <AppNav
         email={user.email}
         username={username}

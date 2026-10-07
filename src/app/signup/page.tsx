@@ -19,25 +19,25 @@ export default async function SignupPage({
 
   return (
     <div className="grid min-h-screen bg-white lg:grid-cols-2">
-      <div className="hidden flex-col justify-between bg-blue p-10 text-white lg:flex [&_h1]:text-white [&_p]:text-white/80">
+      <div className="hidden flex-col justify-between bg-[#061C52] p-10 pb-16 text-white border-r border-[#039EBE] lg:flex">
         <Logo invert />
         <div>
-          <p className="text-sm font-medium text-white/70">Get started</p>
-          <h1 className="mt-3 max-w-md text-3xl font-semibold leading-snug text-white">
+          <p className="text-sm font-bold uppercase tracking-wider text-[#E3EBFB]">Get started</p>
+          <h1 className="mt-3 max-w-md text-3xl font-bold leading-snug !text-white">
             Open a workspace. Score one call today.
           </h1>
         </div>
-        <p className="text-sm text-white/70">Upload, prepare, score — then take notes to the huddle.</p>
+        <p className="text-sm !text-[#E3EBFB]">Upload, prepare, score — then take notes to the huddle.</p>
       </div>
-      <div className="grid place-items-center bg-white px-5 py-16">
-        <div className="w-full max-w-md">
+      <div className="grid place-items-center bg-white px-5 py-12 lg:py-16">
+        <div className="w-full max-w-md surface p-8 sm:p-10 border border-[#E3EBFB] bg-white">
           <div className="lg:hidden">
             <Logo />
           </div>
-          <h1 className="mt-8 text-2xl font-semibold lg:mt-0">
+          <h1 className="mt-8 text-2xl font-bold tracking-tight text-[#061C52] lg:mt-0">
             {invited ? "Create your account to join" : "Create your account"}
           </h1>
-          <p className="mt-2 text-sm text-muted">
+          <p className="mt-2 text-sm text-[#334155]">
             {invited
               ? "Use the email this invitation was sent to. After you sign in you will join that workspace automatically."
               : "Use your work email. After sign-up you can join a team or start on your own."}
@@ -47,7 +47,7 @@ export default async function SignupPage({
               <AuthForm mode="signup" next={dest} email={email} initialError={error} />
             </SignupCountryGate>
           </div>
-          <p className="mt-6 text-sm text-muted">
+          <p className="mt-6 text-sm text-[#334155]">
             Already have a workspace?{" "}
             <Link
               href={
@@ -55,7 +55,7 @@ export default async function SignupPage({
                   ? `/login?next=${encodeURIComponent(dest)}${email ? `&email=${encodeURIComponent(email)}` : ""}`
                   : "/login"
               }
-              className="font-medium text-blue hover:underline"
+              className="font-semibold text-[#04B6DA] hover:text-[#039EBE] underline"
             >
               Sign in
             </Link>

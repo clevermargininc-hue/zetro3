@@ -66,7 +66,7 @@ export function SalesForm({
   if (success) {
     return (
       <div className="border border-line bg-surface-2 p-8 text-center animate-in fade-in duration-300">
-        <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-good/15 text-good">
+        <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-none bg-[#04B6DA]/15 text-[#061C52]">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
@@ -74,7 +74,7 @@ export function SalesForm({
         <h3 className="mb-2 text-[17px] font-semibold text-ink">Quote request received</h3>
         <p className="text-[13px] leading-relaxed text-muted">
           We will reply by email with a price per call in TZS within 1 business day. For urgent contract terms, email{" "}
-          <a href={salesMailto("Zetro — contract or sales deal")} className="font-semibold text-blue hover:underline">
+          <a href={salesMailto("Zetro — contract or sales deal")} className="font-semibold text-[#04B6DA] hover:text-[#039EBE] hover:underline">
             {SALES_EMAIL}
           </a>
           .
@@ -149,7 +149,7 @@ export function SalesForm({
 
       {error ? <p className="alert-error text-[13px]">{error}</p> : null}
 
-      <button type="submit" disabled={loading} className="btn btn-lg btn-blue w-full mt-2 font-semibold">
+      <button type="submit" disabled={loading} className="btn btn-lg btn-primary text-white w-full mt-2 font-semibold">
         {loading ? "Sending request…" : "Request quote in TZS"}
       </button>
 

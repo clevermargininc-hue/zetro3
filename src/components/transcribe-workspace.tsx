@@ -242,7 +242,7 @@ export function TranscribeWorkspace({
             Transcripts stay in the workspace. You score on the next step, from your scorecard.
           </p>
         </div>
-        <div className="border border-line bg-slate-50 p-3">
+        <div className="border border-[#E3EBFB] bg-white rounded-none p-3">
           {audioUrl ? (
             <audio controls src={audioUrl} className="w-full" preload="metadata" />
           ) : (
@@ -264,8 +264,8 @@ export function TranscribeWorkspace({
             </p>
           </div>
           {showWorking && !actionError ? (
-            <div className="flex items-center gap-2.5 text-ink text-[13px] font-medium border border-line px-4 py-3">
-              <div className="h-4 w-4 rounded-full border-2 border-blue/30 border-t-blue animate-spin" />
+            <div className="flex items-center gap-2.5 text-ink text-[13px] font-medium border border-[#E3EBFB] rounded-none px-4 py-3">
+              <div className="h-4 w-4 rounded-full border-2 border-[#E3EBFB] border-t-[#04B6DA] animate-spin" />
               <span>Working on the recording…</span>
             </div>
           ) : null}
@@ -278,7 +278,7 @@ export function TranscribeWorkspace({
                   Boolean(actionError),
               )
             }
-            className="btn btn-blue text-[13px] px-5 py-2.5 relative z-10"
+            className="btn bg-[#04B6DA] hover:bg-[#039EBE] text-white text-[13px] px-5 py-2.5 font-semibold relative z-10"
           >
             {preparingBusy && !actionError
               ? "Preparing… (tap to retry)"
@@ -300,7 +300,7 @@ export function TranscribeWorkspace({
             <button
               type="button"
               onClick={() => void prepare(true)}
-              className="inline-flex items-center gap-1 text-[12px] text-slate-500 hover:text-ink font-medium relative z-10"
+              className="inline-flex items-center gap-1 text-[12px] text-[#04B6DA] hover:text-[#039EBE] font-semibold relative z-10"
             >
               {Icons.refresh}
               <span>{preparingBusy && !actionError ? "Re-processing…" : "Re-prepare"}</span>
@@ -308,7 +308,7 @@ export function TranscribeWorkspace({
             <Link
               href={`/upload/score/${callId}`}
               prefetch={false}
-              className="btn btn-blue text-[13px] px-4 py-2 relative z-10"
+              className="btn bg-[#04B6DA] hover:bg-[#039EBE] text-white text-[13px] px-4 py-2 font-semibold relative z-10"
             >
               Go to Score
             </Link>
@@ -321,7 +321,7 @@ export function TranscribeWorkspace({
           <button
             type="button"
             onClick={() => void prepare(true)}
-            className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[12px] px-4 py-2 relative z-10"
+            className="btn bg-white hover:bg-[#F3F6FD] text-[#061C52] border border-[#E3EBFB] text-[12px] px-4 py-2 font-medium relative z-10"
           >
             {preparingBusy && !actionError ? "Retrying…" : "Retry preparation"}
           </button>

@@ -10,9 +10,9 @@ export function PlanBanner({ status }: { status: PlanStatus | null }) {
 
   if (!status.canScore) {
     return (
-      <div className="no-print mb-6 flex flex-col gap-3 border border-rose/30 bg-rose/5 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-[13px] leading-relaxed text-ink">{planBlockMessage(status)}</p>
-        <a href={mailto} className="btn btn-blue shrink-0 text-[13px]">
+      <div className="no-print mb-6 flex flex-col gap-3 border border-[#B91C1C]/30 bg-[#FEE2E2] px-5 py-4 sm:flex-row sm:items-center sm:justify-between text-[#B91C1C]">
+        <p className="text-[13px] leading-relaxed text-[#B91C1C] font-medium">{planBlockMessage(status)}</p>
+        <a href={mailto} className="btn btn-primary shrink-0 text-[13px]">
           Email {SALES_EMAIL}
         </a>
       </div>
@@ -20,17 +20,17 @@ export function PlanBanner({ status }: { status: PlanStatus | null }) {
   }
 
   return (
-    <div className="no-print mb-6 flex flex-col gap-2 border border-blue/20 bg-blue-soft px-5 py-3 text-[13px] sm:flex-row sm:items-center sm:justify-between">
+    <div className="no-print mb-6 flex flex-col gap-2 border border-[#E3EBFB] bg-[#F3F6FD] px-5 py-3 text-[13px] sm:flex-row sm:items-center sm:justify-between">
       <p className="text-ink">
-        <span className="font-semibold">Free trial:</span> {status.scoredCalls} of {status.trialCalls} calls scored ·{" "}
+        <span className="font-semibold text-[#061C52]">Free trial:</span> {status.scoredCalls} of {status.trialCalls} calls scored ·{" "}
         {status.trialRemaining} left. Deleting a call does not restore a free trial slot. Re-scoring a call does not use the trial.
       </p>
       <p className="shrink-0 text-muted">
-        <Link href="/pricing" className="font-semibold text-blue hover:underline">
+        <Link href="/pricing" className="font-semibold text-[#04B6DA] hover:text-[#039EBE] hover:underline">
           See plans
         </Link>{" "}
         ·{" "}
-        <a href={mailto} className="font-semibold text-blue hover:underline">
+        <a href={mailto} className="font-semibold text-[#04B6DA] hover:text-[#039EBE] hover:underline">
           Email sales
         </a>
       </p>

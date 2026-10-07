@@ -39,7 +39,7 @@ function ForgotPasswordForm() {
   }
 
   return (
-    <div className="w-full max-w-md p-8 md:p-12 rounded-3xl bg-surface-2 border border-line shadow-sm">
+    <div className="w-full max-w-md p-8 md:p-12 surface">
       <h1 className="text-3xl font-extrabold text-ink mb-2">Reset password</h1>
       <p className="text-muted text-[15px] mb-8">
         Enter your email and we&apos;ll send you a link to reset your password.
@@ -47,12 +47,12 @@ function ForgotPasswordForm() {
 
       {success ? (
         <div className="flex flex-col gap-6">
-          <div className="alert-ok p-4 rounded-lg">
+          <div className="alert-ok p-4 rounded-none">
             Check your email for a password reset link.
           </div>
           <Link
             href="/login"
-            className="btn btn-lg bg-white border border-line text-ink hover:bg-surface-2 shadow-sm flex items-center justify-center"
+            className="btn btn-lg bg-white border border-[#E3EBFB] text-[#061C52] hover:bg-[#F3F6FD] shadow-xs flex items-center justify-center font-semibold rounded-none"
           >
             Back to login
           </Link>
@@ -60,7 +60,7 @@ function ForgotPasswordForm() {
       ) : (
         <form onSubmit={onSubmit} className="flex flex-col gap-5">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-ink">Work email</span>
+            <span className="font-semibold text-ink">Work email</span>
             <input
               required
               type="email"
@@ -76,12 +76,12 @@ function ForgotPasswordForm() {
           <button
             type="submit"
             disabled={loading || !email}
-            className="btn btn-lg btn-blue mt-2"
+            className="btn btn-lg btn-primary text-white mt-2 font-semibold rounded-none"
           >
             {loading ? "Sending..." : "Send reset link"}
           </button>
           <div className="mt-4 text-center">
-            <Link href="/login" className="text-sm font-medium text-blue hover:underline">
+            <Link href="/login" className="text-sm font-semibold text-[#04B6DA] hover:text-[#039EBE] hover:underline">
               Back to login
             </Link>
           </div>
@@ -93,7 +93,7 @@ function ForgotPasswordForm() {
 
 export default function ForgotPasswordPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface relative">
+    <div className="min-h-screen flex items-center justify-center bg-bg px-5 py-12 relative">
       <Suspense>
         <ForgotPasswordForm />
       </Suspense>

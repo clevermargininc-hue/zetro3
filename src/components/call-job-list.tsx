@@ -79,7 +79,7 @@ export function CallJobList({
               : "No calls in the prepare queue"
             : `${calls.length} in this step`}
         </p>
-        <Link href="/calls" className="text-[12px] font-semibold text-blue hover:underline">
+        <Link href="/calls" className="text-[12px] font-semibold text-[#04B6DA] hover:text-[#039EBE] hover:underline">
           Calls
         </Link>
       </div>
@@ -111,7 +111,7 @@ export function CallJobList({
                 return (
                   <tr key={call.id}>
                     <td>
-                      <Link href={href} className="text-[14px] font-medium text-ink hover:text-blue">
+                      <Link href={href} className="text-[14px] font-medium text-ink hover:underline">
                         {call.title}
                       </Link>
                       <p className="mt-1 text-[12px] text-muted">{formatDate(call.created_at)}</p>
@@ -146,7 +146,7 @@ export function CallJobList({
                         {statusLabel(call.status)}
                       </span>
                       {call.error_message ? (
-                        <p className="mt-2 text-[12px] text-rose max-w-[180px] leading-relaxed">
+                        <p className="mt-2 text-[12px] text-[#B91C1C] max-w-[180px] leading-relaxed">
                           {call.error_message}
                         </p>
                       ) : null}

@@ -50,9 +50,9 @@ export function StandardsFilesPanel({
       )}
 
       {blocked ? (
-        <p className="text-[12px] text-rose leading-relaxed">{blockedMessage}</p>
+        <p className="text-[12px] text-[#B91C1C] leading-relaxed">{blockedMessage}</p>
       ) : readiness?.ready ? (
-        <p className="text-[12px] text-good leading-relaxed">
+        <p className="text-[12px] text-[#334155] font-semibold leading-relaxed">
           Ready. The score will name these files.
         </p>
       ) : null}

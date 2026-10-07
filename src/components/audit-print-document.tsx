@@ -28,14 +28,14 @@ export function AuditPrintDocument({
   return (
     <article className="audit-print hidden print:block bg-white text-ink text-[12px] font-sans">
       <header className="mb-8 border-b border-line pb-0">
-        <div className="flex items-center gap-3 bg-navy px-5 py-5 text-white">
+        <div className="flex items-center gap-3 bg-[#061C52] px-5 py-5 text-white">
           <ZetroMark className="h-10 w-10" />
           <div>
             <p className="font-brand text-[17px] font-bold tracking-[-0.01em]">Zetro</p>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-soft">Call audit</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#E3EBFB]">Call audit</p>
           </div>
         </div>
-        <div className="h-1 bg-blue" />
+        <div className="h-1 bg-[#04B6DA]" />
         <div className="px-5 py-5">
           <h1 className="text-3xl font-extrabold text-ink">{call.title || "Untitled call"}</h1>
           <p className="mt-2 text-[13px] font-medium text-muted">
@@ -159,7 +159,7 @@ function Notes({ title, items }: { title: string; items: string[] }) {
   return (
     <section className="mb-8">
       <h2 className="text-[14px] font-bold uppercase tracking-widest text-muted border-b border-line/50 pb-2 mb-4">{title}</h2>
-      <ul className="mt-3 list-disc space-y-2 pl-5 text-[13px] text-ink/90 marker:text-blue">
+      <ul className="mt-3 list-disc space-y-2 pl-5 text-[13px] text-ink/90 marker:text-[#04B6DA]">
         {(items.length ? items : ["None identified"]).map((item) => (
           <li key={item} className="pl-1 leading-relaxed">{item}</li>
         ))}

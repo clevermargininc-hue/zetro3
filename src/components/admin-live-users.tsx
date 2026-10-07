@@ -52,13 +52,13 @@ export function AdminLiveUsers({ initial, liveMinutes }: { initial: LiveState; l
 
   return (
     <section className="surface overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line bg-blue-soft px-5 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line bg-[#F3F6FD] px-5 py-4">
         <div className="flex items-center gap-4">
           <span className="relative flex h-3 w-3">
             {live.users.length ? (
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-good opacity-60" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#15803D] opacity-60" />
             ) : null}
-            <span className={`relative inline-flex h-3 w-3 rounded-full ${live.users.length ? "bg-good" : "bg-muted"}`} />
+            <span className={`relative inline-flex h-3 w-3 rounded-full ${live.users.length ? "bg-[#15803D] border border-white" : "bg-muted"}`} />
           </span>
           <div>
             <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">Live now</p>

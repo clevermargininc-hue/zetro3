@@ -238,11 +238,11 @@ export function UploadForm() {
             onDrop={(e) => void onDrop(e)}
             className={`border border-dashed p-8 text-center transition-colors ${
               dragOver
-                ? "border-blue bg-blue-soft"
-                : "border-line bg-slate-50 hover:bg-slate-100/50"
+                ? "border-[#04B6DA] bg-[#04B6DA]/10"
+                : "border-[#E3EBFB] bg-white hover:bg-[#F3F6FD]"
             }`}
           >
-            <div className="mx-auto mb-3.5 flex items-center justify-center text-slate-500">
+            <div className="mx-auto mb-3.5 flex items-center justify-center text-[#061C52]">
               {Icons.uploadCloud}
             </div>
             <p className="text-[15px] font-semibold text-ink">
@@ -289,8 +289,8 @@ export function UploadForm() {
         {error && <div className="alert-error text-[13px]">{error}</div>}
 
         {progress && (
-          <div className="flex items-center gap-3 text-[13px] font-medium text-ink surface p-3.5 border border-line">
-            <div className="h-4 w-4 rounded-full border-2 border-blue/30 border-t-blue animate-spin shrink-0" />
+          <div className="flex items-center gap-3 text-[13px] font-medium text-ink surface p-3.5 border border-[#E3EBFB]">
+            <div className="h-4 w-4 rounded-full border-2 border-[#E3EBFB] border-t-[#04B6DA] animate-spin shrink-0" />
             <span>{progress}</span>
           </div>
         )}
@@ -308,7 +308,7 @@ export function UploadForm() {
             </p>
           </div>
           {failed.length > 0 && (
-            <p className="text-[13px] text-rose">
+            <p className="text-[13px] text-[#B91C1C]">
               {failed.length} failed: {failed.map((row) => `${row.title} (${row.error})`).join("; ")}
             </p>
           )}

@@ -47,7 +47,7 @@ export function ScoreWorkspace({
         <div className="flex items-center justify-between mb-3">
           <Link
             href="/upload/score"
-            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-slate-500 hover:text-blue"
+            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#04B6DA] hover:text-[#039EBE]"
           >
             {Icons.arrowLeft}
             <span>Back to score queue</span>

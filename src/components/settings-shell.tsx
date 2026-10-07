@@ -92,7 +92,7 @@ function SettingsChrome() {
           <nav className="space-y-5 surface p-4">
             {NAV.map((group) => (
               <div key={group.label}>
-                <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-[#061C52] block mb-1.5">
                   {group.label}
                 </span>
                 <div className="space-y-1">
@@ -104,13 +104,13 @@ function SettingsChrome() {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`flex items-center gap-2.5 rounded px-3 py-2 text-[13px] font-medium ${
+                        className={`flex items-center gap-2.5 rounded px-3 py-2 text-[13px] font-medium transition-colors ${
                           active
-                            ? "bg-blue-soft text-blue"
-                            : "text-slate-600 hover:bg-slate-50 hover:text-ink"
+                            ? "bg-[#061C52] text-white font-medium"
+                            : "text-[#334155] hover:bg-[#F3F6FD] hover:text-[#061C52]"
                         }`}
                       >
-                        <span className={active ? "text-blue" : "text-slate-400"}>{item.icon}</span>
+                        <span className={active ? "text-white" : "text-[#334155]"}>{item.icon}</span>
                         <span>{item.label}</span>
                       </Link>
                     );

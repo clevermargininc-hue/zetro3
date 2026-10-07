@@ -65,7 +65,7 @@ export function CallAuditExport({ callId }: { callId: string }) {
     <div className="no-print flex flex-wrap items-center gap-2">
       <button
         type="button"
-        className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xs text-[12px] px-3 py-1.5 font-medium"
+        className="btn bg-white hover:bg-[#F3F6FD] text-[#061C52] border border-[#E3EBFB] shadow-xs text-[12px] px-3 py-1.5 font-medium"
         disabled={Boolean(pending)}
         onClick={() => void download("xlsx")}
       >
@@ -74,7 +74,7 @@ export function CallAuditExport({ callId }: { callId: string }) {
       </button>
       <button
         type="button"
-        className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xs text-[12px] px-3 py-1.5 font-medium"
+        className="btn bg-white hover:bg-[#F3F6FD] text-[#061C52] border border-[#E3EBFB] shadow-xs text-[12px] px-3 py-1.5 font-medium"
         disabled={Boolean(pending)}
         onClick={() => void download("pdf")}
       >
@@ -83,7 +83,7 @@ export function CallAuditExport({ callId }: { callId: string }) {
       </button>
       <button
         type="button"
-        className="btn bg-slate-100 hover:bg-slate-200 text-slate-700 text-[12px] px-3 py-1.5 font-medium"
+        className="btn bg-white hover:bg-[#F3F6FD] text-[#061C52] border border-[#E3EBFB] text-[12px] px-3 py-1.5 font-medium"
         onClick={() => window.print()}
       >
         {Icons.print}

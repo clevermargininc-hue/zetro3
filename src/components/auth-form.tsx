@@ -99,7 +99,7 @@ export function AuthForm({
           type="button"
           onClick={() => signInWithOAuth("google")}
           disabled={loading}
-          className="btn btn-lg bg-white border border-line text-ink hover:bg-surface-2 shadow-sm w-full flex items-center justify-center gap-3"
+          className="btn btn-lg bg-white border border-[#E3EBFB] text-[#061C52] hover:bg-[#F3F6FD] shadow-xs w-full flex items-center justify-center gap-3 font-semibold"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -114,7 +114,7 @@ export function AuthForm({
           type="button"
           onClick={() => signInWithOAuth("azure")}
           disabled={loading}
-          className="btn btn-lg bg-white border border-line text-ink hover:bg-surface-2 shadow-sm w-full flex items-center justify-center gap-3"
+          className="btn btn-lg bg-white border border-[#E3EBFB] text-[#061C52] hover:bg-[#F3F6FD] shadow-xs w-full flex items-center justify-center gap-3 font-semibold"
         >
           <svg width="18" height="18" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
             <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
@@ -128,17 +128,17 @@ export function AuthForm({
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-line"></span>
+          <span className="w-full border-t border-[#E3EBFB]"></span>
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-surface px-2 text-muted font-semibold tracking-wider">Or continue with email</span>
+          <span className="bg-white px-2 text-[#334155] font-semibold tracking-wider">Or continue with email</span>
         </div>
       </div>
 
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         {mode === "signup" && (
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-ink">Full name</span>
+            <span className="font-semibold text-[#061C52]">Full name</span>
             <input
               required
               value={fullName}
@@ -160,7 +160,7 @@ export function AuthForm({
           />
         ) : null}
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-ink">Work email</span>
+          <span className="font-semibold text-[#061C52]">Work email</span>
           <input
             required
             type="email"
@@ -171,11 +171,11 @@ export function AuthForm({
         </label>
         <div className="flex flex-col gap-1.5 text-sm">
           <div className="flex items-center justify-between">
-            <label htmlFor="password-input" className="font-medium text-ink">Password</label>
+            <label htmlFor="password-input" className="font-semibold text-[#061C52]">Password</label>
             {mode === "login" && (
               <Link
                 href="/forgot-password"
-                className="text-blue hover:underline font-medium text-xs"
+                className="text-[#04B6DA] hover:text-[#039EBE] hover:underline font-medium text-xs"
                 tabIndex={-1}
               >
                 Forgot password?
@@ -194,7 +194,7 @@ export function AuthForm({
         </div>
         {error && <p className="alert-error">{error}</p>}
         {info && <p className="alert-ok">{info}</p>}
-        <button type="submit" disabled={loading} className="btn btn-lg btn-blue mt-1">
+        <button type="submit" disabled={loading} className="btn btn-lg btn-primary text-white font-semibold mt-1">
           {loading ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
         </button>
       </form>

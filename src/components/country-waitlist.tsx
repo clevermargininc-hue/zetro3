@@ -149,7 +149,7 @@ export function SalesEmailNote({ className = "" }: { className?: string }) {
       Contracts, payment, or a sales deal? Email us at{" "}
       <a
         href={salesMailto("Zetro — contract or sales deal")}
-        className="font-semibold text-blue hover:underline"
+        className="font-semibold text-[#04B6DA] hover:text-[#039EBE] hover:underline"
       >
         {SALES_EMAIL}
       </a>
@@ -180,7 +180,7 @@ export function NotAvailablePanel({
       </label>
 
       {isLive ? (
-        <div className="border border-blue/30 bg-blue-soft px-5 py-4">
+        <div className="border border-[#E3EBFB] bg-[#F3F6FD] px-5 py-4">
           <p className="text-[15px] font-semibold text-ink">
             Zetro is already live in {nameFor(countries, country)}!
           </p>

@@ -54,54 +54,61 @@ export default function HowItWorksPage() {
         </p>
       </header>
 
-      <div className="mt-10 grid border border-line bg-white sm:grid-cols-2">
-        <div className="flex items-start gap-4 border-b border-line p-6 sm:border-b-0 sm:border-r">
-          <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden border border-line bg-white">
+      <div className="mt-10 grid border border-[#E3EBFB] bg-white rounded-none overflow-hidden sm:grid-cols-2 shadow-xs">
+        <div className="flex items-start gap-4 border-b border-[#E3EBFB] p-6 sm:border-b-0 sm:border-r">
+          <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden border border-[#E3EBFB] bg-[#F3F6FD] rounded-none">
             <TanzaniaFlagIcon className="h-10 w-10" />
           </span>
           <div>
-            <p className="text-[15px] font-semibold text-ink">Tanzania</p>
+            <p className="text-[15px] font-bold text-ink">Tanzania</p>
             <p className="mt-1 text-[13px] text-muted">Kiswahili and English on the same call</p>
           </div>
         </div>
         <div className="flex items-start gap-4 p-6">
-          <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden border border-line bg-white text-slate-500">
+          <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden border border-[#E3EBFB] bg-[#F3F6FD] text-[#061C52] rounded-none">
             <WorldFlagIcon className="h-7 w-7" />
           </span>
           <div>
-            <p className="text-[15px] font-semibold text-ink">Another country</p>
+            <p className="text-[15px] font-bold text-ink">Another country</p>
             <p className="mt-1 text-[13px] text-muted">English only — type yours at signup</p>
           </div>
         </div>
       </div>
 
-      <ol className="mt-10 border border-line bg-white">
+      <ol className="mt-10 border border-[#E3EBFB] bg-white rounded-none overflow-hidden shadow-xs">
         {STEPS.map((step, index) => (
           <li
             key={step.number}
-            className={`grid gap-4 p-6 sm:grid-cols-[4.5rem_1fr] ${
-              index < STEPS.length - 1 ? "border-b border-line" : ""
+            className={`grid gap-4 p-6 sm:grid-cols-[4.5rem_1fr] items-start ${
+              index < STEPS.length - 1 ? "border-b border-[#E3EBFB]" : ""
             }`}
           >
-            <span className="text-[11px] font-medium uppercase tracking-wider text-muted">{step.number}</span>
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-none bg-[#04B6DA] text-[11px] font-bold text-white shadow-2xs">
+              {step.number}
+            </span>
             <div>
-              <h2 className="text-[15px] font-semibold text-ink">{step.title}</h2>
+              <h2 className="text-[15px] font-bold text-ink">{step.title}</h2>
               <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-muted">{step.description}</p>
             </div>
           </li>
         ))}
       </ol>
 
-      <div className="mt-10 flex flex-col items-center justify-between gap-4 border border-line bg-white px-6 py-6 sm:flex-row">
+      <div className="mt-10 flex flex-col items-center justify-between gap-4 border border-[#039EBE] bg-[#04B6DA] text-white rounded-none px-6 py-6 sm:flex-row shadow-md">
         <div>
-          <p className="text-[15px] font-semibold text-ink">Want to see it on your own calls?</p>
-          <p className="mt-1 text-[13px] text-muted">
-            Bring one recording and your scorecard. We will walk you through the score.
+          <p className="text-[16px] font-bold text-white">Want to see it on your own calls?</p>
+          <p className="mt-1 text-[13px] text-[#E3EBFB]">
+            Ask for a walkthrough, or open a workspace and try one recording.
           </p>
         </div>
-        <Link href="/talk-sales" className="btn btn-blue shrink-0">
-          Talk to sales
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/talk-sales" className="btn bg-white text-[#061C52] hover:bg-[#F3F6FD] font-bold border-none shrink-0">
+            Talk to sales
+          </Link>
+          <Link href="/signup" className="btn border border-white text-white hover:bg-white/10 font-semibold shrink-0">
+            Start a workspace
+          </Link>
+        </div>
       </div>
     </div>
   );

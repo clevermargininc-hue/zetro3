@@ -63,8 +63,8 @@ export function CallDownloads({
   }
 
   const btn = compact
-    ? "btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[12px] px-2.5 py-1.5"
-    : "btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[12px] px-3 py-1.5 font-medium";
+    ? "btn bg-white hover:bg-[#F3F6FD] text-[#061C52] border border-[#E3EBFB] text-[12px] px-2.5 py-1.5"
+    : "btn bg-white hover:bg-[#F3F6FD] text-[#061C52] border border-[#E3EBFB] text-[12px] px-3 py-1.5 font-medium";
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -88,7 +88,7 @@ export function CallDownloads({
           <span>{pending === "transcript" ? "Downloading…" : compact ? "Transcript" : "Download transcript"}</span>
         </button>
       ) : null}
-      {error ? <p className="text-[11px] text-rose">{error}</p> : null}
+      {error ? <p className="text-[11px] text-[#B91C1C]">{error}</p> : null}
     </div>
   );
 }

@@ -95,6 +95,7 @@ export default async function LeaderboardPage() {
             hint: topFile
               ? `${topFile.name} · ${topFile.call_count} scored call${topFile.call_count === 1 ? "" : "s"}`
               : "No scored calls yet",
+            featured: true,
           },
           {
             label: "Average score",
@@ -123,7 +124,7 @@ export default async function LeaderboardPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-[#E3EBFB] bg-[#F3F6FD] text-[11px] font-bold uppercase tracking-wider text-[#061C52]">
                 <th className="px-6 py-3 w-16">Rank</th>
                 <th className="px-6 py-3">Agent</th>
                 <th className="px-6 py-3 text-right">Avg score</th>
@@ -133,12 +134,12 @@ export default async function LeaderboardPage() {
                 <th className="px-6 py-3 text-right">Band</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-[13px]">
+            <tbody className="divide-y divide-[#E3EBFB] text-[13px]">
               {ranked.map((row, index) => {
                 const rank = index + 1;
 
                 return (
-                  <tr key={row.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={row.id} className="hover:bg-[#F3F6FD] transition-colors">
                     <td className="px-6 py-3.5 whitespace-nowrap tabular-nums text-muted">
                       {rank}
                     </td>
@@ -178,12 +179,12 @@ export default async function LeaderboardPage() {
 
           {!ranked.length && (
             <div className="py-16 text-center">
-              <div className="inline-flex p-4 rounded-full bg-slate-50 mb-3">{Icons.emptyBox}</div>
+              <div className="inline-flex p-4 rounded-none bg-[#F3F6FD] mb-3">{Icons.emptyBox}</div>
               <h3 className="text-[15px] font-bold text-ink">No rankings yet</h3>
               <p className="mt-1 text-[13px] text-muted max-w-sm mx-auto">
                 Upload and score calls to rank agents.
               </p>
-              <Link href="/upload" className="mt-5 btn btn-blue text-[13px] px-5 py-2 inline-flex font-semibold">
+              <Link href="/upload" className="mt-5 btn btn-primary text-white text-[13px] px-5 py-2 inline-flex font-semibold">
                 Upload a call
               </Link>
             </div>
