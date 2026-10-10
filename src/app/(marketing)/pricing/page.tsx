@@ -52,7 +52,7 @@ export default function PricingPage() {
         <PricingPlans />
       </div>
 
-      <section className="mt-12 border border-line bg-white px-6 py-8 lg:px-8">
+      <section className="frame mt-12 px-6 py-8 lg:px-8">
         <h2 className="text-[18px] font-semibold text-ink">How billing works</h2>
         <ul className="mt-4 grid gap-x-10 gap-y-4 text-[14px] leading-relaxed text-muted md:grid-cols-2">
           {RULES.map((rule) => (
@@ -64,7 +64,7 @@ export default function PricingPage() {
         </ul>
       </section>
 
-      <section className="mt-8 flex flex-col gap-6 border border-blue/20 bg-blue-soft px-6 py-8 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+      <section className="mt-8 flex flex-col gap-6 rounded-xl border border-blue/15 bg-blue-soft px-6 py-8 sm:flex-row sm:items-center sm:justify-between lg:px-8">
         <div className="max-w-xl">
           <h2 className="text-[20px] font-semibold text-ink">Ready to sign, pay, or talk terms?</h2>
           <p className="mt-2 text-[14px] leading-relaxed text-muted">

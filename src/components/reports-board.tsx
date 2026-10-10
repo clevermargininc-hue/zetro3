@@ -154,7 +154,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
               Period
             </label>
             <select
-              className="field bg-slate-50/70 border-slate-200 text-ink text-[13px] font-medium"
+              className="field text-[13px] font-medium text-ink"
               value={period}
               onChange={(event) => setPeriod(event.target.value as ReportPeriod)}
             >
@@ -172,7 +172,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
             </label>
             <input
               type="date"
-              className="field bg-slate-50/70 border-slate-200 text-ink text-[13px]"
+              className="field text-[13px] text-ink"
               value={date}
               onChange={(event) => {
                 if (event.target.value) setDate(event.target.value);
@@ -185,7 +185,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
               Agent
             </label>
             <select
-              className="field bg-slate-50/70 border-slate-200 text-ink text-[13px] font-medium"
+              className="field text-[13px] font-medium text-ink"
               value={agentId}
               onChange={(event) => setAgentId(event.target.value)}
             >
@@ -219,7 +219,7 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
 
       {!compact && report && !loading && report.calls.length ? (
         <section className="surface overflow-hidden no-print">
-          <div className="flex flex-wrap gap-6 border-b border-line px-5">
+          <div className="tabs px-3" role="tablist" aria-label="Report detail">
             {(
               [
                 ["calls", `Calls (${report.calls.length})`],
@@ -229,12 +229,10 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
               <button
                 key={id}
                 type="button"
+                role="tab"
+                aria-selected={activeTab === id}
                 onClick={() => setActiveTab(id)}
-                className={`py-3.5 font-bold text-[13px] transition-colors border-b-2 ${
-                  activeTab === id
-                    ? "border-blue text-blue"
-                    : "border-transparent text-slate-500 hover:text-ink"
-                }`}
+                className={activeTab === id ? "is-active" : ""}
               >
                 {label}
               </button>
@@ -243,15 +241,15 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
 
           <div className="overflow-x-auto">
             {activeTab === "calls" ? (
-              <table className="w-full text-left border-collapse">
+              <table className="data-table">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                    <th className="px-6 py-3">When</th>
-                    <th className="px-6 py-3">Agent</th>
-                    <th className="px-6 py-3 text-right">AHT</th>
-                    <th className="px-6 py-3 text-right">Score</th>
-                    <th className="px-6 py-3">Verdict</th>
-                    <th className="px-6 py-3 text-right">Followed</th>
+                  <tr>
+                    <th>When</th>
+                    <th>Agent</th>
+                    <th className="text-right">AHT</th>
+                    <th className="text-right">Score</th>
+                    <th>Verdict</th>
+                    <th className="text-right">Followed</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-[13px]">
@@ -313,15 +311,15 @@ export function ReportsBoard({ compact = false }: { compact?: boolean }) {
             ) : null}
 
             {activeTab === "agents" ? (
-              <table className="w-full text-left border-collapse">
+              <table className="data-table">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                    <th className="px-6 py-3">Agent</th>
-                    <th className="px-6 py-3 text-right">Calls</th>
-                    <th className="px-6 py-3 text-right">Avg</th>
-                    <th className="px-6 py-3 text-right">AHT</th>
-                    <th className="px-6 py-3 text-right">Followed</th>
-                    <th className="px-6 py-3 text-right">Not followed</th>
+                  <tr>
+                    <th>Agent</th>
+                    <th className="text-right">Calls</th>
+                    <th className="text-right">Avg</th>
+                    <th className="text-right">AHT</th>
+                    <th className="text-right">Followed</th>
+                    <th className="text-right">Not followed</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-[13px]">

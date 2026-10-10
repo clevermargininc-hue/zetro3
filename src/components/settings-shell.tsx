@@ -89,7 +89,7 @@ function SettingsChrome() {
       <div className="grid gap-8 lg:grid-cols-12">
         {/* Navigation Sidebar */}
         <aside className="lg:col-span-3 space-y-6">
-          <nav className="space-y-5 surface p-4">
+          <nav className="surface space-y-5 p-3">
             {NAV.map((group) => (
               <div key={group.label}>
                 <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
@@ -104,7 +104,7 @@ function SettingsChrome() {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`flex items-center gap-2.5 rounded px-3 py-2 text-[13px] font-medium ${
+                        className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium ${
                           active
                             ? "bg-blue-soft text-blue"
                             : "text-slate-600 hover:bg-slate-50 hover:text-ink"

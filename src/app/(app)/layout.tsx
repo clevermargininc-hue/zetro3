@@ -75,7 +75,7 @@ export default async function AppLayout({
         isPlatformAdmin={isPlatformAdmin(user.email)}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <main className="mx-auto w-full max-w-[1180px] flex-1 px-5 py-7 print:max-w-none print:px-0 print:py-0 lg:px-8">
+        <main className="mx-auto w-full max-w-[1120px] flex-1 px-4 py-5 print:max-w-none print:px-0 print:py-0 sm:px-6 sm:py-6 lg:px-8">
           <PlanBanner status={planStatus} />
           {children}
           <PresencePing />

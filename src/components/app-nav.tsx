@@ -159,17 +159,17 @@ export function AppNav({
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden shrink-0 flex-col border-r border-line bg-white print:hidden lg:sticky lg:top-0 lg:flex lg:h-screen transition-[width] duration-200 relative ${
-          collapsed ? "w-16" : "w-60"
+        className={`relative hidden shrink-0 flex-col border-r border-line bg-white print:hidden transition-[width] duration-200 lg:sticky lg:top-0 lg:flex lg:h-screen ${
+          collapsed ? "w-[4.25rem]" : "w-[15.5rem]"
         }`}
       >
         {/* Logo + edge collapse control */}
-        <div className={`relative flex h-14 shrink-0 items-center border-b border-line bg-white ${collapsed ? "justify-center px-0" : "px-5"}`}>
+        <div className={`relative flex h-[3.75rem] shrink-0 items-center border-b border-line bg-white ${collapsed ? "justify-center px-0" : "px-4"}`}>
           <Logo size="sm" collapsed={collapsed} />
           <button
             type="button"
             onClick={() => setCollapsed(!collapsed)}
-            className="absolute -right-3 top-1/2 z-20 flex h-6 w-6 -translate-y-1/2 items-center justify-center border border-line bg-white text-muted hover:text-ink"
+            className="absolute -right-3 top-1/2 z-20 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-white text-muted shadow-[var(--shadow)] hover:text-ink"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
@@ -190,16 +190,16 @@ export function AppNav({
         </div>
 
         {/* Navigation Items */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-5 space-y-6">
-          <nav className="space-y-6">
+        <div className="flex-1 space-y-5 overflow-x-hidden overflow-y-auto px-2.5 py-4">
+          <nav className="space-y-5">
             {groups.map((group) => (
               <div key={group.label} className="space-y-1">
                 {!collapsed ? (
-                  <span className="px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400 block mb-1.5">
+                  <span className="mb-1 block px-2.5 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
                     {group.label}
                   </span>
                 ) : (
-                  <div className="flex justify-center mb-2">
+                  <div className="mb-1.5 flex justify-center">
                     <div className="h-px w-5 bg-line" />
                   </div>
                 )}
@@ -211,10 +211,10 @@ export function AppNav({
                         key={item.href}
                         href={item.href}
                         title={collapsed ? item.label : undefined}
-                        className={`flex items-center rounded text-[13px] font-medium ${
+                        className={`flex items-center rounded-lg text-[13px] font-medium ${
                           collapsed
-                            ? "justify-center h-9 w-full px-0"
-                            : "gap-2.5 px-3 py-2"
+                            ? "h-9 w-full justify-center px-0"
+                            : "gap-2.5 px-2.5 py-1.5"
                         } ${
                           active
                             ? "bg-blue-soft text-blue"
@@ -235,11 +235,11 @@ export function AppNav({
         </div>
 
         {/* Bottom User Profile Section */}
-        <div className="p-3 border-t border-line bg-white shrink-0">
+        <div className="shrink-0 border-t border-line bg-white p-2.5">
           {!collapsed ? (
-            <div className="flex items-center justify-between gap-2 px-1 py-1">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-7 h-7 rounded bg-navy text-white flex items-center justify-center text-[11px] font-medium shrink-0">
+            <div className="flex items-center justify-between gap-2 rounded-lg px-1.5 py-1">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-navy text-[11px] font-medium text-white">
                   {personInitial}
                 </div>
                 <div className="min-w-0">
@@ -254,7 +254,7 @@ export function AppNav({
                 type="button"
                 onClick={signOut}
                 title="Sign out"
-                className="text-slate-400 hover:text-ink p-1.5 rounded hover:bg-slate-50 shrink-0"
+                className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-50 hover:text-ink"
               >
                 {Icons.logout}
               </button>
@@ -265,7 +265,7 @@ export function AppNav({
                 type="button"
                 onClick={signOut}
                 title="Sign out"
-                className="w-7 h-7 rounded bg-navy text-white flex items-center justify-center text-[11px] font-medium"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-navy text-[11px] font-medium text-white"
               >
                 {personInitial}
               </button>
@@ -275,7 +275,7 @@ export function AppNav({
       </aside>
 
       {/* Mobile Header */}
-      <header className="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-line bg-white px-4 print:hidden lg:hidden">
+      <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-line bg-white/95 px-4 backdrop-blur print:hidden lg:hidden">
         <Logo size="sm" />
         <button
           type="button"
@@ -293,8 +293,8 @@ export function AppNav({
       {/* Mobile Menu Drawer */}
       {open ? (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-ink/40 none-xs transition-opacity" onClick={() => setOpen(false)} />
-          <div className="absolute top-0 right-0 h-full w-72 bg-white p-6 shadow-md flex flex-col justify-between">
+          <div className="absolute inset-0 bg-ink/40" onClick={() => setOpen(false)} />
+          <div className="absolute top-0 right-0 flex h-full w-72 flex-col justify-between bg-white p-5 shadow-[var(--shadow-md)]">
             <div className="space-y-6">
               <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                 <Logo size="sm" />
@@ -324,7 +324,7 @@ export function AppNav({
                             key={item.href}
                             href={item.href}
                             onClick={() => setOpen(false)}
-                            className={`flex items-center gap-2.5 px-3 py-2 rounded text-[13px] font-medium ${
+                            className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium ${
                               active
                                 ? "bg-blue-soft text-blue"
                                 : "text-slate-600 hover:bg-slate-50 hover:text-ink"
@@ -346,7 +346,7 @@ export function AppNav({
             {/* Mobile User Bottom */}
             <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-7 h-7 rounded bg-navy text-white flex items-center justify-center text-[11px] font-medium shrink-0">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-navy text-[11px] font-medium text-white">
                   {personInitial}
                 </div>
                 <div className="min-w-0">

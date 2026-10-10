@@ -128,15 +128,15 @@ export default async function DashboardPage({
         title="Overview"
         description="Call quality and handling time in this workspace."
         actions={
-          <div className="flex flex-wrap gap-1.5">
-            <Link href="/dashboard" className={`chip ${days === "all" ? "border-blue bg-blue-soft text-blue" : ""}`}>
+          <div className="segmented" role="tablist" aria-label="Overview range">
+            <Link href="/dashboard" className={days === "all" ? "is-active" : ""}>
               All
             </Link>
             {QUALITY_RANGES.map((option) => (
               <Link
                 key={option}
                 href={`/dashboard?range=${option}`}
-                className={`chip ${option === days ? "border-blue bg-blue-soft text-blue" : ""}`}
+                className={option === days ? "is-active" : ""}
               >
                 {option} days
               </Link>
@@ -196,7 +196,7 @@ export default async function DashboardPage({
       />
 
       <section className="surface overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-col justify-between gap-3 border-b border-line px-4 py-3 sm:flex-row sm:items-center sm:px-5">
           <div>
             <h2 className="text-[14px] font-semibold text-ink">Recent scores</h2>
             <p className="text-[12px] text-muted mt-0.5">Latest recordings in this window</p>
@@ -240,10 +240,11 @@ export default async function DashboardPage({
             );
           })}
           {!rangeCalls.length ? (
-            <div className="py-12 text-center px-5">
-              <h3 className="text-[14px] font-semibold text-ink">No call records</h3>
-              <p className="mt-1 text-[13px] text-muted">Upload recordings to start quality auditing.</p>
-              <Link href="/upload" className="mt-4 btn btn-blue text-[13px] inline-flex">
+            <div className="empty-state">
+              <div className="empty-state-icon">{Icons.emptyBox}</div>
+              <h3>No call records</h3>
+              <p>Upload recordings to start quality auditing.</p>
+              <Link href="/upload" className="btn btn-blue mt-4 text-[13px]">
                 Upload calls
               </Link>
             </div>
@@ -251,15 +252,15 @@ export default async function DashboardPage({
         </div>
 
         <div className="hidden overflow-x-auto md:block">
-          <table className="w-full text-left border-collapse">
+          <table className="data-table">
             <thead>
-              <tr className="border-b border-line bg-bg text-[11px] font-medium uppercase tracking-wider text-muted">
-                <th className="px-6 py-3">Agent</th>
-                <th className="px-6 py-3">Scored</th>
-                <th className="px-6 py-3">Language</th>
-                <th className="px-6 py-3 text-right">Followed</th>
-                <th className="px-6 py-3 text-right">QA Score</th>
-                <th className="px-6 py-3 text-right">Action</th>
+              <tr>
+                <th>Agent</th>
+                <th>Scored</th>
+                <th>Language</th>
+                <th className="text-right">Followed</th>
+                <th className="text-right">QA score</th>
+                <th className="text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line text-[13px]">
@@ -267,22 +268,22 @@ export default async function DashboardPage({
                 const score = scoreOf(call);
                 const rate = score ? complianceFollowRateFromScore(score) : null;
                 return (
-                  <tr key={call.id} className="hover:bg-surface-2 transition-colors">
-                    <td className="px-6 py-3.5">
-                      <div className="font-semibold text-ink tabular-nums">{agentLabel(call)}</div>
-                      <div className="text-[11px] text-muted flex items-center gap-1.5 mt-0.5">
+                  <tr key={call.id}>
+                    <td>
+                      <div className="font-medium text-ink tabular-nums">{agentLabel(call)}</div>
+                      <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted">
                         <span>Duration: {formatDuration(call.duration_seconds)}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-3.5 text-muted whitespace-nowrap text-[12px]">
+                    <td className="whitespace-nowrap text-[12px] text-muted">
                       {formatDate(scoredAt(call))}
                     </td>
-                    <td className="px-6 py-3.5 whitespace-nowrap">
+                    <td className="whitespace-nowrap">
                       <span className="chip">
                         {languageLabel(call.detected_language || call.language_mode)}
                       </span>
                     </td>
-                    <td className="px-6 py-3.5 whitespace-nowrap text-right">
+                    <td className="whitespace-nowrap text-right">
                       {rate?.followed_pct != null ? (
                         <span className={`${scoreChipClass(rate.followed_pct)} tabular-nums`}>
                           {rate.followed_pct}%
@@ -291,7 +292,7 @@ export default async function DashboardPage({
                         <span className="text-muted text-[11px]">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-3.5 text-right whitespace-nowrap">
+                    <td className="whitespace-nowrap text-right">
                       {score?.overall_score != null ? (
                         <span className={`${scoreChipClass(score.overall_score)} tabular-nums`}>
                           {score.overall_score}%
@@ -300,13 +301,12 @@ export default async function DashboardPage({
                         <span className="chip">{call.status === "failed" ? "Failed" : "Processing"}</span>
                       )}
                     </td>
-                    <td className="px-6 py-3.5 text-right whitespace-nowrap">
+                    <td className="whitespace-nowrap text-right">
                       <Link
                         href={score ? `/upload/score/${call.id}` : `/upload/prepare/${call.id}`}
-                        className="inline-flex items-center gap-1 font-semibold text-[12px] text-blue hover:text-blue-2 transition-colors"
+                        className="text-[12px] font-medium text-blue hover:text-blue-2"
                       >
-                        <span>{score ? "View Scorecard" : "View Progress"}</span>
-                        <span>→</span>
+                        {score ? "Scorecard" : "Progress"}
                       </Link>
                     </td>
                   </tr>
@@ -316,13 +316,11 @@ export default async function DashboardPage({
           </table>
 
           {!rangeCalls.length ? (
-            <div className="py-16 text-center">
-              <div className="inline-flex p-3 mb-3 text-muted">{Icons.emptyBox}</div>
-              <h3 className="text-[14px] font-semibold text-ink">No calls yet</h3>
-              <p className="mt-1 text-[13px] text-muted max-w-sm mx-auto">
-                Upload a recording to start scoring.
-              </p>
-              <Link href="/upload" className="mt-4 btn btn-blue text-[13px] inline-flex">
+            <div className="empty-state">
+              <div className="empty-state-icon">{Icons.emptyBox}</div>
+              <h3>No calls yet</h3>
+              <p>Upload a recording to start scoring.</p>
+              <Link href="/upload" className="btn btn-blue mt-4 text-[13px]">
                 Upload calls
               </Link>
             </div>

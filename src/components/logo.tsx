@@ -13,7 +13,7 @@ export function ZetroMark({
 }) {
   return (
     <span
-      className={`shrink-0 grid place-items-center rounded-[4px] ${
+      className={`grid shrink-0 place-items-center rounded-md ${
         invert ? "bg-white text-blue" : "bg-blue text-white"
       } ${className}`}
     >

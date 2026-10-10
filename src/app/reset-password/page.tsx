@@ -32,9 +32,9 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface relative">
-      <div className="w-full max-w-md p-8 md:p-12 rounded-3xl bg-surface-2 border border-line shadow-sm">
-        <h1 className="text-3xl font-extrabold text-ink mb-2">Set new password</h1>
+    <div className="flex min-h-screen items-center justify-center bg-bg px-5">
+      <div className="surface w-full max-w-md p-6 sm:p-8">
+        <h1 className="mb-2 text-2xl font-semibold text-ink">Set new password</h1>
         <p className="text-muted text-[15px] mb-8">
           Enter a new, strong password for your account.
         </p>
