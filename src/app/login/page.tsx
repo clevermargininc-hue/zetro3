@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AuthForm } from "@/components/auth-form";
 import { Logo } from "@/components/logo";
+import s from "./login.module.css";
 
 export default async function LoginPage({
   searchParams,
@@ -19,35 +20,26 @@ export default async function LoginPage({
         : decoded;
 
   return (
-    <div className="grid min-h-screen bg-white lg:grid-cols-2">
-      <div className="hidden flex-col justify-between bg-blue p-10 text-white lg:flex [&_h1]:text-white [&_p]:text-white/80">
-        <Logo invert />
-        <div>
-          <p className="text-sm font-medium text-white/70">Call quality</p>
-          <h1 className="mt-3 max-w-md text-3xl font-semibold leading-snug text-white">
-            Score calls against the scorecard you already use.
-          </h1>
-        </div>
-        <p className="text-sm text-white/70">Tanzania · English and Kiswahili</p>
-      </div>
-      <div className="grid place-items-center bg-white px-5 py-16">
-        <div className="w-full max-w-md">
-          <div className="lg:hidden">
-            <Logo />
-          </div>
-          <h1 className="mt-8 text-2xl font-semibold lg:mt-0">
+    <main className={s.page}>
+      <header className={s.topbar}>
+        <Logo size="sm" />
+        <Link href="/" className={s.back}>← Back to home</Link>
+      </header>
+      <section className={s.entry}>
+        <div className={s.entryInner}>
+          <h1 className={s.heading}>
             {invited ? "Sign in to join your team" : "Sign in to Zetro"}
           </h1>
-          <p className="mt-2 text-sm text-muted">
+          <p className={s.description}>
             {invited
               ? "Use the email this invitation was sent to. You will join that workspace automatically."
-              : "Open your workspace to review calls and scores."}
+              : "Welcome back. Sign in to your workspace."}
           </p>
           {oauthError ? <p className="alert-error mt-4">{oauthError}</p> : null}
-          <div className="mt-8">
+          <div className={s.formCard}>
             <AuthForm mode="login" next={dest} email={email} />
           </div>
-          <p className="mt-6 text-sm text-muted">
+          <p className={s.newOrg}>
             {invited ? "New here? " : "New organization? "}
             <Link
               href={
@@ -55,13 +47,15 @@ export default async function LoginPage({
                   ? `/signup?next=${encodeURIComponent(dest)}${email ? `&email=${encodeURIComponent(email)}` : ""}`
                   : "/signup"
               }
-              className="font-medium text-blue hover:underline"
+              className="font-semibold text-blue hover:underline"
             >
               {invited ? "Create an account" : "Create a workspace"}
             </Link>
           </p>
+          <p className={s.security}>Your workspace. Your conversations. Securely connected.</p>
         </div>
-      </div>
-    </div>
+      </section>
+      <footer className={s.footer}>Zetro · Call quality &amp; customer intelligence</footer>
+    </main>
   );
 }

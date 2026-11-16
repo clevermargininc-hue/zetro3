@@ -1,5 +1,6 @@
 "use client";
 
+import { Globe } from "lucide-react";
 import { isTanzania } from "@/lib/locale";
 
 const COUNTRY_ISO: Record<string, string> = {
@@ -84,22 +85,7 @@ export function WorldFlagIcon({
       />
     );
   }
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      aria-hidden
-    >
-      <circle cx="12" cy="12" r="9" />
-      <path d="M3 12h18" />
-      <path d="M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
-      <path d="M5.5 7.5c2.2 1.2 5 1.8 6.5 1.8s4.3-.6 6.5-1.8" />
-      <path d="M5.5 16.5c2.2-1.2 5-1.8 6.5-1.8s4.3.6 6.5 1.8" />
-    </svg>
-  );
+  return <Globe className={className} strokeWidth={1.6} aria-hidden />;
 }
 
 type Mode = "tz" | "other" | null;
@@ -125,11 +111,11 @@ export function CountryRegionPicker({
         type="button"
         disabled={disabled}
         onClick={() => onModeChange("tz")}
-        className={`flex w-full items-start gap-4 border bg-white p-5 text-left ${
-          mode === "tz" ? "border-blue bg-blue-soft" : "border-line hover:border-slate-300"
-        }`}
+        aria-pressed={mode === "tz"}
+        className={`flex w-full items-start gap-4 rounded-xl border bg-white p-5 text-left transition-colors ${mode === "tz" ? "border-navy bg-blue-soft/60" : "border-line hover:border-slate-300"
+          }`}
       >
-        <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden border border-line bg-white">
+        <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-md border border-line bg-white">
           <TanzaniaFlagIcon className="h-11 w-11" />
         </span>
         <span>
@@ -138,28 +124,28 @@ export function CountryRegionPicker({
         </span>
       </button>
 
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => onModeChange("other")}
-        className={`flex w-full flex-col gap-3 border bg-white p-5 text-left ${
-          mode === "other" ? "border-blue bg-blue-soft" : "border-line hover:border-slate-300"
-        }`}
+      <div
+        className={`flex w-full flex-col gap-3 rounded-xl border bg-white p-5 text-left transition-colors ${mode === "other" ? "border-navy bg-blue-soft/60" : "border-line hover:border-slate-300"
+          }`}
       >
-        <span className="flex items-start gap-4">
-          <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden border border-line bg-white text-slate-500">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onModeChange("other")}
+          aria-pressed={mode === "other"}
+          className="flex w-full items-start gap-4 text-left"
+        >
+          <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-md border border-line bg-white text-slate-500">
             <WorldFlagIcon country={otherCountry} className="h-7 w-7" />
           </span>
           <span>
             <span className="block text-[15px] font-semibold text-ink">Another country / region</span>
             <span className="mt-1 block text-sm text-muted">English only — type your country</span>
           </span>
-        </span>
+        </button>
+
         {mode === "other" ? (
-          <label
-            className="flex w-full flex-col gap-1.5 text-sm sm:pl-[3.75rem]"
-            onClick={(event) => event.stopPropagation()}
-          >
+          <label className="flex w-full flex-col gap-1.5 text-sm sm:pl-[3.75rem]">
             <span className="font-medium text-ink">Country or region</span>
             <div className="relative">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
@@ -177,7 +163,7 @@ export function CountryRegionPicker({
             </div>
           </label>
         ) : null}
-      </button>
+      </div>
     </div>
   );
 }

@@ -1,13 +1,20 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
-import { agentLabel, formatAht, formatDate, formatDuration, languageLabel } from "@/lib/format";
+import { agentLabel, formatAht, pipelineQueueCounts } from "@/lib/format";
 import { fetchAllRows } from "@/lib/fetch-all";
 import { getTeamScope } from "@/lib/workspaces";
 import type { Call, CallScore } from "@/lib/types";
 import { complianceFollowRateFromScore, rollupComplianceRate } from "@/lib/compliance-engine";
+import {
+  computeOverviewMetrics,
+  extractCustomerSentimentSummary,
+  extractTopOverviewGaps,
+  serializeOverviewCalls,
+} from "@/lib/overview-analytics";
 import { JoinRequestBanner } from "@/components/join-request-banner";
+import { OverviewInteractiveBoard } from "@/components/overview-interactive-board";
 import { QaMixCharts, QaTrendCharts } from "@/components/qa-chart-grid";
-import { KpiStrip, PageHeader, scoreChipClass } from "@/components/ui";
+import { KpiStrip, PageHeader } from "@/components/ui";
 import {
   autoQualityBuckets,
   calendarDay,
@@ -18,16 +25,6 @@ import {
   QUALITY_RANGES,
   type QualityRange,
 } from "@/lib/workspace-charts";
-
-const Icons = {
-  emptyBox: (
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted/40">
-      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-      <line x1="12" y1="22.08" x2="12" y2="12" />
-    </svg>
-  ),
-};
 
 function formatTotalTime(seconds: number) {
   if (!seconds || seconds <= 0) return "0 mins";
@@ -122,55 +119,109 @@ export default async function DashboardPage({
           keyOf: (iso) => calendarDay(iso),
         });
 
+  const overviewMetrics = computeOverviewMetrics({ allCalls, days });
+  const overviewGaps = extractTopOverviewGaps(rangeCalls, 6);
+  const sentimentSummary = extractCustomerSentimentSummary(rangeCalls);
+  const serializedCalls = serializeOverviewCalls(rangeCalls, 200);
+  const queueCounts = pipelineQueueCounts(allCalls.map((c) => c.status));
+  const failedCallsCount = allCalls.filter((c) => c.status === "failed").length;
+  const hasActiveJobs = queueCounts.prepare > 0 || queueCounts.score > 0;
+
   return (
     <div className="space-y-6 pb-10">
       <PageHeader
+        eyebrow="Enterprise QA & Operations"
         title="Overview"
-        description="Call quality and handling time in this workspace."
+        description="Call quality, compliance adherence, and customer intelligence across your workspace."
         actions={
-          <div className="flex flex-wrap gap-1.5">
-            <Link href="/dashboard" className={`chip ${days === "all" ? "border-blue bg-blue-soft text-blue" : ""}`}>
-              All
-            </Link>
-            {QUALITY_RANGES.map((option) => (
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-[#E3E9F5] bg-[#F8FAFF] p-1">
               <Link
-                key={option}
-                href={`/dashboard?range=${option}`}
-                className={`chip ${option === days ? "border-blue bg-blue-soft text-blue" : ""}`}
+                href="/dashboard"
+                className={`rounded-lg px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                  days === "all"
+                    ? "bg-[#0A1A3F] text-white shadow-2xs"
+                    : "text-[#5A6882] hover:bg-white hover:text-[#0A1A3F]"
+                }`}
               >
-                {option} days
+                All
               </Link>
-            ))}
+              {QUALITY_RANGES.map((option) => (
+                <Link
+                  key={option}
+                  href={`/dashboard?range=${option}`}
+                  className={`rounded-lg px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                    option === days
+                      ? "bg-[#0A1A3F] text-white shadow-2xs"
+                      : "text-[#5A6882] hover:bg-white hover:text-[#0A1A3F]"
+                  }`}
+                >
+                  {option}d
+                </Link>
+              ))}
+            </div>
+            <Link href="/upload" className="btn btn-blue text-[12.5px]">
+              Upload calls
+            </Link>
           </div>
         }
       />
 
       <JoinRequestBanner />
 
+      {(hasActiveJobs || failedCallsCount > 0) && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#BFDBFE] bg-[#EEF3FF]/70 px-4 py-3 text-[13px] text-[#0A1A3F]">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-[#2459E8]" />
+            <span className="font-semibold">Pipeline activity:</span>
+            {queueCounts.prepare > 0 ? (
+              <span className="chip chip-info text-[11.5px]">
+                {queueCounts.prepare} preparing / transcribing
+              </span>
+            ) : null}
+            {queueCounts.score > 0 ? (
+              <span className="chip chip-info text-[11.5px]">{queueCounts.score} scoring</span>
+            ) : null}
+            {failedCallsCount > 0 ? (
+              <span className="chip chip-bad text-[11.5px]">{failedCallsCount} failed</span>
+            ) : null}
+          </div>
+          <Link href="/calls" className="text-[12.5px] font-semibold text-[#2459E8] hover:underline">
+            Manage queue in Calls →
+          </Link>
+        </div>
+      )}
+
       <KpiStrip
         items={[
           {
             label: "Quality score",
             value: avgScore != null ? `${avgScore}%` : "—",
-            hint: passRate != null ? `${passRate}% pass rate (≥70)` : "No scored calls yet",
+            delta: overviewMetrics.deltas.score,
+            hint: passRate != null ? `${passRate}% pass rate (≥70%)` : "No scored calls yet",
           },
           {
             label: "Audited calls",
             value: String(completedCalls.length),
+            delta: overviewMetrics.deltas.audited,
             hint: `${formatTotalTime(totalAudioSeconds)} evaluated audio`,
           },
           {
             label: "Compliance followed",
             value: complianceRate.followed_pct != null ? `${complianceRate.followed_pct}%` : "—",
+            delta: overviewMetrics.deltas.compliance,
             hint:
               complianceRate.not_followed_pct != null
-                ? `${complianceRate.not_followed_pct}% not followed`
+                ? `${complianceRate.not_followed_pct}% missed`
                 : "No company rules checked",
           },
           {
             label: "Avg handle time",
             value: formatAht(ahtSeconds),
-            hint: "Per audited call",
+            delta: overviewMetrics.deltas.aht,
+            hint: handleDurations.length
+              ? `Across ${handleDurations.length} timed call${handleDurations.length === 1 ? "" : "s"}`
+              : "Per audited call",
           },
         ]}
       />
@@ -195,140 +246,15 @@ export default async function DashboardPage({
         }))}
       />
 
-      <section className="surface overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-[14px] font-semibold text-ink">Recent scores</h2>
-            <p className="text-[12px] text-muted mt-0.5">Latest recordings in this window</p>
-          </div>
-          <Link href="/calls" className="btn btn-ghost text-[12px]">
-            View all
-          </Link>
-        </div>
-
-        <div className="divide-y divide-line md:hidden">
-          {rangeCalls.slice(0, 8).map((call) => {
-            const score = scoreOf(call);
-            const rate = score ? complianceFollowRateFromScore(score) : null;
-            return (
-              <Link
-                key={call.id}
-                href={score ? `/upload/score/${call.id}` : `/upload/prepare/${call.id}`}
-                className="block px-5 py-4 hover:bg-surface-2"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-ink tabular-nums">{agentLabel(call)}</p>
-                    <p className="mt-1 text-[12px] text-muted">
-                      {formatDate(scoredAt(call))} · {languageLabel(call.detected_language || call.language_mode)}
-                    </p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    {score?.overall_score != null ? (
-                      <span className={`${scoreChipClass(score.overall_score)} tabular-nums`}>
-                        {score.overall_score}%
-                      </span>
-                    ) : (
-                      <span className="chip">{call.status === "failed" ? "Failed" : "Processing"}</span>
-                    )}
-                    <p className="mt-1 text-[11px] text-muted">
-                      {rate?.followed_pct != null ? `${rate.followed_pct}% followed` : "—"}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-          {!rangeCalls.length ? (
-            <div className="py-12 text-center px-5">
-              <h3 className="text-[14px] font-semibold text-ink">No call records</h3>
-              <p className="mt-1 text-[13px] text-muted">Upload recordings to start quality auditing.</p>
-              <Link href="/upload" className="mt-4 btn btn-blue text-[13px] inline-flex">
-                Upload calls
-              </Link>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="hidden overflow-x-auto md:block">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-line bg-bg text-[11px] font-medium uppercase tracking-wider text-muted">
-                <th className="px-6 py-3">Agent</th>
-                <th className="px-6 py-3">Scored</th>
-                <th className="px-6 py-3">Language</th>
-                <th className="px-6 py-3 text-right">Followed</th>
-                <th className="px-6 py-3 text-right">QA Score</th>
-                <th className="px-6 py-3 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line text-[13px]">
-              {rangeCalls.slice(0, 8).map((call) => {
-                const score = scoreOf(call);
-                const rate = score ? complianceFollowRateFromScore(score) : null;
-                return (
-                  <tr key={call.id} className="hover:bg-surface-2 transition-colors">
-                    <td className="px-6 py-3.5">
-                      <div className="font-semibold text-ink tabular-nums">{agentLabel(call)}</div>
-                      <div className="text-[11px] text-muted flex items-center gap-1.5 mt-0.5">
-                        <span>Duration: {formatDuration(call.duration_seconds)}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-3.5 text-muted whitespace-nowrap text-[12px]">
-                      {formatDate(scoredAt(call))}
-                    </td>
-                    <td className="px-6 py-3.5 whitespace-nowrap">
-                      <span className="chip">
-                        {languageLabel(call.detected_language || call.language_mode)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3.5 whitespace-nowrap text-right">
-                      {rate?.followed_pct != null ? (
-                        <span className={`${scoreChipClass(rate.followed_pct)} tabular-nums`}>
-                          {rate.followed_pct}%
-                        </span>
-                      ) : (
-                        <span className="text-muted text-[11px]">—</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-3.5 text-right whitespace-nowrap">
-                      {score?.overall_score != null ? (
-                        <span className={`${scoreChipClass(score.overall_score)} tabular-nums`}>
-                          {score.overall_score}%
-                        </span>
-                      ) : (
-                        <span className="chip">{call.status === "failed" ? "Failed" : "Processing"}</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-3.5 text-right whitespace-nowrap">
-                      <Link
-                        href={score ? `/upload/score/${call.id}` : `/upload/prepare/${call.id}`}
-                        className="inline-flex items-center gap-1 font-semibold text-[12px] text-blue hover:text-blue-2 transition-colors"
-                      >
-                        <span>{score ? "View Scorecard" : "View Progress"}</span>
-                        <span>→</span>
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          {!rangeCalls.length ? (
-            <div className="py-16 text-center">
-              <div className="inline-flex p-3 mb-3 text-muted">{Icons.emptyBox}</div>
-              <h3 className="text-[14px] font-semibold text-ink">No calls yet</h3>
-              <p className="mt-1 text-[13px] text-muted max-w-sm mx-auto">
-                Upload a recording to start scoring.
-              </p>
-              <Link href="/upload" className="mt-4 btn btn-blue text-[13px] inline-flex">
-                Upload calls
-              </Link>
-            </div>
-          ) : null}
-        </div>
-      </section>
+      <OverviewInteractiveBoard
+        calls={serializedCalls}
+        gaps={overviewGaps}
+        sentiment={sentimentSummary}
+        languageMix={overviewMetrics.current.languageMix}
+        rangeLabel={rangeText}
+        hasActiveJobs={hasActiveJobs}
+        totalWorkspaceCalls={allCalls.length}
+      />
     </div>
   );
 }

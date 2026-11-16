@@ -1,26 +1,47 @@
 import Link from "next/link";
 
-/** The Z from Unbounded Bold, so the mark matches the wordmark and favicon without loading the font. */
-const Z_PATH =
-  "M17.54 17.75L6.46 17.75L6.46 15.45L13.98 8.07L16.27 8.75L6.50 8.75L6.50 6.25L17.50 6.25L17.50 8.55L9.98 15.94L8.00 15.25L17.54 15.25L17.54 17.75Z";
-
+/** Brand glyph matching the Zetro landing page navbar mark. */
 export function ZetroMark({
-  className = "h-9 w-9",
+  className = "h-[30px] w-[30px]",
   invert = false,
 }: {
   className?: string;
   invert?: boolean;
 }) {
   return (
-    <span
-      className={`shrink-0 grid place-items-center rounded-[4px] ${
-        invert ? "bg-white text-blue" : "bg-blue text-white"
-      } ${className}`}
+    <svg
+      viewBox="0 0 36 36"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+      focusable="false"
+      className={`shrink-0 select-none ${className}`}
     >
-      <svg viewBox="0 0 24 24" className="h-full w-full" aria-hidden>
-        <path d={Z_PATH} fill="currentColor" />
-      </svg>
-    </span>
+      <rect width="36" height="36" rx="10" fill={invert ? "#2F6BFF" : "#0A1A3F"} />
+      <path
+        d="M9.5 11.5H22.5L13 24.5H26.5"
+        stroke="#FFFFFF"
+        strokeWidth="2.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <rect
+        x="23.5"
+        y="9.5"
+        width="3"
+        height="7"
+        rx="1.5"
+        fill={invert ? "#DCE6FF" : "#2F6BFF"}
+      />
+      <rect
+        x="27.5"
+        y="11.5"
+        width="3"
+        height="5"
+        rx="1.5"
+        fill={invert ? "#DCE6FF" : "#2F6BFF"}
+      />
+    </svg>
   );
 }
 
@@ -28,22 +49,40 @@ export function Logo({
   size = "md",
   invert = false,
   collapsed = false,
+  href = "/",
 }: {
   size?: "sm" | "md" | "lg";
   invert?: boolean;
   collapsed?: boolean;
+  href?: string;
 }) {
-  const mark = size === "lg" ? "h-10 w-10" : size === "sm" ? "h-8 w-8" : "h-9 w-9";
-  const type = size === "lg" ? "text-[22px]" : size === "sm" ? "text-[16px]" : "text-[19px]";
+  const mark =
+    size === "lg"
+      ? "h-10 w-10"
+      : size === "sm"
+        ? "h-[30px] w-[30px]"
+        : "h-[34px] w-[34px]";
+  const type =
+    size === "lg"
+      ? "text-[28px]"
+      : size === "sm"
+        ? "text-[22px]"
+        : "text-[25px]";
 
   return (
-    <Link href="/" className="flex items-center gap-2.5">
+    <Link
+      href={href}
+      aria-label="Zetro home"
+      className="inline-flex shrink-0 items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2459E8]"
+    >
       <ZetroMark className={mark} invert={invert} />
       {!collapsed && (
         <span
-          className={`${type} font-brand font-bold leading-none tracking-[-0.01em] ${
-            invert ? "text-white" : "text-ink"
-          }`}
+          className={`${type} font-bold leading-none tracking-[-0.04em] ${invert ? "text-white" : "text-[#0A1A3F]"}`}
+          style={{
+            fontFamily:
+              'var(--font-space-grotesk), "Space Grotesk", var(--font-inter), system-ui, sans-serif',
+          }}
         >
           Zetro
         </span>

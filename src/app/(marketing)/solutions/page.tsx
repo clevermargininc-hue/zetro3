@@ -1,129 +1,240 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Metadata } from "next";
+import { ZetroPublicCta } from "@/components/landing/zetro-public-chrome";
+import { TRIAL_CALLS } from "@/lib/billing";
 
 export const metadata: Metadata = {
-  title: "Who Zetro is for | Zetro",
-  description: "Zetro helps QA leads, operations, and agents score calls fairly — against the scorecard you already use.",
+  title: "Solutions & Sectors | Zetro Quality Auditing & Customer Intelligence",
+  description:
+    "How East African banks, telecoms, insurers, hospitals, SACCOs, and public service desks use Zetro for 100% QA and repeat-caller intelligence.",
 };
-
-function Check() {
-  return (
-    <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-    </svg>
-  );
-}
 
 const ROLES = [
   {
-    title: "QA leads",
-    kicker: "Stop hunting for tapes. Start coaching.",
-    body: "You should not spend the day picking which 1% of calls to hear. Zetro scores the calls you choose every day, flags weak calls, and shows the moment that went wrong.",
-    points: ["Score as many calls as you choose", "Notes you can take to the huddle", "Marks against your scorecard"],
+    role: "Quality Assurance Leads",
+    kicker: "Stop sampling 2%. Audit the floor.",
+    body: "Evaluate every call against your exact rubric weights, auto-surface compliance misses, and verify every score with timestamped quotes.",
+    points: [
+      "100% continuous queue coverage",
+      "Timestamped audio & transcript proof",
+      "Zero auditor fatigue across shifts",
+      "Instant PDF coaching exports",
+    ],
     featured: false,
   },
   {
-    title: "Operations",
-    kicker: "See if the floor is following the rules.",
-    body: "Know whether agents greet, resolve, and stay inside policy — without waiting for a monthly sample. Spot risk while you can still coach it.",
-    points: ["Clear pass and fail on the scorecard", "Who is strong this week", "What customers keep repeating"],
+    role: "Operations & Floor Managers",
+    kicker: "Verify adherence across every shift.",
+    body: "Spot policy breaches early, benchmark agents fairly on consistent rubrics, and trace recurring repeat callers back to root operational blockers.",
+    points: [
+      "Real-time pass/fail & Auto-Zero alerts",
+      "Agent leaderboard by team & queue",
+      "Repeat vs reopened issue tracking",
+      "Preserves exact Excel formula weights",
+    ],
     featured: true,
   },
   {
-    title: "Agents",
-    kicker: "Fair scores. Clear feedback.",
-    body: "Nobody should be judged on one bad call that happened to be listened to. Zetro scores enough of each person’s work that the mark is typical, not unlucky.",
-    points: ["The same rules for everyone", "Quotes from the actual call", "Praise when the call was good"],
+    role: "Compliance & Risk Officers",
+    kicker: "Mandatory disclosures verified every time.",
+    body: "Audit KYC checks, BoT/TCRA scripts, fee explanations, and unauthorized commitments in both Kiswahili and English without manual tape pulling.",
+    points: [
+      "BoT, TCRA & insurer script checks",
+      "Auto-Zero escalation workflows",
+      "Tenant-isolated immutable records",
+      "Full exportable evidence trail",
+    ],
+    featured: false,
+  },
+  {
+    role: "Customer Experience Teams",
+    kicker: "Understand why callers come back.",
+    body: "Separate duplicate QA audits from genuine repeat customer contacts and identify whether failures stem from agent handling, process, or system outage.",
+    points: [
+      "Per-customer contact timelines",
+      "Same issue vs new issue separation",
+      "Resolution & callback verification",
+      "Service provider vs agent attribution",
+    ],
     featured: false,
   },
 ] as const;
 
-const INDUSTRIES = [
+const SECTORS = [
   {
-    title: "Telecom",
-    body: "Check that sales agents say the real terms when they sell data or mobile money — in English and Kiswahili.",
+    id: "banks",
+    tag: "Banking",
+    title: "Banks & Microfinance",
+    body: "Audit loan collections, SimBanking & mobile-app disputes, branch callbacks, and fraud desks with strict NIDA identity verification and BoT regulatory disclosure checks.",
+    highlights: [
+      "Mandatory KYC / DOB & PIN safety checks",
+      "Dispute & reversal SLA tracking",
+      "Zero unauthorized fee or waiver promises",
+    ],
   },
   {
-    title: "Banks and finance",
-    body: "Score collections and service calls for empathy and the rules you must follow.",
+    id: "telecoms",
+    tag: "Telecom",
+    title: "Telecoms & Mobile Money",
+    body: "Maintain high QA accuracy across SIM swap requests, mobile-money reversals, agent float inquiries, and bundle complaints in fluent Swahili and English.",
+    highlights: [
+      "SIM-swap & USSD fraud verification",
+      "Code-switching transcription in SW + EN",
+      "Repeat outage vs agent blocker detection",
+    ],
   },
   {
-    title: "BPO and outsourcing",
-    body: "Show clients the scores, not a promise. Share a simple view of campaign quality.",
+    id: "insurers-hospitals",
+    tag: "Healthcare & Insurance",
+    title: "Insurers & Hospitals",
+    body: "Ensure claims intake, NHIF/private policy authorizations, and patient triage desks deliver accurate coverage guidance, empathetic tone, and strict confidentiality.",
+    highlights: [
+      "Policy benefit & pre-auth disclosure checks",
+      "Patient triage empathy & hold-time auditing",
+      "Escalation review for urgent claims",
+    ],
   },
   {
-    title: "E-commerce",
-    body: "Catch delivery complaints and weak resolutions without listening to every tape by hand.",
+    id: "saccos",
+    tag: "Member & Public Desks",
+    title: "SACCOs & Public Desks",
+    body: "Give member service cooperatives, utilities, and public-sector helplines audit visibility across loan eligibility calls, citizen inquiries, and unresolved complaint queues.",
+    highlights: [
+      "Service-charter response compliance",
+      "Clear Swahili citizen & member tone scoring",
+      "Repeat-ticket root-cause accountability",
+    ],
   },
 ] as const;
 
 export default function SolutionsPage() {
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-16 lg:py-24">
-      <header className="max-w-2xl">
-        <p className="page-kicker">Who it is for</p>
-        <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
-          Built for the whole floor
-        </h1>
-        <p className="mt-4 text-[16px] leading-relaxed text-muted">
-          From the person on the headset to the person who owns the SLA. Same calls. Same scorecard.
-          Evidence you can act on.
-        </p>
-      </header>
-
-      <div className="mt-12 grid border border-line bg-white lg:grid-cols-3">
-        {ROLES.map((role) => (
-          <article
-            key={role.title}
-            className={`flex flex-col border-b border-line p-6 last:border-b-0 lg:border-b-0 lg:border-r lg:last:border-r-0 ${
-              role.featured ? "bg-blue-soft ring-2 ring-inset ring-blue" : ""
-            }`}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="font-display text-[16px] font-semibold text-ink">{role.title}</h2>
-              {role.featured ? <span className="chip chip-ok">Operations</span> : null}
-            </div>
-            <p className="mt-2 text-[13px] font-medium text-ink">{role.kicker}</p>
-            <p className="mt-3 flex-1 text-[13px] leading-relaxed text-muted">{role.body}</p>
-            <ul className="mt-5 space-y-2.5 border-t border-line pt-5">
-              {role.points.map((item) => (
-                <li key={item} className="flex items-start gap-2.5 text-[13px] text-ink">
-                  <Check />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </article>
-        ))}
-      </div>
-
-      <section className="mt-10">
-        <h2 className="text-[15px] font-semibold text-ink">Where it fits</h2>
-        <p className="mt-1 text-[13px] text-muted">The same three steps — upload, prepare, score — on busy service lines.</p>
-        <div className="mt-4 grid border border-line bg-white sm:grid-cols-2">
-          {INDUSTRIES.map((item, index) => (
-            <article
-              key={item.title}
-              className={`p-6 ${index % 2 === 0 ? "sm:border-r border-line" : ""} ${
-                index < 2 ? "border-b border-line" : ""
-              }`}
-            >
-              <h3 className="text-[15px] font-semibold text-ink">{item.title}</h3>
-              <p className="mt-2 text-[13px] leading-relaxed text-muted">{item.body}</p>
-            </article>
-          ))}
+    <div>
+      {/* ── Subpage Hero ──────────────────────────────────────────────── */}
+      <section className="z-subhero" aria-labelledby="solutions-heading">
+        <div className="z-container">
+          <span className="z-eyebrow">Solutions · Teams &amp; Sectors</span>
+          <h1 id="solutions-heading" className="z-subhero-h1">
+            One platform.{" "}
+            <span className="z-h1-accent">Clear answers across every seat and sector.</span>
+          </h1>
+          <p className="z-subhero-lead">
+            Designed for regulated high-volume contact centers in East Africa—uniting QA scoring, regulatory compliance, coaching briefs, and repeat-caller intelligence.
+          </p>
+          <div className="z-subhero-actions">
+            <Link href="/signup" className="z-btn z-btn-solid" style={{ height: "44px", paddingInline: "20px" }}>
+              Start {TRIAL_CALLS}-call free trial
+            </Link>
+            <Link href="/talk-sales" className="z-btn z-btn-outline" style={{ height: "44px", paddingInline: "20px" }}>
+              Talk to solutions team →
+            </Link>
+          </div>
         </div>
       </section>
 
-      <div className="mt-10 flex flex-col items-center justify-between gap-4 border border-line bg-white px-6 py-6 sm:flex-row">
-        <div>
-          <p className="text-[15px] font-semibold text-ink">Not sure it fits your floor?</p>
-          <p className="mt-1 text-[13px] text-muted">Tell us the languages, the volume, and how you score today.</p>
+      {/* ── Roles Grid ────────────────────────────────────────────────── */}
+      <section className="z-section" aria-labelledby="roles-heading">
+        <div className="z-container">
+          <div className="z-head">
+            <span className="z-eyebrow">Role alignment</span>
+            <h2 id="roles-heading" className="z-h2">
+              Clarity for every operational role.
+            </h2>
+          </div>
+
+          <div className="z-subgrid-4">
+            {ROLES.map((item) => (
+              <article
+                key={item.role}
+                className={item.featured ? "z-card z-price is-featured" : "z-card z-price"}
+                style={{ padding: "24px", transform: "none" }}
+              >
+                {item.featured ? (
+                  <span className="z-price-badge">Floor core</span>
+                ) : null}
+                <h3 className="z-h3">{item.role}</h3>
+                <p style={{ marginTop: "6px", fontSize: "13.5px", fontWeight: 600, color: "var(--z-blue-ink)" }}>
+                  {item.kicker}
+                </p>
+                <p className="z-body" style={{ marginTop: "10px", fontSize: "14px" }}>
+                  {item.body}
+                </p>
+
+                <ul className="z-list" style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid var(--z-line)" }}>
+                  {item.points.map((pt) => (
+                    <li key={pt} style={{ fontSize: "13.5px" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2459E8" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                      <span>{pt}</span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
         </div>
-        <Link href="/talk-sales" className="btn btn-blue shrink-0">
-          Talk to sales
-        </Link>
-      </div>
+      </section>
+
+      {/* ── Regulated Sectors (#banks, #telecoms, #insurers-hospitals, #saccos) */}
+      <section id="sectors" className="z-section z-band-alt" aria-labelledby="sectors-heading">
+        <div className="z-container">
+          <div className="z-head">
+            <span className="z-eyebrow">East African sectors</span>
+            <h2 id="sectors-heading" className="z-h2">
+              Built for high-trust contact centers.
+            </h2>
+            <p className="z-lead">
+              Pre-tuned for Swahili and English terminology in banking, telecoms, insurance, healthcare, cooperatives, and public service desks.
+            </p>
+          </div>
+
+          <div className="z-subgrid-2">
+            {SECTORS.map((sector) => (
+              <article
+                key={sector.id}
+                id={sector.id}
+                className="z-card"
+                style={{ padding: "28px" }}
+              >
+                <span className="z-eyebrow">{sector.tag}</span>
+                <h3 className="z-h3" style={{ marginTop: "14px", fontSize: "21px" }}>
+                  {sector.title}
+                </h3>
+                <p className="z-body" style={{ marginTop: "8px" }}>
+                  {sector.body}
+                </p>
+
+                <ul className="z-list" style={{ marginTop: "18px", paddingTop: "16px", borderTop: "1px solid var(--z-line)" }}>
+                  {sector.highlights.map((hl) => (
+                    <li key={hl} style={{ fontSize: "14px" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2459E8" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                      <span>{hl}</span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+
+          <div style={{ marginTop: "40px", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "12px" }}>
+            <Link href="/how-it-works#steps" className="z-btn z-btn-outline">
+              See the 6-step audit pipeline →
+            </Link>
+            <Link href="/pricing#calculator" className="z-btn z-btn-solid">
+              Open TZS tariff calculator →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <ZetroPublicCta
+        eyebrow="Sector walkthrough"
+        title="Not sure how Zetro handles your queues and scorecards?"
+        body="Share your call languages, daily call volume, and scorecard format—our Dar es Salaam team will evaluate sample calls live with your QA leads."
+      />
     </div>
   );
 }

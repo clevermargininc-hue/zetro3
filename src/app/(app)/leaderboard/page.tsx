@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Award } from "lucide-react";
 import { KpiStrip, PageHeader, scoreChipClass } from "@/components/ui";
 import { requireUser } from "@/lib/supabase/server";
 import { agentLabel } from "@/lib/format";
@@ -7,12 +8,7 @@ import { fetchAllRows } from "@/lib/fetch-all";
 import { getTeamScope } from "@/lib/workspaces";
 
 const Icons = {
-  emptyBox: (
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted/40">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-    </svg>
-  ),
+  emptyBox: <Award className="h-10 w-10 text-muted/40" strokeWidth={1.5} />,
 };
 
 export default async function LeaderboardPage() {
@@ -121,45 +117,45 @@ export default async function LeaderboardPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="data-table">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/30 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                <th className="px-6 py-3 w-16">Rank</th>
-                <th className="px-6 py-3">Agent</th>
-                <th className="px-6 py-3 text-right">Avg score</th>
-                <th className="px-6 py-3 text-right">Scored calls</th>
-                <th className="px-6 py-3 text-right">Excellent (&gt;85%)</th>
-                <th className="px-6 py-3 text-right">Needs Review</th>
-                <th className="px-6 py-3 text-right">Band</th>
+              <tr>
+                <th className="w-16">Rank</th>
+                <th>Agent</th>
+                <th className="text-right">Avg score</th>
+                <th className="text-right">Scored calls</th>
+                <th className="text-right">Excellent (&gt;85%)</th>
+                <th className="text-right">Needs Review</th>
+                <th className="text-right">Band</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-[13px]">
+            <tbody>
               {ranked.map((row, index) => {
                 const rank = index + 1;
 
                 return (
-                  <tr key={row.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-3.5 whitespace-nowrap tabular-nums text-muted">
+                  <tr key={row.id} className="transition-colors">
+                    <td className="whitespace-nowrap tabular-nums text-muted">
                       {rank}
                     </td>
-                    <td className="px-6 py-3.5 max-w-[16rem]">
-                      <span className="block font-medium text-ink tabular-nums break-all">{row.name}</span>
+                    <td className="max-w-[16rem]">
+                      <span className="block font-medium text-ink tabular-nums break-words">{row.name}</span>
                     </td>
-                    <td className="px-6 py-3.5 text-right whitespace-nowrap">
+                    <td className="text-right whitespace-nowrap">
                       <span className={`${scoreChipClass(row.avg_score)} tabular-nums`}>
                         {row.avg_score}%
                       </span>
                     </td>
-                    <td className="px-6 py-3.5 text-right font-medium text-slate-700 tabular-nums">
+                    <td className="text-right font-medium text-slate-700 tabular-nums">
                       {row.call_count}
                     </td>
-                    <td className="px-6 py-3.5 text-right font-medium tabular-nums text-ink">
+                    <td className="text-right font-medium tabular-nums text-ink">
                       {row.excellent}
                     </td>
-                    <td className="px-6 py-3.5 text-right font-medium tabular-nums text-ink">
+                    <td className="text-right font-medium tabular-nums text-ink">
                       {row.poor + row.needs_improvement}
                     </td>
-                    <td className="px-6 py-3.5 text-right whitespace-nowrap">
+                    <td className="text-right whitespace-nowrap">
                       <span className="chip">
                         {row.avg_score >= 85
                           ? "Excellent"

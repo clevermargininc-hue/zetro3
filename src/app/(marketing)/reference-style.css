@@ -1,0 +1,37 @@
+.reference-landing{--brand-blue:#0063ff;--brand-navy:#081b38;--brand-cyan:#25bcef;font-family:var(--font-inter),Arial,sans-serif;color:#0a2046}
+.reference-landing>div:first-child{background:#081b38;border-bottom:0}
+.reference-landing>section:first-of-type{background:radial-gradient(ellipse at 72% 83%,#0063ed88 0%,#0a3e8244 33%,transparent 61%),linear-gradient(115deg,#0c1d38 0%,#071d3e 49%,#06224c 100%);padding-top:32px;padding-bottom:88px}
+.reference-landing header>div{padding-top:24px;padding-bottom:24px}
+.reference-landing header nav{gap:38px}
+.reference-landing h1{font-size:clamp(34px,3.6vw,52px);line-height:1.13;letter-spacing:-.035em;font-weight:800}
+.reference-landing h1 span:nth-child(2){color:#25bcef}
+.reference-landing h1~p{font-size:16px;line-height:1.75;color:#e5edfc;max-width:490px}
+.reference-landing a[href='/talk-sales']{background:#0063ff;border-radius:999px;box-shadow:0 5px 22px #0063ff24}
+.reference-landing a[href='/talk-sales']:hover{background:#1677ff}
+.reference-landing #how-it-works{padding-top:96px;padding-bottom:94px;background:radial-gradient(ellipse at 50% 100%,#eaf2ff, #f7faff 70%)}
+.reference-landing #how-it-works h2{font-size:34px;letter-spacing:-.035em;color:#0a2046}
+.reference-landing #how-it-works+section{background:linear-gradient(180deg,#f4f8ff,#edf4ff);border-radius:0 0 8% 8%;padding-top:96px;padding-bottom:100px}
+.reference-landing footer{background:#081b38;color:#b9c9e1}
+.reference-landing .industry-section{padding:100px 24px 96px;background:#fff}
+.reference-landing .industry-section>div{max-width:1216px;margin:auto}
+.reference-landing .industry-heading{text-align:center;font-size:26px;font-weight:750;letter-spacing:-.03em}
+.reference-landing .industry-description{margin:16px auto 40px;text-align:center;color:#536986;font-size:14px;line-height:1.7}
+.reference-landing .industry-list{display:flex;flex-wrap:wrap;justify-content:center;gap:24px 48px;padding:20px 0 96px;font-size:15px;font-weight:650;color:#42628d}
+.reference-landing .outcome-banner{display:grid;grid-template-columns:1.5fr 1fr;gap:48px;align-items:center;overflow:hidden;border-radius:20px;padding:38px;background:radial-gradient(ellipse at 65% 20%,#0c51bb,#0a2248 55%,#081b38);color:#fff}
+.reference-landing .outcome-banner small{color:#81bdff;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.reference-landing .outcome-banner h2{margin:12px 0;font-size:28px;font-weight:750;line-height:1.2;letter-spacing:-.03em}
+.reference-landing .outcome-banner p{color:#c7d8ef;font-size:14px;line-height:1.7;max-width:490px}
+.reference-landing .outcome-action{padding-left:36px;border-left:1px solid #ffffff25}
+.reference-landing .outcome-action a{display:inline-flex;margin-top:20px;padding:12px 22px;font-size:13px;font-weight:650}
+.reference-landing #how-it-works h2{margin-top:22px}
+.reference-landing #how-it-works h2+p{margin-top:16px;line-height:1.75}
+.reference-landing #how-it-works h3{margin-top:20px}
+.reference-landing #how-it-works h3+p{margin-top:12px;line-height:1.75}
+.reference-landing>section:first-of-type{padding-top:48px;padding-bottom:110px}
+.reference-landing h1{margin-top:28px}
+.reference-landing h1~p{margin-top:28px}
+.reference-landing .outcome-banner{padding:48px;gap:56px}
+.reference-landing footer{padding-top:72px;padding-bottom:42px}
+@media(max-width:767px){.reference-landing #how-it-works,.reference-landing #how-it-works+section{padding-top:64px;padding-bottom:64px}.reference-landing .industry-section{padding-top:64px;padding-bottom:64px}.reference-landing .industry-list{padding-bottom:56px}.reference-landing .outcome-banner{padding:28px;gap:28px}}
+@media(min-width:1024px){.reference-landing>section:first-of-type>div.relative>div.grid{column-gap:48px}.reference-landing>section:first-of-type>div.relative{max-width:1320px;padding-left:48px;padding-right:48px}}
+@media(max-width:767px){.reference-landing h1 span{white-space:normal}.reference-landing h1{font-size:clamp(30px,7.5vw,44px)}.reference-landing>section:first-of-type{padding-top:20px;padding-bottom:65px}.reference-landing .outcome-banner{grid-template-columns:1fr;padding:26px;gap:26px}.reference-landing .outcome-action{padding:24px 0 0;border-left:0;border-top:1px solid #ffffff25}.reference-landing .industry-list{gap:16px 24px}.reference-landing .industry-heading{font-size:23px}}

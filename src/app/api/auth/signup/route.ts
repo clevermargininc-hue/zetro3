@@ -9,9 +9,9 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   const country = countryFromHeaders(request.headers);
-  const abroad = country ? !isAllowedCountry(country) : process.env.NODE_ENV === "production";
+  const abroad = country ? !isAllowedCountry(country) : false;
   if (abroad) {
-    return NextResponse.json({ error: "Zetro is only available in Tanzania." }, { status: 403 });
+    return NextResponse.json({ error: "Zetro is not available in your region." }, { status: 403 });
   }
 
   const limited = rateLimit(`signup:${clientKey(request)}`, 5, 60 * 60_000);

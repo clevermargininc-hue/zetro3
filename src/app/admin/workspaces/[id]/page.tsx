@@ -4,7 +4,7 @@ import { AdminPlanForm } from "@/components/admin-plan-form";
 import { PlanChip } from "@/components/admin-plan-chip";
 import { KpiStrip, PageHeader } from "@/components/ui";
 import { getWorkspaceForAdmin } from "@/lib/admin-data";
-import { LENGTH_BANDS, SETUP_FEE_TZS, formatTzs, formatUsdFromTzs } from "@/lib/billing";
+import { LENGTH_BANDS, SETUP_FEE_TZS, formatTzs, formatUsdFromTzs, totalBandCalls } from "@/lib/billing";
 
 export default async function AdminWorkspacePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,28 +19,16 @@ export default async function AdminWorkspacePage({ params }: { params: Promise<{
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue">
-            <Link href="/admin" className="hover:underline">Admin Console</Link>
-            <span className="text-slate-300">/</span>
-            <Link href="/admin/companies" className="hover:underline text-muted">Companies</Link>
-            <span className="text-slate-300">/</span>
-            <span className="text-ink font-normal">{workspace.name}</span>
-          </div>
-          <h1 className="mt-1 text-[22px] font-bold tracking-tight text-ink">
-            {workspace.name}
-          </h1>
-          <p className="mt-1 text-[13px] text-muted">
-            {[
+      <PageHeader
+        eyebrow="Company workspace"
+        title={workspace.name}
+        description={[
               workspace.domain || "No company domain",
               workspace.access === "team" ? "Team access" : "Solo access",
               workspace.country || "Tanzania",
               `Workspace created ${workspace.createdAt.slice(0, 10)}`,
             ].join(" · ")}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+        actions={<div className="flex items-center gap-2">
           <PlanChip plan={status.plan} />
           <Link
             href="/admin/companies"
@@ -48,8 +36,8 @@ export default async function AdminWorkspacePage({ params }: { params: Promise<{
           >
             ← Back to Companies
           </Link>
-        </div>
-      </div>
+        </div>}
+      />
 
       {status.setupMissing ? (
         <p className="alert-error text-[13px]">
@@ -71,8 +59,8 @@ export default async function AdminWorkspacePage({ params }: { params: Promise<{
           },
           {
             label: `Scored in ${monthLabel}`,
-            value: (first.short + first.medium + first.long).toLocaleString("en-US"),
-            hint: `${rescore.short + rescore.medium + rescore.long} re-scored`,
+            value: totalBandCalls(first).toLocaleString("en-US"),
+            hint: `${totalBandCalls(rescore)} re-scored`,
           },
           {
             label: "Can score now",

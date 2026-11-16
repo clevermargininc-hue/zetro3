@@ -1,15 +1,16 @@
+import "../(marketing)/z-landing.css";
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Metadata } from "next";
-import { MarketingNav } from "@/components/marketing-nav";
+import { ZetroPublicFooter, ZetroPublicNav } from "@/components/landing/zetro-public-chrome";
 import { SalesForm } from "@/components/sales-form";
-import { SALES_EMAIL, salesMailto } from "@/lib/contact";
 import { TRIAL_CALLS } from "@/lib/billing";
+import { SALES_EMAIL, salesMailto } from "@/lib/contact";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Talk to Sales | Zetro",
+  title: "Book a Demo & Talk to Sales | Zetro",
   description:
-    "Tell us how many calls you score and average duration. We will reply with a customized quote in Tanzanian shillings.",
+    "Tell us how many calls you score and average duration. Our Dar es Salaam team will reply with an official quote in Tanzanian Shillings.",
 };
 
 const BENEFITS = [
@@ -17,21 +18,21 @@ const BENEFITS = [
     step: "01",
     label: "Billing",
     title: "Pay per scored call",
-    desc: "Priced strictly by recording length and monthly volume tier. Failed or unscored uploads are always free.",
+    desc: "Priced strictly by recording duration and monthly volume tier. Failed or unscored uploads are never billed.",
   },
   {
     step: "02",
     label: "Standards",
-    title: "Your own scorecard",
-    desc: "Upload your existing Excel, Word, or PDF guidelines. We score to your exact criteria weights and Auto-Zero rules.",
+    title: "Your own company scorecard",
+    desc: "Upload your existing Excel, Word, or PDF guidelines. Zetro applies your exact weights and Auto-Zero triggers.",
   },
   {
     step: "03",
-    label: "Terms",
-    title: "Invoicing in TZS",
-    desc: "Direct monthly or annual invoicing payable within 30 days. No credit card required, with US dollars as a reference.",
+    label: "Commercials",
+    title: "30-day TZS invoicing",
+    desc: "Monthly or annual enterprise contracts invoiced in Tanzanian Shillings with 30-day terms and zero online card required.",
   },
-];
+] as const;
 
 export default async function TalkSalesPage({
   searchParams,
@@ -52,117 +53,122 @@ export default async function TalkSalesPage({
   }
 
   return (
-    <div className="marketing-shell flex min-h-full flex-col bg-white">
-      <MarketingNav signedIn={signedIn} />
+    <div className="z-landing flex min-h-full flex-col antialiased">
+      <a href="#main-content" className="z-skip">
+        Skip to main content
+      </a>
 
-      <main className="flex-1 bg-surface-2/40 py-12 lg:py-20">
-        <div className="mx-auto w-full max-w-6xl px-6 lg:px-8">
-          {/* Header */}
-          <div className="max-w-2xl">
-            <p className="page-kicker">Enterprise &amp; Volume</p>
-            <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
-              Tell us your calls. We will send a quote.
+      <ZetroPublicNav signedIn={signedIn} />
+
+      <main id="main-content" className="flex-1">
+        {/* ── Subhero ───────────────────────────────────────────────── */}
+        <section className="z-subhero" aria-labelledby="sales-heading">
+          <div className="z-container">
+            <span className="z-eyebrow">Dar es Salaam commercial team · Demo &amp; Quote</span>
+            <h1 id="sales-heading" className="z-subhero-h1">
+              Tell us your call volume.{" "}
+              <span className="z-h1-accent">We&apos;ll prepare a custom TZS proposal.</span>
             </h1>
-            <p className="mt-4 text-[16px] leading-relaxed text-muted">
-              How many calls you want scored each month and how long they last sets your price per call.
-              Invoices are issued in Tanzanian shillings.
+            <p className="z-subhero-lead">
+              Book a live walkthrough with our East Africa engineering and QA team or request an
+              official enterprise quote in Tanzanian Shillings based on your monthly call length
+              and queue count.
             </p>
           </div>
+        </section>
 
-          <div className="mt-12 grid grid-cols-1 items-start gap-10 lg:grid-cols-12 lg:gap-12">
-            {/* Left Column: Benefit Cards matching Pricing Charges Style */}
-            <div className="space-y-6 lg:col-span-5">
-              <div className="grid gap-px border border-line bg-line shadow-xs">
-                {BENEFITS.map((item) => (
-                  <div key={item.step} className="bg-white p-5">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
-                      {item.step} · {item.label}
-                    </p>
-                    <h3 className="mt-1 text-[15px] font-semibold text-ink">{item.title}</h3>
-                    <p className="mt-2 text-[13px] leading-relaxed text-muted">{item.desc}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Direct email highlight card */}
-              <div className="border border-blue/20 bg-blue-soft p-5 shadow-xs">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-blue">
-                  Direct Contract Inquiries
-                </p>
-                <h3 className="mt-1 text-[15px] font-semibold text-ink">Prefer email or phone?</h3>
-                <p className="mt-1 text-[13px] leading-relaxed text-muted">
-                  Email us with your floor requirements. We will review and reply within one business
-                  day with an agreement.
-                </p>
-                <a
-                  href={salesMailto("Zetro — contract or sales deal")}
-                  className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-blue hover:underline"
-                >
-                  <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                    />
-                  </svg>
-                  <span>{SALES_EMAIL}</span>
-                </a>
-              </div>
-
-              <div className="flex items-center gap-2 text-[12px] text-muted">
-                <span className="font-semibold text-good">✓</span>
-                <span>Includes {TRIAL_CALLS} free trial calls scored on your own scorecard</span>
-              </div>
-            </div>
-
-            {/* Right Column: Sales Quote Form Card matching Pricing Calculator */}
-            <div className="lg:col-span-7">
-              <div className="border border-line bg-white shadow-xs">
-                <div className="border-b border-line bg-bg px-6 py-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
-                    Quote Request
-                  </p>
-                  <h2 className="mt-0.5 text-[18px] font-semibold text-ink">
-                    Ask for a custom price in TZS
-                  </h2>
-                  <p className="mt-1 text-[13px] text-muted">
-                    Tell us your volume. We reply with a price per call in TZS. This form does not charge your card.
-                  </p>
+        {/* ── Two-Column Demo + Quote Request ───────────────────────── */}
+        <section className="z-section" style={{ paddingTop: "56px", paddingBottom: "88px" }}>
+          <div className="z-container">
+            <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-12 lg:gap-12">
+              {/* Left Column: Benefits & Direct Contact */}
+              <div className="space-y-6 lg:col-span-5">
+                <div className="z-card divide-y divide-[#E3E9F5] overflow-hidden">
+                  {BENEFITS.map((item) => (
+                    <div key={item.step} className="p-6">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-[#2459E8]">
+                        {item.step} · {item.label}
+                      </p>
+                      <h2 className="font-display mt-1.5 text-[17px] font-bold text-[#0A1A3F]">
+                        {item.title}
+                      </h2>
+                      <p className="mt-1.5 text-[13.5px] leading-relaxed text-[#5A6882]">
+                        {item.desc}
+                      </p>
+                    </div>
+                  ))}
                 </div>
 
-                <div className="p-6 sm:p-8">
-                  <SalesForm
-                    initialCalls={calls}
-                    initialMinutes={minutes}
-                    initialBilling={billing}
-                  />
+                <div className="rounded-[16px] border border-[#DCE6FF] bg-[#EEF3FF]/70 p-6">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-[#2459E8]">
+                    Direct commercial inquiries
+                  </p>
+                  <h2 className="font-display mt-1.5 text-[17px] font-bold text-[#0A1A3F]">
+                    Prefer email or direct procurement review?
+                  </h2>
+                  <p className="mt-1.5 text-[13.5px] leading-relaxed text-[#5A6882]">
+                    Send your floor requirements or RFP notes directly. We respond within one
+                    business day with a commercial quote in TZS.
+                  </p>
+                  <a
+                    href={salesMailto("Zetro — contract or sales deal")}
+                    className="mt-4 inline-flex items-center gap-2 text-[13.5px] font-semibold text-[#2459E8] hover:underline"
+                  >
+                    <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span>{SALES_EMAIL}</span>
+                  </a>
+                </div>
+
+                <div className="z-card flex items-center justify-between gap-4 p-4 text-[13px] text-[#0A1A3F]">
+                  <span className="font-medium">
+                    Includes {TRIAL_CALLS} free calls scored on your own rubric
+                  </span>
+                  <Link
+                    href="/pricing#calculator"
+                    className="shrink-0 font-semibold text-[#2459E8] hover:underline"
+                  >
+                    Open calculator →
+                  </Link>
+                </div>
+              </div>
+
+              {/* Right Column: Official Quote Form */}
+              <div className="lg:col-span-7">
+                <div className="z-card overflow-hidden">
+                  <div className="border-b border-[#E3E9F5] bg-[#F8FAFF] px-6 py-5 sm:px-8">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-[#2459E8]">
+                      Quote &amp; walkthrough request
+                    </p>
+                    <h2 className="font-display mt-1 text-[21px] font-bold text-[#0A1A3F]">
+                      Request an official quote in TZS
+                    </h2>
+                    <p className="mt-1 text-[13.5px] text-[#5A6882]">
+                      Share your estimated monthly call volume and recording length. No card required.
+                    </p>
+                  </div>
+
+                  <div className="p-6 sm:p-8">
+                    <SalesForm
+                      initialCalls={calls}
+                      initialMinutes={minutes}
+                      initialBilling={billing}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
       </main>
 
-      {/* Footer matching standard marketing layout */}
-      <footer className="mt-auto border-t border-line bg-bg py-12">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-          <p className="text-[12px] font-semibold text-muted">
-            Zetro is a product of Clevermargins Software Business Solutions (CSBS).
-          </p>
-          <div className="flex items-center gap-6 text-[13px] font-semibold text-muted">
-            <Link href="/pricing" className="hover:text-ink">
-              Pricing
-            </Link>
-            <Link href="/how-it-works" className="hover:text-ink">
-              How it works
-            </Link>
-            <Link href="/login" className="hover:text-ink">
-              Sign in
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <ZetroPublicFooter signedIn={signedIn} />
     </div>
   );
 }

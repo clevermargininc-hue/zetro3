@@ -52,7 +52,7 @@ export function AdminLiveUsers({ initial, liveMinutes }: { initial: LiveState; l
 
   return (
     <section className="surface overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line bg-blue-soft px-5 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line bg-white px-5 py-5">
         <div className="flex items-center gap-4">
           <span className="relative flex h-3 w-3">
             {live.users.length ? (

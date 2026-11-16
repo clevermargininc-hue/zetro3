@@ -39,37 +39,27 @@ export default async function AdminAnalyticsPage({
 
   return (
     <div className="space-y-7">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue">
-            <span>Admin Console</span>
-            <span className="text-slate-300">/</span>
-            <span className="text-muted font-normal">Real-Time Operations</span>
-          </div>
-          <h1 className="mt-1 text-[22px] font-bold tracking-tight text-ink">
-            Platform Analytics & Overview
-          </h1>
-          <p className="mt-1 max-w-2xl text-[13px] text-muted leading-relaxed">
-            Realtime activity, daily call auditing throughput, active user sessions, and conversion funnel from free trial to paying enterprise accounts.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-1.5 rounded-lg border border-line bg-white p-1 shadow-2xs">
+      <PageHeader
+        eyebrow="Platform overview"
+        title="Your platform, at a glance"
+        description="Monitor company activity, call volume, and revenue across Zetro."
+        actions={<div className="flex items-center gap-1 rounded-lg border border-line bg-white p-1">
           {ANALYTICS_RANGES.map((option) => (
             <Link
               key={option}
               href={option === 30 ? "/admin" : `/admin?range=${option}`}
+              aria-current={option === days ? "page" : undefined}
               className={`rounded px-3 py-1.5 text-[12px] font-semibold transition-colors ${
                 option === days
                   ? "bg-blue text-white shadow-2xs"
                   : "text-muted hover:text-ink hover:bg-slate-50"
               }`}
             >
-              {option}d
+              {option} days
             </Link>
           ))}
-        </div>
-      </div>
+        </div>}
+      />
 
       {data.setupMissing ? (
         <p className="alert-error text-[13px]">
@@ -81,6 +71,7 @@ export default async function AdminAnalyticsPage({
 
       <AdminLiveUsers initial={data.live} liveMinutes={LIVE_MINUTES} />
 
+      <h2 className="workspace-section-title">Audience & engagement</h2>
       <KpiStrip
         items={[
           { label: "Active today", value: n(data.counts.activeToday) },
@@ -95,6 +86,7 @@ export default async function AdminAnalyticsPage({
           Most of them are bots, so they are not counted anywhere on this page.
         </p>
       ) : null}
+      <h2 className="workspace-section-title">Business performance</h2>
       <KpiStrip
         items={[
           { label: "Paying companies", value: n(data.payingCount), hint: `of ${n(data.companyCount)}` },
@@ -112,6 +104,7 @@ export default async function AdminAnalyticsPage({
         ]}
       />
 
+      <h2 className="workspace-section-title">Activity trends</h2>
       <div className="grid gap-5 lg:grid-cols-2">
         <ChartCard
           title="Active users per day"

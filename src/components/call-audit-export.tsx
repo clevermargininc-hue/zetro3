@@ -1,32 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { FileText, Printer } from "lucide-react";
+import { BrandIcon } from "@/components/brand-icon";
 import { authFetch } from "@/lib/auth-fetch";
 
 const Icons = {
-  excel: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="8" y1="13" x2="16" y2="17" />
-      <line x1="16" y1="13" x2="8" y2="17" />
-    </svg>
-  ),
-  pdf: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="16" y1="13" x2="8" y2="13" />
-      <line x1="16" y1="17" x2="8" y2="17" />
-    </svg>
-  ),
-  print: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="6 9 6 2 18 2 18 9" />
-      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-      <rect x="6" y="14" width="12" height="8" />
-    </svg>
-  ),
+  excel: <BrandIcon brand="excel" size={14} variant="mark" />,
+  pdf: <FileText className="h-3.5 w-3.5 text-rose-600" />,
+  print: <Printer className="h-3.5 w-3.5" />,
 };
 
 export function CallAuditExport({ callId }: { callId: string }) {

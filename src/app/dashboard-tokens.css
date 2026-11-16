@@ -1,0 +1,146 @@
+/* =========================================================================
+   ZETRO ENTERPRISE DASHBOARD DESIGN TOKENS
+   Strict CSS-variable theme supporting Light Mode (default) and Navy Dark Mode.
+   Palette: Navy #0A1A3F, Surface #FFFFFF, Canvas #F6F8FC, Electric Blue #2F6BFF.
+   Semantic status only: Green #16A34A, Amber #F59E0B, Red #DC2626 (10% tints).
+   ========================================================================= */
+
+[data-zetro-app] {
+  --z-canvas: #f6f8fc;
+  --z-surface: #ffffff;
+  --z-surface-muted: #f1f4fa;
+  --z-surface-elevated: #ffffff;
+  --z-navy: #0a1a3f;
+  --z-ink: #0a1a3f;
+  --z-ink-secondary: #475569;
+  --z-ink-muted: #64748b;
+  --z-border: #e6eaf2;
+  --z-border-strong: #cbd5e1;
+
+  --z-accent: #2f6bff;
+  --z-accent-hover: #1e56e8;
+  --z-accent-tint: rgba(47, 107, 255, 0.1);
+  --z-accent-fg: #ffffff;
+
+  --z-pass: #16a34a;
+  --z-pass-tint: rgba(22, 163, 74, 0.1);
+  --z-warn: #f59e0b;
+  --z-warn-tint: rgba(245, 158, 11, 0.1);
+  --z-fail: #dc2626;
+  --z-fail-tint: rgba(220, 38, 38, 0.1);
+
+  --z-radius-control: 8px;
+  --z-radius-card: 14px;
+  --z-radius-panel: 20px;
+
+  --z-shadow-card: 0 1px 2px rgba(10, 26, 63, 0.04), 0 4px 16px rgba(10, 26, 63, 0.03);
+  --z-shadow-panel: 0 12px 36px rgba(10, 26, 63, 0.12), 0 2px 8px rgba(10, 26, 63, 0.06);
+
+  --z-dot-color: rgba(10, 26, 63, 0.09);
+
+  --z-duration-fast: 150ms;
+  --z-duration-panel: 200ms;
+  --z-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  font-family: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
+  background-color: var(--z-canvas);
+  color: var(--z-ink);
+  color-scheme: light;
+}
+
+[data-zetro-app][data-theme="dark"] {
+  --z-canvas: #060e22;
+  --z-surface: #0a1a3f;
+  --z-surface-muted: #102452;
+  --z-surface-elevated: #0f214c;
+  --z-navy: #f8faff;
+  --z-ink: #f1f5ff;
+  --z-ink-secondary: #a5b4d4;
+  --z-ink-muted: #7e91b8;
+  --z-border: #1b2f5e;
+  --z-border-strong: #2b447d;
+
+  --z-accent: #4d82ff;
+  --z-accent-hover: #2f6bff;
+  --z-accent-tint: rgba(77, 130, 255, 0.16);
+  --z-accent-fg: #ffffff;
+
+  --z-pass: #22c55e;
+  --z-pass-tint: rgba(34, 197, 94, 0.14);
+  --z-warn: #fbbf24;
+  --z-warn-tint: rgba(251, 191, 36, 0.14);
+  --z-fail: #f87171;
+  --z-fail-tint: rgba(248, 113, 113, 0.14);
+
+  --z-shadow-card: 0 1px 2px rgba(2, 6, 18, 0.35), 0 4px 16px rgba(2, 6, 18, 0.25);
+  --z-shadow-panel: 0 16px 40px rgba(2, 6, 18, 0.55);
+
+  --z-dot-color: rgba(165, 180, 212, 0.12);
+
+  color-scheme: dark;
+}
+
+.z-display {
+  font-family: var(--font-space-grotesk), "Space Grotesk", system-ui, sans-serif;
+}
+
+.z-tabular {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Faint dot-grid texture: restricted ONLY to EmptyState and PageHeader strips */
+.z-dot-grid {
+  background-image: radial-gradient(var(--z-dot-color) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.z-card {
+  background-color: var(--z-surface);
+  border: 1px solid var(--z-border);
+  border-radius: var(--z-radius-card);
+  box-shadow: var(--z-shadow-card);
+  transition:
+    border-color var(--z-duration-fast) var(--z-ease),
+    background-color var(--z-duration-fast) var(--z-ease);
+}
+
+.z-panel {
+  background-color: var(--z-surface-elevated);
+  border: 1px solid var(--z-border);
+  border-radius: var(--z-radius-panel);
+  box-shadow: var(--z-shadow-panel);
+}
+
+.z-focus:focus-visible {
+  outline: 2px solid var(--z-accent);
+  outline-offset: 2px;
+}
+
+@keyframes z-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.48;
+  }
+  50% {
+    opacity: 0.92;
+  }
+}
+
+.z-skeleton {
+  background-color: var(--z-surface-muted);
+  border-radius: var(--z-radius-control);
+  animation: z-skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-zetro-app],
+  [data-zetro-app] *,
+  [data-zetro-app] *::before,
+  [data-zetro-app] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

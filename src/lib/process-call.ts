@@ -23,6 +23,7 @@ import { describeAiError, describePrepareError } from "@/lib/ai-client";
 import { getMembership } from "@/lib/workspaces";
 import { HOLD_ASR_KEYTERMS } from "@/lib/detect-holds";
 import { resolvedLanguageMode, workspaceLanguages } from "@/lib/locale";
+import { analyzeCallCustomerJourney } from "@/lib/customer-journey-service";
 
 function inferRoleFromLabel(label: string): SpeakerRole | null {
   const n = label.trim().toLowerCase();
@@ -252,6 +253,11 @@ export async function transcribeCall(callId: string, options: JobOptions = {}) {
         ...(force ? { completed_at: null } : {}),
       })
       .eq("id", callId);
+
+    // Phase 7: Trigger Customer Journey & Repeat Issue Intelligence (isolated so it never blocks transcription)
+    await analyzeCallCustomerJourney(callId, { force }).catch((journeyErr) => {
+      console.warn("Customer journey analysis after transcription skipped:", journeyErr);
+    });
   } catch (err) {
     const message = describePrepareError(err);
     const saved = await utteranceCount(supabase, callId).catch(() => 0);
@@ -467,6 +473,11 @@ export async function scoreCall(
         error_message: null,
       })
       .eq("id", callId);
+
+    // Phase 7: Enrich Customer Journey & Repeat Issue Intelligence with QA evaluation (isolated so it never blocks scoring)
+    await analyzeCallCustomerJourney(callId, { force: true }).catch((journeyErr) => {
+      console.warn("Customer journey enrichment after scoring skipped:", journeyErr);
+    });
   } catch (err) {
     const message = describeAiError(err);
     const { data: kept } = await db.from("call_scores").select("id").eq("call_id", callId).maybeSingle();

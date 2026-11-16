@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { DeleteCallButton } from "@/components/delete-call-button";
 import { useCallLive } from "@/components/use-call-live";
 import { ScoreCard } from "@/components/score-card";
@@ -14,12 +15,7 @@ import type { Call, CallScore } from "@/lib/types";
 import { PageHeader } from "@/components/ui";
 
 const Icons = {
-  arrowLeft: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="19" y1="12" x2="5" y2="12" />
-      <polyline points="12 19 5 12 12 5" />
-    </svg>
-  ),
+  arrowLeft: <ArrowLeft className="h-3.5 w-3.5" />,
 };
 
 export function ScoreWorkspace({
@@ -31,7 +27,7 @@ export function ScoreWorkspace({
   initialScore: CallScore | null;
   initialHasTranscript?: boolean;
 }) {
-  const { call, setCall, score, hasTranscript } = useCallLive(
+  const { call, setCall, score, audioUrl, hasTranscript } = useCallLive(
     initialCall,
     initialScore,
     initialHasTranscript,
@@ -47,7 +43,7 @@ export function ScoreWorkspace({
         <div className="flex items-center justify-between mb-3">
           <Link
             href="/upload/score"
-            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-slate-500 hover:text-blue"
+            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-slate-500 hover:text-navy"
           >
             {Icons.arrowLeft}
             <span>Back to score queue</span>
@@ -88,6 +84,18 @@ export function ScoreWorkspace({
       {call.error_message && (
         <div className="alert-error no-print text-[13px]">{call.error_message}</div>
       )}
+
+      {audioUrl ? (
+        <section className="surface no-print px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-[13px] font-semibold text-ink">Call Recording Playback</h2>
+            <p className="text-[12px] text-muted truncate">
+              Listen alongside your scorecard evaluation and coaching notes
+            </p>
+          </div>
+          <audio controls src={audioUrl} className="w-full sm:max-w-md h-9" preload="metadata" />
+        </section>
+      ) : null}
 
       {!canAudit && !busy && (
         <section className="surface no-print p-6 max-w-lg space-y-3">

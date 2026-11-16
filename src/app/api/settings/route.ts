@@ -3,7 +3,7 @@ import { getRequestUser } from "@/lib/supabase/request-user";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncProfileFromAuth, updateProfileName, updateUsername } from "@/lib/workspace-settings";
 import { displayCountry, workspaceLanguages } from "@/lib/locale";
-import { BILLING_PLAN_LABELS, estimateInvoice } from "@/lib/billing";
+import { BILLING_PLAN_LABELS, estimateInvoice, totalBandCalls } from "@/lib/billing";
 import { billingMonthLabel, getMonthBandUsage, getPlanStatus } from "@/lib/plans";
 import {
   getMembership,
@@ -77,12 +77,8 @@ export async function GET(request: Request) {
             rescore: monthUsage.rescore,
           })
         : null;
-    const scoredThisMonth = monthUsage
-      ? monthUsage.first.short + monthUsage.first.medium + monthUsage.first.long
-      : 0;
-    const rescoredThisMonth = monthUsage
-      ? monthUsage.rescore.short + monthUsage.rescore.medium + monthUsage.rescore.long
-      : 0;
+    const scoredThisMonth = monthUsage ? totalBandCalls(monthUsage.first) : 0;
+    const rescoredThisMonth = monthUsage ? totalBandCalls(monthUsage.rescore) : 0;
 
     const payload = {
       profile: {

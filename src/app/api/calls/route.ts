@@ -6,6 +6,7 @@ import type { LanguageMode } from "@/lib/types";
 import { fetchAllRows } from "@/lib/fetch-all";
 import { getMembership, getTeamScope } from "@/lib/workspaces";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { normalizePhoneNumber, resolveCountryIso } from "@/lib/customer-identity";
 
 export const runtime = "nodejs";
 
@@ -54,6 +55,11 @@ export async function POST(request: Request) {
     title?: string;
     agent_name?: string;
     language_mode?: LanguageMode;
+    caller_phone?: string;
+    external_customer_ref?: string;
+    location?: string;
+    service_provider?: string;
+    product_category?: string;
   };
 
   if (!body.audio_path) {
@@ -72,9 +78,11 @@ export async function POST(request: Request) {
     ? body.language_mode || "auto"
     : "auto";
   let languageMode = requested;
+  let countryIso = "TZ";
   try {
     const membership = await getMembership(user.id);
     languageMode = resolvedLanguageMode(membership?.country, requested);
+    countryIso = resolveCountryIso(membership?.country);
   } catch {
     languageMode = requested;
   }
@@ -109,19 +117,54 @@ export async function POST(request: Request) {
     }
   }
 
-  const { data: call, error } = await supabase
+  const basePayload = {
+    user_id: user.id,
+    agent_id: agentId,
+    title: body.title?.trim() || body.file_name || "Untitled call",
+    file_name: body.file_name || null,
+    audio_path: path,
+    language_mode: languageMode,
+    status: "queued" as const,
+  };
+
+  const normalizedPhone = body.caller_phone
+    ? normalizePhoneNumber(body.caller_phone, countryIso).e164 || body.caller_phone.trim()
+    : null;
+
+  const extendedPayload = {
+    ...basePayload,
+    ...(normalizedPhone ? { caller_phone: normalizedPhone } : {}),
+    ...(body.external_customer_ref?.trim()
+      ? { external_customer_ref: body.external_customer_ref.trim() }
+      : {}),
+    ...(body.location?.trim() ? { location: body.location.trim() } : {}),
+    ...(body.service_provider?.trim()
+      ? { service_provider: body.service_provider.trim() }
+      : {}),
+    ...(body.product_category?.trim()
+      ? { product_category: body.product_category.trim() }
+      : {}),
+  };
+
+  let { data: call, error } = await supabase
     .from("calls")
-    .insert({
-      user_id: user.id,
-      agent_id: agentId,
-      title: body.title?.trim() || body.file_name || "Untitled call",
-      file_name: body.file_name || null,
-      audio_path: path,
-      language_mode: languageMode,
-      status: "queued",
-    })
+    .insert(extendedPayload)
     .select("*")
     .single();
+
+  // Graceful fallback if optional columns haven't been added to `public.calls` yet
+  if (
+    error &&
+    /caller_phone|external_customer_ref|location|service_provider|product_category/i.test(
+      error.message,
+    )
+  ) {
+    ({ data: call, error } = await supabase
+      .from("calls")
+      .insert(basePayload)
+      .select("*")
+      .single());
+  }
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

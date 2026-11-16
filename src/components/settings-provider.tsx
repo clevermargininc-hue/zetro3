@@ -31,7 +31,7 @@ export type SettingsData = {
     monthLabel: string;
     scoredThisMonth: number;
     rescoredThisMonth: number;
-    byBand: { short: number; medium: number; long: number };
+    byBand: { upTo3: number; upTo6: number; upTo9: number; upTo12: number; upTo15: number };
     spentTzs: number;
     invoiceTzs: number;
     minimumApplied: boolean;

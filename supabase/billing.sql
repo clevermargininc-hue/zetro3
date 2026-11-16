@@ -177,9 +177,12 @@ as $$
   select
     e.kind,
     case
-      when coalesce(e.duration_seconds, 0) <= 300 then 'short'
-      when e.duration_seconds <= 600 then 'medium'
-      else 'long'
+      when coalesce(e.duration_seconds, 0) <= 180 then 'upTo3'
+      when e.duration_seconds <= 360 then 'upTo6'
+      when e.duration_seconds <= 540 then 'upTo9'
+      when e.duration_seconds <= 720 then 'upTo12'
+      when e.duration_seconds <= 900 then 'upTo15'
+      else 'over'
     end,
     count(*)
   from public.score_events e

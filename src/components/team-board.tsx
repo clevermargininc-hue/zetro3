@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check } from "lucide-react";
 import { authFetch } from "@/lib/auth-fetch";
 import { publicName } from "@/lib/display-name";
 
@@ -43,6 +44,7 @@ export function TeamBoard() {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [inviteDraft, setInviteDraft] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   function load() {
     return authFetch("/api/team")
@@ -151,7 +153,7 @@ export function TeamBoard() {
                 <button
                   type="submit"
                   disabled={busy === "invite"}
-                  className="btn bg-blue hover:bg-blue-2 text-white text-[13px] px-5 py-2 font-semibold shrink-0"
+                  className="btn btn-blue text-[13px] px-5 py-2 font-semibold shrink-0"
                 >
                   {busy === "invite" ? "Sending…" : "Send Invite"}
                 </button>
@@ -163,7 +165,7 @@ export function TeamBoard() {
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
                     Pending Invitations ({(data.invites || []).length})
                   </span>
-                  <div className="divide-y divide-slate-100 border border-line overflow-hidden">
+                  <div className="divide-y divide-slate-100 rounded-md border border-line overflow-hidden">
                     {(data.invites || []).map((invite) => (
                       <div
                         key={invite.id}
@@ -173,15 +175,25 @@ export function TeamBoard() {
                         <div className="flex items-center gap-3">
                           <button
                             type="button"
-                            className="font-semibold text-blue hover:underline text-[12px]"
+                            className="font-semibold text-text-link hover:underline text-[12px]"
                             onClick={() => {
                               const raw = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
                               const origin = (raw.match(/https?:\/\/[^\s]+/i)?.[0] || raw).replace(/\/$/, "");
                               const url = `${origin}/invite/${invite.token}`;
                               void navigator.clipboard.writeText(url);
+                              setCopiedId(invite.id);
+                              window.setTimeout(() => {
+                                setCopiedId((prev) => (prev === invite.id ? null : prev));
+                              }, 2000);
                             }}
                           >
-                            Copy Link
+                            {copiedId === invite.id ? (
+                              <span className="inline-flex items-center gap-1">
+                                Copied <Check className="h-3 w-3" />
+                              </span>
+                            ) : (
+                              "Copy Link"
+                            )}
                           </button>
                           <button
                             type="button"
@@ -194,7 +206,10 @@ export function TeamBoard() {
                           <button
                             type="button"
                             disabled={busy === invite.id}
-                            onClick={() => void act({ action: "cancel-invite", inviteId: invite.id }, invite.id)}
+                            onClick={() => {
+                              if (!window.confirm(`Revoke pending invitation for ${invite.email}?`)) return;
+                              void act({ action: "cancel-invite", inviteId: invite.id }, invite.id);
+                            }}
                             className="text-rose hover:text-rose/80 text-[12px]"
                           >
                             Revoke
@@ -216,7 +231,7 @@ export function TeamBoard() {
                 <p className="text-[13px] text-muted mt-0.5">Teammates requesting to access this organization workspace.</p>
               </div>
 
-              <div className="divide-y divide-slate-100 border border-line overflow-hidden">
+              <div className="divide-y divide-slate-100 rounded-md border border-line overflow-hidden">
                 {data.requests.map((request) => (
                   <div key={request.id} className="p-4 bg-slate-50 flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -228,7 +243,7 @@ export function TeamBoard() {
                         type="button"
                         disabled={busy === request.id}
                         onClick={() => review(request.id, "approve")}
-                        className="btn bg-blue hover:bg-blue-2 text-white text-[12px] px-3.5 py-1.5 font-semibold"
+                        className="btn btn-blue text-[12px] px-3.5 py-1.5 font-semibold"
                       >
                         Approve
                       </button>
@@ -236,7 +251,7 @@ export function TeamBoard() {
                         type="button"
                         disabled={busy === request.id}
                         onClick={() => review(request.id, "reject")}
-                        className="btn bg-white hover:bg-slate-50 text-slate-700 border border-line text-[12px] px-3.5 py-1.5"
+                        className="btn btn-ghost text-[12px] px-3.5 py-1.5"
                       >
                         Decline
                       </button>
@@ -263,7 +278,7 @@ export function TeamBoard() {
               {data.members.map((member) => (
                 <div key={member.userId} className="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-[11px] font-bold shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center text-[11px] font-bold shrink-0">
                       {getInitials(member.fullName || member.email)}
                     </div>
                     <div className="min-w-0">
@@ -279,9 +294,10 @@ export function TeamBoard() {
                       <button
                         type="button"
                         disabled={busy === member.userId}
-                        onClick={() =>
-                          void act({ action: "remove-member", userId: member.userId }, member.userId)
-                        }
+                        onClick={() => {
+                          if (!window.confirm(`Remove ${personLabel(member)} from this workspace?`)) return;
+                          void act({ action: "remove-member", userId: member.userId }, member.userId);
+                        }}
                         className="text-[12px] text-slate-400 hover:text-rose font-medium transition-colors"
                       >
                         Remove

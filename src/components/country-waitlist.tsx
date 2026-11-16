@@ -169,34 +169,41 @@ export function NotAvailablePanel({
   initialCountry: string | null;
 }) {
   const [country, setCountry] = useState(() => knownCode(countries, initialCountry));
-  const isLive = country !== "" && allowed.includes(country);
-  const liveNames = allowed.map((code) => nameFor(countries, code)).join(", ");
+  const allAllowed = allowed.includes("*") || allowed.length >= countries.length;
+  const isLive = allAllowed || (country !== "" && allowed.includes(country));
+  const liveNames = allAllowed
+    ? "all countries worldwide"
+    : allowed.map((code) => nameFor(countries, code)).join(", ");
 
   return (
     <div className="flex flex-col gap-6">
       <label htmlFor="waitlist-country" className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-ink">Let me know when Zetro launches in</span>
+        <span className="font-medium text-ink">Your country</span>
         <CountrySelect id="waitlist-country" countries={countries} value={country} onChange={setCountry} />
       </label>
 
       {isLive ? (
         <div className="border border-blue/30 bg-blue-soft px-5 py-4">
           <p className="text-[15px] font-semibold text-ink">
-            Zetro is already live in {nameFor(countries, country)}!
+            Zetro is live {country ? `in ${nameFor(countries, country)}` : "worldwide"}!
           </p>
           <p className="mt-1.5 text-[13px] leading-relaxed text-muted">
-            If you are in {nameFor(countries, country)} and still see this page, you may be on a VPN
-            or travelling. Turn off the VPN and reload, or send us a message below and we will help.
+            You can create a workspace and start scoring calls against your scorecards right now.
           </p>
+          <div className="mt-4">
+            <a href="/signup" className="btn btn-sm btn-blue inline-flex items-center">
+              Create an account &rarr;
+            </a>
+          </div>
         </div>
       ) : null}
 
-      {country ? (
+      {country && !isLive ? (
         <WaitlistForm
           key={country}
           country={country}
           countryName={nameFor(countries, country)}
-          submitLabel={isLive ? "Send message" : "Let me know"}
+          submitLabel="Let me know"
         />
       ) : (
         <p className="text-[13px] text-muted">Zetro is live in {liveNames}.</p>
@@ -218,14 +225,17 @@ export function SignupCountryGate({
   children: ReactNode;
 }) {
   const detected = knownCode(countries, initialCountry);
-  const lockedOut = detected !== "" && !allowed.includes(detected);
+  const allAllowed = allowed.includes("*") || allowed.length >= countries.length;
+  const lockedOut = !allAllowed && detected !== "" && !allowed.includes(detected);
   const [country, setCountry] = useState(detected);
-  const isLive = country !== "" && allowed.includes(country) && !lockedOut;
+  const isLive = allAllowed || (country !== "" && allowed.includes(country) && !lockedOut);
   const countryName = country ? nameFor(countries, country) : "";
-  const ordered = [
-    ...countries.filter((item) => allowed.includes(item.code)),
-    ...countries.filter((item) => !allowed.includes(item.code)),
-  ];
+  const ordered = allAllowed
+    ? countries
+    : [
+        ...countries.filter((item) => allowed.includes(item.code)),
+        ...countries.filter((item) => !allowed.includes(item.code)),
+      ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -240,15 +250,15 @@ export function SignupCountryGate({
         />
       </label>
 
-      {isLive ? children : null}
+      {/* Render signup form immediately when live or when all countries are allowed */}
+      {isLive || allAllowed ? children : null}
 
-      {country && !isLive ? (
+      {country && !isLive && !allAllowed ? (
         <div className="flex flex-col gap-5">
           <div className="border border-line bg-bg px-5 py-4">
             <p className="text-[15px] font-semibold text-ink">Zetro is not available in {countryName} yet</p>
             <p className="mt-1.5 text-[13px] leading-relaxed text-muted">
-              We are starting with contact centers in Tanzania. Leave your details and we will tell you
-              as soon as we launch in {countryName}.
+              We are expanding rapidly. Leave your details and we will notify you as soon as Zetro launches in {countryName}.
             </p>
           </div>
           <WaitlistForm key={country} country={country} countryName={countryName} />

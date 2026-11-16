@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { AppNav } from "@/components/app-nav";
+import design from "@/components/workspace-design.module.css";
+import { AppNav, AppTopBar } from "@/components/app-nav";
 import { PlanBanner } from "@/components/plan-banner";
 import { PresencePing } from "@/components/presence-ping";
 import { isPlatformAdmin } from "@/lib/platform-admin";
@@ -65,7 +66,7 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="min-h-full bg-bg print:block lg:flex print:bg-white">
+    <div className={`${design.shell} min-h-full print:block lg:flex print:bg-white`}>
       <AppNav
         email={user.email}
         username={username}
@@ -74,8 +75,15 @@ export default async function AppLayout({
         plan={plan}
         isPlatformAdmin={isPlatformAdmin(user.email)}
       />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <main className="mx-auto w-full max-w-[1180px] flex-1 px-5 py-7 print:max-w-none print:px-0 print:py-0 lg:px-8">
+      <div className="workspace-body flex min-w-0 flex-1 flex-col">
+        <AppTopBar
+          email={user.email}
+          username={username}
+          displayName={displayName}
+          workspaceName={workspaceName}
+          plan={plan}
+        />
+        <main id="main-content" className="workspace-content mx-auto w-full flex-1 print:max-w-none print:px-0 print:py-0">
           <PlanBanner status={planStatus} />
           {children}
           <PresencePing />

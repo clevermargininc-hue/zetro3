@@ -41,7 +41,7 @@ export async function proxy(request: NextRequest) {
     }
     if (path.startsWith("/api/")) {
       return withDevGeoCookie(
-        NextResponse.json({ error: "Zetro is only available in Tanzania." }, { status: 403 }),
+        NextResponse.json({ error: "Zetro is not available in your region." }, { status: 403 }),
         simulated,
         code,
       );
@@ -50,6 +50,14 @@ export async function proxy(request: NextRequest) {
     dest.pathname = NOT_AVAILABLE_PATH;
     dest.search = "";
     if (code) dest.searchParams.set("country", code);
+    return withDevGeoCookie(NextResponse.redirect(dest), simulated, code);
+  }
+
+  // If a visitor navigates directly to /not-available while their country is allowed, send them to signup
+  if (path === NOT_AVAILABLE_PATH && isAllowedCountry(code)) {
+    const dest = request.nextUrl.clone();
+    dest.pathname = "/signup";
+    dest.search = "";
     return withDevGeoCookie(NextResponse.redirect(dest), simulated, code);
   }
 

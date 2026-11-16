@@ -25,11 +25,18 @@ export function QaTrendCharts({
         subtitle={`${rangeText} · average of scored calls`}
         total={latest != null ? `${latest}%` : "—"}
       >
-        <LineChart labels={labels} values={avgScores} label="average score" color={C.blue} fixedMax={100} />
-        <p className="mt-2 text-[11px] text-muted">Quiet periods have no dot. The line joins days or months that had scores.</p>
+        <LineChart labels={labels} values={avgScores} label="average score" color="#2F6BFF" fixedMax={100} />
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-[11.5px] text-muted">
+          <span>Quiet periods have no dot. Line connects periods with scored calls.</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E3E9F5] bg-[#F8FAFF] px-2 py-0.5 font-semibold text-[#0A1A3F]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#16A34A]" />
+            Pass target: 70%+
+          </span>
+        </div>
       </ChartCard>
       <ChartCard title="Calls scored" subtitle={rangeText} total={n(sum(calls))}>
-        <BarChart labels={labels} series={[{ label: "Scored calls", color: C.blue, values: calls }]} />
+        <BarChart labels={labels} series={[{ label: "Scored calls", color: "#2F6BFF", values: calls }]} />
+        <p className="mt-2.5 text-[11.5px] text-muted">Completed QA evaluations grouped by audit date.</p>
       </ChartCard>
     </div>
   );
@@ -50,7 +57,7 @@ export function QaMixCharts({
 }) {
   const scored = excellent + good + review + poor;
   const bandSlices = [
-    { label: "Excellent (85+)", value: excellent, color: C.green },
+    { label: "Excellent (85+)", value: excellent, color: C.teal },
     { label: "Good (70–84)", value: good, color: C.blue },
     { label: "Review (50–69)", value: review, color: C.amber },
     { label: "Poor (under 50)", value: poor, color: C.grey },
@@ -65,7 +72,7 @@ export function QaMixCharts({
         )}
       </ChartCard>
       <ChartCard title="Agents" subtitle="Average score">
-        <HBars empty="No scored agents in this window." scaleMax={100} rows={agentRows} />
+        <HBars empty="No scored agents in this window." scaleMax={100} rows={agentRows} color={C.blue} />
       </ChartCard>
     </div>
   );

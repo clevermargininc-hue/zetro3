@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import { authFetch } from "@/lib/auth-fetch";
 import { waitForCallStatus } from "@/lib/wait-call-status";
 import { friendlyPrepareError } from "@/lib/prepare-error";
@@ -13,19 +14,8 @@ import { useCallLive } from "@/components/use-call-live";
 import { PageHeader } from "@/components/ui";
 
 const Icons = {
-  arrowLeft: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="19" y1="12" x2="5" y2="12" />
-      <polyline points="12 19 5 12 12 5" />
-    </svg>
-  ),
-  refresh: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="23 4 23 10 17 10" />
-      <polyline points="1 20 1 14 7 14" />
-      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-    </svg>
-  ),
+  arrowLeft: <ArrowLeft className="h-3.5 w-3.5" />,
+  refresh: <RefreshCw className="h-3.5 w-3.5" />,
 };
 
 export function TranscribeWorkspace({
@@ -49,8 +39,6 @@ export function TranscribeWorkspace({
   const callId = call?.id ?? initialCall.id;
   const callStatus = call?.status ?? initialCall.status;
   const canScore = hasTranscript;
-  // Only the in-flight request disables the CTA. Server "queued"/"transcribing"
-  // alone must not hide the button — that left uploads stuck with no clickable control.
   const preparingBusy = preparing;
   const showWorking =
     preparing || callStatus === "transcribing" || callStatus === "queued";
@@ -87,12 +75,12 @@ export function TranscribeWorkspace({
         if (!res.ok) {
           throw new Error(
             body.error ||
-              body.message ||
-              (res.status === 401
-                ? "Please sign in again, then retry."
-                : res.status === 431
-                  ? "Sign out, sign back in, then retry prepare. Session data was too large to send."
-                  : `Could not prepare call (${res.status})`),
+            body.message ||
+            (res.status === 401
+              ? "Please sign in again, then retry."
+              : res.status === 431
+                ? "Sign out, sign back in, then retry prepare. Session data was too large to send."
+                : `Could not prepare call (${res.status})`),
           );
         }
         if (cancelled) return;
@@ -122,10 +110,8 @@ export function TranscribeWorkspace({
     return () => {
       cancelled = true;
       setPreparing(false);
-      // Strict Mode remount / leave-and-return must be able to restart prepare.
       if (startedFor.current === callId) startedFor.current = null;
     };
-    // Intentionally omit callStatus: updating to "transcribing" must not cancel waitForCallStatus.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- auto-start once per callId visit
   }, [callId, hasTranscript, setCall]);
 
@@ -148,12 +134,12 @@ export function TranscribeWorkspace({
       if (!res.ok) {
         throw new Error(
           body.error ||
-            body.message ||
-            (res.status === 401
-              ? "Please sign in again, then retry."
-              : res.status === 431
-                ? "Sign out, sign back in, then retry prepare. Session data was too large to send."
-                : `Could not prepare call (${res.status})`),
+          body.message ||
+          (res.status === 401
+            ? "Please sign in again, then retry."
+            : res.status === 431
+              ? "Sign out, sign back in, then retry prepare. Session data was too large to send."
+              : `Could not prepare call (${res.status})`),
         );
       }
       if (body.reused && !force) {
@@ -187,10 +173,10 @@ export function TranscribeWorkspace({
       <div>
         <Link
           href="/upload/prepare"
-          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-slate-500 hover:text-blue mb-3"
+          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-slate-500 hover:text-navy mb-3"
         >
           {Icons.arrowLeft}
-            <span>Back to prepare queue</span>
+          <span>Back to prepare queue</span>
         </Link>
         <PageHeader
           kicker="Step 2 of 3 · Prepare"
@@ -217,7 +203,7 @@ export function TranscribeWorkspace({
                     : "Preparing…"}
                 </span>
               )}
-              <CallDownloads callId={call.id} hasTranscript={false} />
+              <CallDownloads callId={call.id} hasTranscript={hasTranscript} />
               <DeleteCallButton
                 callId={call.id}
                 title={call.title}
@@ -242,7 +228,7 @@ export function TranscribeWorkspace({
             Transcripts stay in the workspace. You score on the next step, from your scorecard.
           </p>
         </div>
-        <div className="border border-line bg-slate-50 p-3">
+        <div className="rounded-md border border-line bg-slate-50 p-3">
           {audioUrl ? (
             <audio controls src={audioUrl} className="w-full" preload="metadata" />
           ) : (
@@ -264,7 +250,7 @@ export function TranscribeWorkspace({
             </p>
           </div>
           {showWorking && !actionError ? (
-            <div className="flex items-center gap-2.5 text-ink text-[13px] font-medium border border-line px-4 py-3">
+            <div className="flex items-center gap-2.5 text-ink text-[13px] font-medium rounded-md border border-line px-4 py-3">
               <div className="h-4 w-4 rounded-full border-2 border-blue/30 border-t-blue animate-spin" />
               <span>Working on the recording…</span>
             </div>
@@ -274,8 +260,8 @@ export function TranscribeWorkspace({
             onClick={() =>
               void prepare(
                 showWorking ||
-                  call.status === "failed" ||
-                  Boolean(actionError),
+                call.status === "failed" ||
+                Boolean(actionError),
               )
             }
             className="btn btn-blue text-[13px] px-5 py-2.5 relative z-10"
@@ -293,7 +279,7 @@ export function TranscribeWorkspace({
             <span className="chip chip-ok">Ready for Step 3</span>
             <h2 className="mt-2 text-[15px] font-semibold text-ink">Go to Score</h2>
             <p className="text-[12px] text-muted mt-0.5">
-              Listen here if you need to. Scoring reads your scorecard, not a generic list.
+              Listen here if you need to, or download the transcript above. Scoring reads your scorecard, not a generic list.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

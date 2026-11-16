@@ -1,90 +1,146 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Metadata } from "next";
+import { ZetroPublicCta } from "@/components/landing/zetro-public-chrome";
 import { PricingPlans } from "@/components/pricing-quote";
-import { SALES_EMAIL, salesMailto } from "@/lib/contact";
 import { MAX_TALK_MINUTES, TRIAL_CALLS } from "@/lib/billing";
+import { SALES_EMAIL, salesMailto } from "@/lib/contact";
 
 export const metadata: Metadata = {
-  title: "Pricing | Zetro",
+  title: "Pricing & TZS Calculator | Zetro Quality Auditing & Customer Intelligence",
   description:
-    "Pay per scored call, in Tanzanian shillings. Price set by call length and monthly volume, billed monthly or annually.",
+    "Transparent TZS pricing for calls analysed across quality auditing and customer intelligence, based on call length and monthly volume.",
 };
 
 const RULES = [
   {
-    title: "Each call is billed by its own length.",
-    body: "Zetro measures the recording, so you never pay for wrap-up time that is not in the audio.",
+    title: "Each call is billed by its own audio length.",
+    body: "Zetro measures the audio file duration precisely. You never pay for wrap-up time or after-call work (ACW) that is not in the recording.",
   },
   {
-    title: "Only scored calls are billed.",
-    body: "Failed or unscored uploads are free.",
+    title: "Only successfully analysed calls are billed.",
+    body: "Corrupted audio files or failed analyses are never charged. One physical recording audited more than once remains one customer contact in intelligence.",
   },
   {
-    title: "Your volume level is set in the contract.",
-    body: "You commit to a monthly number of calls. Calls above it are billed at the same rate.",
+    title: "Your volume tier is defined in the agreement.",
+    body: "You commit to a predictable monthly call volume. Additional calls within the billing cycle are invoiced at the same agreed unit rate.",
   },
   {
     title: `Calls over ${MAX_TALK_MINUTES} minutes are quoted separately.`,
-    body: "Tell us if your floor has many long calls and we will price them with you.",
+    body: "If your contact center handles extensive escalations or dispute calls exceeding 15 minutes, we create a custom rate card with you.",
   },
   {
-    title: "Invoices are in TZS, payable within 30 days.",
-    body: "Prices are reviewed every 6 months, or sooner if the shilling moves more than 10% against the US dollar.",
+    title: "The monthly minimum is a billing floor.",
+    body: "Zetro compares scored-call usage with TZS 500,000 and bills whichever is higher. It is not added on top of usage.",
   },
-];
+  {
+    title: "Free trial on your actual company scorecard.",
+    body: `Each company can score ${TRIAL_CALLS} trial calls using its own scorecard before signing a paid contract.`,
+  },
+  {
+    title: "Annual commitments are invoiced upfront.",
+    body: "Each committed month is evaluated against the monthly minimum, then the 12 months are summed. Overage is invoiced monthly at the annual contracted rate.",
+  },
+  {
+    title: "Duration boundaries use exact recording seconds.",
+    body: "Exactly 3:00 stays in the first band; 3:01 enters the second. The same rule applies at 6, 9, 12 and 15 minutes.",
+  },
+] as const;
 
 export default function PricingPage() {
   return (
-    <div className="mx-auto w-full max-w-5xl px-6 py-16 lg:py-24">
-      <header className="mx-auto max-w-3xl text-center">
-        <p className="page-kicker">Pricing</p>
-        <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
-          Pay per scored call
-        </h1>
-        <p className="mt-4 text-[16px] leading-relaxed text-muted">
-          One price per call, set by how long your calls are and how many you score each month. Prices
-          are in Tanzanian shillings, with US dollars as a guide. Start with {TRIAL_CALLS} free calls on
-          your own scorecard.
-        </p>
-      </header>
-
-      <div className="mt-10">
-        <PricingPlans />
-      </div>
-
-      <section className="mt-12 border border-line bg-white px-6 py-8 lg:px-8">
-        <h2 className="text-[18px] font-semibold text-ink">How billing works</h2>
-        <ul className="mt-4 grid gap-x-10 gap-y-4 text-[14px] leading-relaxed text-muted md:grid-cols-2">
-          {RULES.map((rule) => (
-            <li key={rule.title}>
-              <span className="font-medium text-ink">{rule.title} </span>
-              {rule.body}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="mt-8 flex flex-col gap-6 border border-blue/20 bg-blue-soft px-6 py-8 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-        <div className="max-w-xl">
-          <h2 className="text-[20px] font-semibold text-ink">Ready to sign, pay, or talk terms?</h2>
-          <p className="mt-2 text-[14px] leading-relaxed text-muted">
-            We do not take online payments yet. Email{" "}
-            <a href={salesMailto("Zetro — contract or sales deal")} className="font-semibold text-blue hover:underline">
-              {SALES_EMAIL}
-            </a>{" "}
-            for contracts, invoices, and sales deals. We send the invoice in TZS — the app never
-            charges your card.
+    <div>
+      {/* ── Subpage Hero ──────────────────────────────────────────────── */}
+      <section className="z-subhero" aria-labelledby="pricing-page-heading">
+        <div className="z-container">
+          <span className="z-eyebrow">Tanzania tariff &amp; calculator · TZS</span>
+          <h1 id="pricing-page-heading" className="z-subhero-h1">
+            Transparent TZS pricing.{" "}
+            <span className="z-h1-accent">Start with {TRIAL_CALLS} free calls.</span>
+          </h1>
+          <p className="z-subhero-lead">
+            Pay only per successfully audited call based on exact recording duration and contracted monthly volume, with a 10% discount on annual commitments.
           </p>
-        </div>
-        <div className="flex shrink-0 flex-col gap-2 sm:items-end">
-          <a href={salesMailto("Zetro — contract or sales deal")} className="btn btn-lg btn-blue">
-            Email sales
-          </a>
-          <Link href="/signup" className="text-[13px] font-semibold text-blue hover:underline">
-            Or start the free trial →
-          </Link>
+          <div className="z-subhero-actions">
+            <a
+              href="#calculator"
+              className="z-btn z-btn-solid"
+              style={{ height: "44px", paddingInline: "20px" }}
+            >
+              Jump to TZS calculator ↓
+            </a>
+            <Link
+              href="/signup"
+              className="z-btn z-btn-outline"
+              style={{ height: "44px", paddingInline: "20px" }}
+            >
+              Start {TRIAL_CALLS}-call free trial
+            </Link>
+          </div>
         </div>
       </section>
+
+      {/* ── Tariff Table & Interactive TZS Calculator (#plans / #calculator) */}
+      <section id="plans" className="z-section" aria-label="Tariff schedule and estimator">
+        <div className="z-container">
+          <PricingPlans />
+        </div>
+      </section>
+
+      {/* ── Contract Principles & Billing Rules (#terms) ──────────────── */}
+      <section id="terms" className="z-section z-band-alt" aria-labelledby="terms-heading">
+        <div className="z-container">
+          <div className="z-head">
+            <span className="z-eyebrow">Contract terms</span>
+            <h2 id="terms-heading" className="z-h2">
+              How billing works in practice.
+            </h2>
+            <p className="z-lead">
+              Clear rules written for finance directors and operations teams—invoiced in TZS with standard 30-day payment terms ({SALES_EMAIL}).
+            </p>
+          </div>
+
+          <ul className="z-subgrid-2">
+            {RULES.map((rule) => (
+              <li key={rule.title} className="z-card" style={{ padding: "24px" }}>
+                <h3 className="z-h3" style={{ fontSize: "16px" }}>
+                  {rule.title}
+                </h3>
+                <p className="z-body" style={{ marginTop: "8px", fontSize: "14px" }}>
+                  {rule.body}
+                </p>
+              </li>
+            ))}
+          </ul>
+
+          <div
+            style={{
+              marginTop: "36px",
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              gap: "12px",
+            }}
+          >
+            <Link href="/talk-sales" className="z-btn z-btn-solid">
+              Request an official quote →
+            </Link>
+            <a
+              href={salesMailto("Zetro — contract or sales deal")}
+              className="z-btn z-btn-outline"
+            >
+              Email {SALES_EMAIL}
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <ZetroPublicCta
+        eyebrow="Enterprise agreements"
+        title="Ready to score your first calls on your own rubric?"
+        body={`Every workspace starts with ${TRIAL_CALLS} free audited calls—no credit card required.`}
+        secondaryHref="/talk-sales"
+        secondaryLabel="Or request a custom contract in TZS →"
+      />
     </div>
   );
 }

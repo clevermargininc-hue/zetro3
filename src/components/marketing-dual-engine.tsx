@@ -1,0 +1,3 @@
+export function MarketingDualEngine() {
+  return <section className="dual-engine" aria-label="Zetro product capabilities"><div className="dual-engine-inner"><div className="dual-engine-intro"><span>ONE CONNECTED VIEW</span><strong>Quality Auditing <i>+</i> Customer Intelligence</strong></div><div className="dual-engine-capability"><b>01</b><div><strong>Audit the conversation</strong><p>Score every call against your standards, with transcript evidence and coaching guidance.</p></div></div><div className="dual-engine-bridge" aria-hidden="true">→</div><div className="dual-engine-capability"><b>02</b><div><strong>Understand the customer journey</strong><p>See who called again, whether the issue changed, what remained unresolved, and why.</p></div></div></div></section>;
+}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Briefcase, Database, Plug, Sliders, User, Users } from "lucide-react";
 import { SettingsProvider, useSettings } from "@/components/settings-provider";
 import { PageHeader } from "@/components/ui";
 import {
@@ -11,36 +12,15 @@ import {
   WorkspaceSettings,
 } from "@/components/settings-sections";
 import { TeamBoard } from "@/components/team-board";
+import { CompanyDataSettings } from "@/components/company-data-settings";
 
 const Icons = {
-  user: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  ),
-  workspace: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-    </svg>
-  ),
-  team: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  ),
-  auditing: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z" />
-      <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
-      <path d="M12 2v2" />
-      <path d="M12 20v2" />
-    </svg>
-  ),
+  user: <User className="h-4 w-4" />,
+  workspace: <Briefcase className="h-4 w-4" />,
+  catalogue: <Database className="h-4 w-4" />,
+  connections: <Plug className="h-4 w-4" />,
+  team: <Users className="h-4 w-4" />,
+  auditing: <Sliders className="h-4 w-4" />,
 };
 
 const NAV = [
@@ -52,6 +32,7 @@ const NAV = [
     label: "Workspace",
     items: [
       { href: "/settings/workspace", label: "Workspace", icon: Icons.workspace },
+      { href: "/settings/company-intelligence", label: "Company data", icon: Icons.catalogue },
       { href: "/settings/team", label: "Team", icon: Icons.team },
       { href: "/settings/auditing", label: "Scoring", icon: Icons.auditing },
     ],
@@ -63,6 +44,7 @@ function SettingsPanel() {
   const section = pathname.replace(/^\/settings\/?/, "") || "account";
 
   if (section === "workspace") return <WorkspaceSettings />;
+  if (section === "company-intelligence") return <CompanyDataSettings />;
   if (section === "team") {
     return (
       <div className="space-y-6">
@@ -89,7 +71,7 @@ function SettingsChrome() {
       <div className="grid gap-8 lg:grid-cols-12">
         {/* Navigation Sidebar */}
         <aside className="lg:col-span-3 space-y-6">
-          <nav className="space-y-5 surface p-4">
+          <nav className="settings-navigation space-y-5 surface p-4">
             {NAV.map((group) => (
               <div key={group.label}>
                 <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
@@ -104,6 +86,7 @@ function SettingsChrome() {
                       <Link
                         key={item.href}
                         href={item.href}
+                        aria-current={active ? "page" : undefined}
                         className={`flex items-center gap-2.5 rounded px-3 py-2 text-[13px] font-medium ${
                           active
                             ? "bg-blue-soft text-blue"

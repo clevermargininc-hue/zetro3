@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Building2, User } from "lucide-react";
 import { authFetch } from "@/lib/auth-fetch";
 import { createClient } from "@/lib/supabase/client";
 import { CountryRegionPicker, TanzaniaFlagIcon, WorldFlagIcon } from "@/components/country-region-picker";
@@ -267,21 +268,14 @@ export function OnboardingFlow() {
             <button
               type="button"
               onClick={() => setStep("team")}
-              className="flex w-full items-start gap-4 border border-line bg-white p-5 text-left hover:border-blue"
+              className="flex w-full items-start gap-4 rounded-xl border border-[#E3E9F5] bg-white p-5 text-left transition-colors hover:border-[#2F6BFF]"
             >
-              <span className="grid h-11 w-11 shrink-0 place-items-center border border-line text-slate-500">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path d="M3 21V8a2 2 0 0 1 2-2h4v15" />
-                  <path d="M9 21V4h8a2 2 0 0 1 2 2v15" />
-                  <path d="M9 9h4M9 13h4M9 17h4" />
-                  <circle cx="17" cy="10" r="1.2" fill="currentColor" stroke="none" />
-                  <circle cx="19.5" cy="12" r="1.2" fill="currentColor" stroke="none" />
-                  <path d="M15.8 16c.4-1 1.3-1.6 2.5-1.6s2.1.6 2.5 1.6" />
-                </svg>
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-[#E3E9F5] bg-[#F8FAFF] text-[#2459E8]">
+                <Building2 className="h-[22px] w-[22px]" strokeWidth={1.8} />
               </span>
               <span>
-                <span className="block text-[15px] font-semibold text-ink">With my team</span>
-                <span className="mt-1 block text-sm text-muted">
+                <span className="block text-[15px] font-semibold text-[#0A1A3F]">With my team</span>
+                <span className="mt-1 block text-sm text-[#5A6882]">
                   A shared workspace for your contact center.
                 </span>
               </span>
@@ -290,17 +284,14 @@ export function OnboardingFlow() {
               type="button"
               disabled={loading}
               onClick={() => post({ action: "solo" })}
-              className="flex w-full items-start gap-4 border border-line bg-white p-5 text-left hover:border-blue"
+              className="flex w-full items-start gap-4 rounded-xl border border-[#E3E9F5] bg-white p-5 text-left transition-colors hover:border-[#2F6BFF]"
             >
-              <span className="grid h-11 w-11 shrink-0 place-items-center border border-line text-slate-500">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <circle cx="12" cy="8" r="3.5" />
-                  <path d="M5.5 19.5c.8-3.2 3.3-5 6.5-5s5.7 1.8 6.5 5" />
-                </svg>
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-[#E3E9F5] bg-[#F8FAFF] text-[#2459E8]">
+                <User className="h-[22px] w-[22px]" strokeWidth={1.8} />
               </span>
               <span>
-                <span className="block text-[15px] font-semibold text-ink">Just me for now</span>
-                <span className="mt-1 block text-sm text-muted">
+                <span className="block text-[15px] font-semibold text-[#0A1A3F]">Just me for now</span>
+                <span className="mt-1 block text-sm text-[#5A6882]">
                   A private workspace. Invite people when you are ready.
                 </span>
               </span>

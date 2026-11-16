@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { FolderOpen, Search } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { fetchAllRows } from "@/lib/fetch-all";
 import { DeleteCallButton } from "@/components/delete-call-button";
@@ -29,22 +30,33 @@ function scoreOf(call: CallRow) {
 }
 
 const Icons = {
-  emptyBox: (
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted/40">
-      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-    </svg>
-  ),
+  emptyBox: <FolderOpen className="h-10 w-10 text-muted/40" strokeWidth={1.5} />,
+  search: <Search className="h-3.5 w-3.5 text-slate-400" />,
 };
 
-export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[], teamScope: string[] }) {
+export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[]; teamScope: string[] }) {
   const [calls, setCalls] = useState(initialCalls);
   const [filter, setFilter] = useState<Filter>("all");
+  const [search, setSearch] = useState("");
+
+  const hasActiveJobs = useMemo(
+    () =>
+      calls.some(
+        (c) =>
+          c.status === "queued" ||
+          c.status === "transcribing" ||
+          c.status === "analyzing",
+      ),
+    [calls],
+  );
 
   useEffect(() => {
     const supabase = createClient();
 
     async function refresh() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       const page = await fetchAllRows<CallRow>((from, to) =>
         supabase
@@ -57,9 +69,11 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
       if (page.data) setCalls(page.data);
     }
 
-    const poll = window.setInterval(() => {
-      void refresh();
-    }, 2500);
+    const poll = hasActiveJobs
+      ? window.setInterval(() => {
+          void refresh();
+        }, 6000)
+      : null;
 
     const channel = supabase
       .channel("all-calls")
@@ -73,10 +87,10 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
       .subscribe();
 
     return () => {
-      window.clearInterval(poll);
+      if (poll !== null) window.clearInterval(poll);
       supabase.removeChannel(channel);
     };
-  }, [teamScope]);
+  }, [teamScope, hasActiveJobs]);
 
   const counts = useMemo(() => {
     let audited = 0;
@@ -86,12 +100,23 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
     return { audited, notYet: calls.length - audited };
   }, [calls]);
 
-  const visible =
-    filter === "all"
-      ? calls
-      : calls.filter((call) =>
-          filter === "audited" ? isCallAudited(call.status) : !isCallAudited(call.status),
-        );
+  const visible = useMemo(() => {
+    const byTab =
+      filter === "all"
+        ? calls
+        : calls.filter((call) =>
+            filter === "audited" ? isCallAudited(call.status) : !isCallAudited(call.status),
+          );
+    const q = search.trim().toLowerCase();
+    if (!q) return byTab;
+    return byTab.filter((call) => {
+      const agent = agentLabel(call).toLowerCase();
+      const title = (call.title || "").toLowerCase();
+      const file = (call.file_name || "").toLowerCase();
+      const lang = languageLabel(call.detected_language || call.language_mode).toLowerCase();
+      return agent.includes(q) || title.includes(q) || file.includes(q) || lang.includes(q);
+    });
+  }, [calls, filter, search]);
 
   return (
     <div className="space-y-5">
@@ -103,49 +128,65 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
         ]}
       />
 
-      <div className="flex flex-wrap items-center gap-1 border-b border-line">
-        {(
-          [
-            ["all", `All (${calls.length})`],
-            ["audited", `Audited (${counts.audited})`],
-            ["not_yet", `Not yet (${counts.notYet})`],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setFilter(id)}
-            className={`px-3 py-2 text-[12px] font-medium border-b-2 -mb-px ${
-              filter === id
-                ? "border-blue text-ink"
-                : "border-transparent text-slate-500 hover:text-ink"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-2 sm:pb-0">
+        <div className="flex flex-wrap items-center gap-1">
+          {(
+            [
+              ["all", `All (${calls.length})`],
+              ["audited", `Audited (${counts.audited})`],
+              ["not_yet", `Not yet (${counts.notYet})`],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setFilter(id)}
+              className={`px-3 py-2 text-[12px] font-semibold border-b-2 -mb-px transition-colors ${
+                filter === id
+                  ? "border-navy text-ink"
+                  : "border-transparent text-slate-500 hover:text-ink"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative w-full sm:w-64 sm:pb-1.5">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 sm:-mt-0.5">
+            {Icons.search}
+          </span>
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search agent, file, or language…"
+            aria-label="Search calls"
+            className="field py-1.5 pl-8 pr-3 text-[12px]"
+          />
+        </div>
       </div>
 
       {/* Main Table */}
       <div className="surface overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="data-table">
             <thead>
-              <tr className="border-b border-line bg-slate-50 text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                <th className="px-6 py-3">Agent ID</th>
-                <th className="px-6 py-3">Language</th>
-                <th className="px-6 py-3">Audit status</th>
-                <th className="px-6 py-3 text-right">QA Score</th>
-                <th className="px-6 py-3 text-right">Actions</th>
+              <tr>
+                <th>Agent ID</th>
+                <th>Language</th>
+                <th>Audit status</th>
+                <th className="text-right">QA Score</th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-[13px]">
+            <tbody>
               {visible.map((call) => {
                 const score = scoreOf(call);
                 return (
-                  <tr key={call.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={call.id} className="transition-colors">
                     {/* Agent ID & Date */}
-                    <td className="px-6 py-3.5">
+                    <td>
                       <div className="font-semibold text-ink tabular-nums">
                         {agentLabel(call)}
                       </div>
@@ -157,14 +198,14 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                     </td>
 
                     {/* Language */}
-                    <td className="px-6 py-3.5 whitespace-nowrap">
+                    <td className="whitespace-nowrap">
                       <span className="chip">
                         {languageLabel(call.detected_language || call.language_mode)}
                       </span>
                     </td>
 
                     {/* Status */}
-                    <td className="px-6 py-3.5 whitespace-nowrap">
+                    <td className="whitespace-nowrap">
                       <StatusBadge status={call.status} />
                       {call.error_message ? (
                         <p className="mt-1 text-[11px] text-rose font-medium max-w-xs truncate">
@@ -174,7 +215,7 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                     </td>
 
                     {/* Score */}
-                    <td className="px-6 py-3.5 text-right whitespace-nowrap">
+                    <td className="text-right whitespace-nowrap">
                       {score ? (
                         <span className={`${scoreChipClass(score.overall_score)} tabular-nums`}>
                           {score.overall_score}%
@@ -185,36 +226,30 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                     </td>
 
                     {/* Actions */}
-                    <td className="px-6 py-3.5 text-right whitespace-nowrap">
+                    <td className="text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">
                         {call.status === "completed" ? (
                           <>
-                            <CallDownloads
-                              callId={call.id}
-                              compact
-                            />
+                            <CallDownloads callId={call.id} compact />
                             <Link
                               href={`/upload/score/${call.id}`}
-                              className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[12px] px-3 py-1.5 font-medium"
+                              className="btn btn-ghost text-[12px] px-3 py-1.5 font-medium"
                             >
                               Scorecard
                             </Link>
                           </>
                         ) : call.status === "transcribed" || call.status === "analyzing" ? (
                           <>
-                            <CallDownloads
-                              callId={call.id}
-                              compact
-                            />
+                            <CallDownloads callId={call.id} compact />
                             <Link
                               href={`/upload/prepare/${call.id}`}
-                              className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[12px] px-3 py-1.5 font-medium"
+                              className="btn btn-ghost text-[12px] px-3 py-1.5 font-medium"
                             >
                               Recording
                             </Link>
                             <Link
                               href={`/upload/score/${call.id}`}
-                              className="btn bg-blue hover:bg-blue-2 text-white text-[12px] px-3 py-1.5 font-semibold"
+                              className="btn btn-blue text-[12px] px-3 py-1.5 font-semibold"
                             >
                               Score
                             </Link>
@@ -224,7 +259,7 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                             <CallDownloads callId={call.id} compact />
                             <Link
                               href={`/upload/prepare/${call.id}`}
-                              className="btn bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 text-[12px] px-3 py-1.5"
+                              className="btn btn-ghost text-[12px] px-3 py-1.5"
                             >
                               View Progress
                             </Link>
@@ -234,7 +269,7 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                             <CallDownloads callId={call.id} compact />
                             <Link
                               href={`/upload/prepare/${call.id}`}
-                              className="btn bg-blue hover:bg-blue-2 text-white text-[12px] px-3 py-1.5 font-semibold"
+                              className="btn btn-blue text-[12px] px-3 py-1.5 font-semibold"
                             >
                               Prepare
                             </Link>
@@ -264,11 +299,23 @@ export function CallsBoard({ initialCalls, teamScope }: { initialCalls: CallRow[
                 {calls.length ? "No recordings match this filter" : "No calls yet"}
               </h3>
               <p className="mt-1 text-[13px] text-muted max-w-sm mx-auto">
-                Upload a recording, prepare it, then score it when you are ready.
+                {search.trim()
+                  ? "Try clearing your search query or switching filter tabs."
+                  : "Upload a recording, prepare it, then score it when you are ready."}
               </p>
-              <Link href="/upload" className="mt-5 btn btn-blue text-[13px] px-5 py-2 inline-flex font-semibold">
-                Upload calls
-              </Link>
+              {search.trim() ? (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="mt-4 btn btn-ghost text-[12px]"
+                >
+                  Clear search
+                </button>
+              ) : (
+                <Link href="/upload" className="mt-5 btn btn-blue text-[13px] px-5 py-2 inline-flex font-semibold">
+                  Upload calls
+                </Link>
+              )}
             </div>
           )}
         </div>

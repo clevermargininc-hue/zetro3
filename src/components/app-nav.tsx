@@ -3,81 +3,39 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import {
+  Award,
+  Bell,
+  Building2,
+  FileBarChart2,
+  GitBranch,
+  LayoutDashboard,
+  LayoutPanelTop,
+  LogOut,
+  Mic,
+  Search,
+  Settings,
+  ShieldCheck,
+  Upload,
+} from "lucide-react";
 import { Logo } from "@/components/logo";
 import { createClient } from "@/lib/supabase/client";
 import { clearWorkspaceCookie } from "@/lib/workspace-cookie";
 
-// Enterprise SVG Icons
 const Icons = {
-  overview: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="9" rx="1.5" />
-      <rect x="14" y="3" width="7" height="5" rx="1.5" />
-      <rect x="14" y="12" width="7" height="9" rx="1.5" />
-      <rect x="3" y="16" width="7" height="5" rx="1.5" />
-    </svg>
-  ),
-  upload: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
-    </svg>
-  ),
-  audits: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-      <line x1="12" y1="19" x2="12" y2="22" />
-    </svg>
-  ),
-  ranking: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="8" r="7" />
-      <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
-    </svg>
-  ),
-  reports: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="16" y1="13" x2="8" y2="13" />
-      <line x1="16" y1="17" x2="8" y2="17" />
-    </svg>
-  ),
-  analytics: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="20" x2="18" y2="10" />
-      <line x1="12" y1="20" x2="12" y2="4" />
-      <line x1="6" y1="20" x2="6" y2="14" />
-    </svg>
-  ),
-  standards: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
-  ),
-  settings: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.5 1.1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
-    </svg>
-  ),
-  admin: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <line x1="3" y1="9" x2="21" y2="9" />
-      <line x1="8" y1="14" x2="16" y2="14" />
-    </svg>
-  ),
-  logout: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-      <polyline points="16 17 21 12 16 7" />
-      <line x1="21" y1="12" x2="9" y2="12" />
-    </svg>
-  ),
+  overview: <LayoutDashboard className="h-[18px] w-[18px]" />,
+  upload: <Upload className="h-[18px] w-[18px]" />,
+  audits: <Mic className="h-[18px] w-[18px]" />,
+  journey: <GitBranch className="h-[18px] w-[18px]" />,
+  ranking: <Award className="h-[18px] w-[18px]" />,
+  reports: <FileBarChart2 className="h-[18px] w-[18px]" />,
+  standards: <ShieldCheck className="h-[18px] w-[18px]" />,
+  settings: <Settings className="h-[18px] w-[18px]" />,
+  admin: <LayoutPanelTop className="h-[18px] w-[18px]" />,
+  logout: <LogOut className="h-[15px] w-[15px]" />,
+  search: <Search className="h-[15px] w-[15px]" />,
+  bell: <Bell className="h-[17px] w-[17px]" />,
+  building: <Building2 className="h-[14px] w-[14px]" />,
 };
 
 const NAV = [
@@ -90,8 +48,9 @@ const NAV = [
     ],
   },
   {
-    label: "Quality",
+    label: "Quality & Intelligence",
     items: [
+      { href: "/customers", label: "Customer Intelligence", icon: Icons.journey },
       { href: "/leaderboard", label: "Leaderboard", icon: Icons.ranking },
       { href: "/reports", label: "Reports", icon: Icons.reports },
     ],
@@ -106,7 +65,7 @@ const NAV = [
 ];
 
 const ADMIN_GROUP = {
-  label: "Zetro team",
+  label: "Zetro Team",
   items: [{ href: "/admin", label: "Admin dashboard", icon: Icons.admin }],
 };
 
@@ -115,10 +74,150 @@ function linkActive(href: string, pathname: string) {
     return pathname === "/upload" || pathname.startsWith("/upload/");
   }
   if (href === "/calls") {
-    return pathname === "/calls";
+    return pathname === "/calls" || pathname.startsWith("/calls/");
+  }
+  if (href === "/customers") {
+    return pathname === "/customers" || pathname.startsWith("/customers/");
   }
   if (href === "/dashboard") return pathname === "/dashboard";
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function getPageBreadcrumb(pathname: string): { section: string; page: string } {
+  if (pathname.startsWith("/customers/issues/")) {
+    return { section: "Customer Intelligence", page: "Issue Investigation" };
+  }
+  if (pathname.startsWith("/customers/")) {
+    return { section: "Customer Intelligence", page: "Customer Journey" };
+  }
+  if (pathname === "/customers") {
+    return { section: "Quality & Intelligence", page: "Customer Intelligence" };
+  }
+  if (pathname.startsWith("/upload/score/")) {
+    return { section: "Score Calls", page: "QA Evaluation Scorecard" };
+  }
+  if (pathname.startsWith("/upload/prepare/")) {
+    return { section: "Score Calls", page: "Transcript & Diarization" };
+  }
+  if (pathname.startsWith("/upload")) {
+    return { section: "Work", page: "Score Calls Pipeline" };
+  }
+  if (pathname.startsWith("/calls")) {
+    return { section: "Work", page: "Calls Inventory" };
+  }
+  if (pathname.startsWith("/leaderboard")) {
+    return { section: "Quality & Intelligence", page: "Agent Leaderboard" };
+  }
+  if (pathname.startsWith("/reports")) {
+    return { section: "Quality & Intelligence", page: "Executive & Coaching Reports" };
+  }
+  if (pathname.startsWith("/standards")) {
+    return { section: "Workspace", page: "Scorecard & Compliance Standards" };
+  }
+  if (pathname.startsWith("/settings")) {
+    return { section: "Workspace", page: "Workspace Settings" };
+  }
+  return { section: "Work", page: "Overview Dashboard" };
+}
+
+export function AppTopBar({
+  email,
+  username,
+  displayName,
+  workspaceName,
+  plan,
+}: {
+  email?: string | null;
+  username?: string | null;
+  displayName?: string | null;
+  workspaceName?: string | null;
+  plan?: string | null;
+}) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const { section, page } = getPageBreadcrumb(pathname);
+
+  const personLabel = username
+    ? `@${username}`
+    : displayName || (email || "").split("@")[0] || "Member";
+  const personInitial = (displayName || username || email || "M").charAt(0).toUpperCase();
+
+  function handleGlobalSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+    if (/^[+0-9\s-]{6,}$/.test(q) || /^ISS-/i.test(q) || /^CUST-/i.test(q)) {
+      router.push(`/customers`);
+    } else {
+      router.push(`/calls`);
+    }
+  }
+
+  return (
+    <header className="workspace-topbar sticky top-0 z-10 hidden shrink-0 items-center justify-between border-b border-line bg-white px-6 print:hidden lg:flex">
+      {/* Breadcrumb / Page Title */}
+      <div className="flex items-center gap-2 text-[13px] min-w-0">
+        <span className="text-muted font-medium truncate">{section}</span>
+        <span className="text-subtle">/</span>
+        <span className="font-semibold text-navy truncate">{page}</span>
+      </div>
+
+      {/* Right Cluster: Search, Organization Badge, Notifications, User Profile */}
+      <div className="flex items-center gap-3.5">
+        <form onSubmit={handleGlobalSearch} className="relative hidden xl:block w-64">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
+            {Icons.search}
+          </span>
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search calls, MSISDN, issues…"
+            aria-label="Global workspace search"
+            className="w-full rounded-lg border border-line bg-surface-2 py-1.5 pl-8.5 pr-3 text-[12.5px] text-ink placeholder:text-subtle focus:border-blue focus:bg-white focus:outline-none"
+          />
+        </form>
+
+        {/* Organization Info Pill */}
+        <div className="flex items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-2.5 py-1 text-[12px] font-medium text-ink-soft">
+          <span className="text-teal">{Icons.building}</span>
+          <span className="font-semibold text-navy truncate max-w-[140px]">
+            {workspaceName || "Enterprise Workspace"}
+          </span>
+          {plan ? (
+            <span className="rounded bg-blue-soft px-1.5 py-0.2 text-[10px] font-bold uppercase tracking-wider text-blue">
+              {plan}
+            </span>
+          ) : null}
+        </div>
+
+        {/* Notifications Link */}
+        <Link
+          href="/customers"
+          title="Repeat Issue & Compliance Alerts"
+          aria-label="Repeat Issue & Compliance Alerts"
+          className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-line bg-white text-ink-soft hover:bg-surface-2 hover:text-navy transition-colors"
+        >
+          {Icons.bell}
+          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-teal ring-2 ring-white" />
+        </Link>
+
+        {/* User Profile */}
+        <Link
+          href="/settings/account"
+          className="flex items-center gap-2 rounded-lg border border-transparent px-2 py-1 hover:border-line hover:bg-surface-2 transition-colors"
+        >
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-navy text-[11px] font-bold text-white">
+            {personInitial}
+          </div>
+          <span className="text-[12.5px] font-semibold text-ink max-w-[120px] truncate">
+            {personLabel}
+          </span>
+        </Link>
+      </div>
+    </header>
+  );
 }
 
 export function AppNav({
@@ -157,19 +256,23 @@ export function AppNav({
 
   return (
     <>
-      {/* Desktop Sidebar */}
+      {/* Desktop Sidebar — Clean White Enterprise Sidebar */}
       <aside
-        className={`hidden shrink-0 flex-col border-r border-line bg-white print:hidden lg:sticky lg:top-0 lg:flex lg:h-screen transition-[width] duration-200 relative ${
-          collapsed ? "w-16" : "w-60"
+        className={`workspace-sidebar hidden shrink-0 flex-col border-r border-line bg-white print:hidden lg:sticky lg:top-0 lg:flex lg:h-screen transition-[width] duration-200 relative ${
+          collapsed ? "w-16" : "w-64"
         }`}
       >
         {/* Logo + edge collapse control */}
-        <div className={`relative flex h-14 shrink-0 items-center border-b border-line bg-white ${collapsed ? "justify-center px-0" : "px-5"}`}>
-          <Logo size="sm" collapsed={collapsed} />
+        <div
+          className={`relative flex h-14 shrink-0 items-center border-b border-line bg-white ${
+            collapsed ? "justify-center px-0" : "px-5"
+          }`}
+        >
+          <Logo size="sm" collapsed={collapsed} href="/dashboard" />
           <button
             type="button"
             onClick={() => setCollapsed(!collapsed)}
-            className="absolute -right-3 top-1/2 z-20 flex h-6 w-6 -translate-y-1/2 items-center justify-center border border-line bg-white text-muted hover:text-ink"
+            className="absolute -right-3 top-1/2 z-20 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-white text-muted hover:text-navy shadow-2xs"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
@@ -195,7 +298,7 @@ export function AppNav({
             {groups.map((group) => (
               <div key={group.label} className="space-y-1">
                 {!collapsed ? (
-                  <span className="px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400 block mb-1.5">
+                  <span className="px-3 text-[11px] font-semibold uppercase tracking-[0.07em] text-muted block mb-1.5">
                     {group.label}
                   </span>
                 ) : (
@@ -203,25 +306,26 @@ export function AppNav({
                     <div className="h-px w-5 bg-line" />
                   </div>
                 )}
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   {group.items.map((item) => {
                     const active = linkActive(item.href, pathname);
                     return (
                       <Link
                         key={item.href}
                         href={item.href}
+                        aria-current={active ? "page" : undefined}
                         title={collapsed ? item.label : undefined}
-                        className={`flex items-center rounded text-[13px] font-medium ${
+                        className={`flex items-center rounded-lg text-[13.5px] transition-colors ${
                           collapsed
                             ? "justify-center h-9 w-full px-0"
-                            : "gap-2.5 px-3 py-2"
+                            : "gap-3 px-3 py-2"
                         } ${
                           active
-                            ? "bg-blue-soft text-blue"
-                            : "text-slate-600 hover:bg-slate-50 hover:text-ink"
+                            ? "bg-blue-soft text-blue font-semibold"
+                            : "text-ink-soft font-medium hover:bg-surface-2 hover:text-ink"
                         }`}
                       >
-                        <span className={`shrink-0 ${active ? "text-blue" : "text-slate-400"}`}>
+                        <span className={`shrink-0 ${active ? "text-blue" : "text-muted"}`}>
                           {item.icon}
                         </span>
                         {!collapsed && <span className="truncate">{item.label}</span>}
@@ -237,14 +341,16 @@ export function AppNav({
         {/* Bottom User Profile Section */}
         <div className="p-3 border-t border-line bg-white shrink-0">
           {!collapsed ? (
-            <div className="flex items-center justify-between gap-2 px-1 py-1">
+            <div className="flex items-center justify-between gap-2 px-1.5 py-1">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-7 h-7 rounded bg-navy text-white flex items-center justify-center text-[11px] font-medium shrink-0">
+                <div className="w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center text-[12px] font-bold shrink-0">
                   {personInitial}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[12px] font-medium text-ink truncate leading-tight">{personLabel}</p>
-                  <p className="text-[11px] text-muted truncate leading-tight mt-0.5">
+                  <p className="text-[13px] font-semibold text-ink truncate leading-tight">
+                    {personLabel}
+                  </p>
+                  <p className="text-[11.5px] text-muted truncate leading-tight mt-0.5">
                     {plan === "solo" ? "Solo · " : plan === "team" ? "Team · " : ""}
                     {workspaceName || "Zetro"}
                   </p>
@@ -254,20 +360,31 @@ export function AppNav({
                 type="button"
                 onClick={signOut}
                 title="Sign out"
-                className="text-slate-400 hover:text-ink p-1.5 rounded hover:bg-slate-50 shrink-0"
+                aria-label="Sign out"
+                className="text-muted hover:text-ink p-1.5 rounded-lg hover:bg-surface-2 shrink-0"
               >
                 {Icons.logout}
               </button>
             </div>
           ) : (
-            <div className="flex justify-center">
+            <div className="flex flex-col items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCollapsed(false)}
+                title={`${personLabel} · Expand sidebar`}
+                aria-label={`${personLabel} · Expand sidebar`}
+                className="w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center text-[12px] font-bold"
+              >
+                {personInitial}
+              </button>
               <button
                 type="button"
                 onClick={signOut}
                 title="Sign out"
-                className="w-7 h-7 rounded bg-navy text-white flex items-center justify-center text-[11px] font-medium"
+                aria-label="Sign out"
+                className="text-muted hover:text-ink p-1.5 rounded-lg hover:bg-surface-2"
               >
-                {personInitial}
+                {Icons.logout}
               </button>
             </div>
           )}
@@ -275,12 +392,14 @@ export function AppNav({
       </aside>
 
       {/* Mobile Header */}
-      <header className="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-line bg-white px-4 print:hidden lg:hidden">
-        <Logo size="sm" />
+      <header className="sticky top-0 z-20 flex h-13 items-center justify-between border-b border-line bg-white px-4 print:hidden lg:hidden">
+        <Logo size="sm" href="/dashboard" />
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="p-2 text-slate-600 hover:text-ink"
+          aria-label="Open navigation menu"
+          aria-expanded={open}
+          className="p-2 text-ink-soft hover:text-ink"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="4" y1="12" x2="20" y2="12" />
@@ -293,15 +412,19 @@ export function AppNav({
       {/* Mobile Menu Drawer */}
       {open ? (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-ink/40 none-xs transition-opacity" onClick={() => setOpen(false)} />
-          <div className="absolute top-0 right-0 h-full w-72 bg-white p-6 shadow-md flex flex-col justify-between">
+          <div
+            className="absolute inset-0 bg-ink/30 backdrop-blur-xs transition-opacity"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute top-0 right-0 h-full w-72 bg-white p-6 shadow-xl flex flex-col justify-between">
             <div className="space-y-6">
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                <Logo size="sm" />
+              <div className="flex items-center justify-between pb-4 border-b border-line">
+                <Logo size="sm" href="/dashboard" />
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="p-1.5 text-slate-400 hover:text-ink"
+                  aria-label="Close navigation menu"
+                  className="p-1.5 text-muted hover:text-ink"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" />
@@ -310,27 +433,28 @@ export function AppNav({
                 </button>
               </div>
 
-              <nav className="space-y-7">
+              <nav className="space-y-6">
                 {groups.map((group) => (
-                  <div key={group.label} className="space-y-2">
-                    <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  <div key={group.label} className="space-y-1.5">
+                    <span className="px-3 text-[11px] font-semibold uppercase tracking-wider text-muted block mb-1">
                       {group.label}
                     </span>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
                       {group.items.map((item) => {
                         const active = linkActive(item.href, pathname);
                         return (
                           <Link
                             key={item.href}
                             href={item.href}
+                            aria-current={active ? "page" : undefined}
                             onClick={() => setOpen(false)}
-                            className={`flex items-center gap-2.5 px-3 py-2 rounded text-[13px] font-medium ${
+                            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-[13.5px] ${
                               active
-                                ? "bg-blue-soft text-blue"
-                                : "text-slate-600 hover:bg-slate-50 hover:text-ink"
+                                ? "bg-blue-soft text-blue font-semibold"
+                                : "text-ink-soft font-medium hover:bg-surface-2 hover:text-ink"
                             }`}
                           >
-                            <span className={active ? "text-blue" : "text-slate-400"}>
+                            <span className={active ? "text-blue" : "text-muted"}>
                               {item.icon}
                             </span>
                             <span>{item.label}</span>
@@ -344,20 +468,20 @@ export function AppNav({
             </div>
 
             {/* Mobile User Bottom */}
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+            <div className="pt-4 border-t border-line flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-7 h-7 rounded bg-navy text-white flex items-center justify-center text-[11px] font-medium shrink-0">
+                <div className="w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center text-[12px] font-bold shrink-0">
                   {personInitial}
                 </div>
                 <div className="min-w-0">
                   <p className="text-[13px] font-semibold text-ink truncate">{personLabel}</p>
-                  <p className="text-[11px] text-muted truncate">{email}</p>
+                  <p className="text-[11.5px] text-muted truncate">{email}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={signOut}
-                className="text-[12px] font-medium text-slate-600 hover:text-ink"
+                className="text-[12.5px] font-semibold text-ink-soft hover:text-rose"
               >
                 Sign out
               </button>

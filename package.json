@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:customers": "node --import ./scripts/register-typescript-tests.mjs --test src/lib/__tests__/customer-journey.test.ts src/lib/__tests__/customer-intelligence-metrics.test.ts src/lib/__tests__/customer-intelligence-query.test.ts src/lib/__tests__/recording-identity.test.ts",
+    "test:catalogue": "node --import ./scripts/register-typescript-tests.mjs --test src/lib/__tests__/company-catalogue.test.ts src/lib/__tests__/telephony-connector.test.ts",
+    "test:billing": "node --import ./scripts/register-typescript-tests.mjs --test src/lib/__tests__/billing.test.ts"
   },
   "dependencies": {
     "@elevenlabs/elevenlabs-js": "^2.64.0",
@@ -17,16 +20,27 @@
     "@fortawesome/react-fontawesome": "^3.5.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
+    "@tanstack/react-query": "^5.107.1",
+    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-virtual": "^3.14.26",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "exceljs": "^4.4.0",
     "jszip": "^3.10.1",
+    "lucide-react": "^1.73.0",
     "mammoth": "^1.12.1",
     "next": "16.3.1",
     "openai": "^7.5.0",
+    "radix-ui": "^1.8.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "recharts": "^3.10.1",
+    "tailwind-merge": "^3.7.0",
     "undici": "^8.10.0",
     "unpdf": "^1.8.1",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

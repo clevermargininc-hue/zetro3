@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 import { createClient } from "@/lib/supabase/client";
 
 function ForgotPasswordForm() {
@@ -21,8 +22,6 @@ function ForgotPasswordForm() {
 
     try {
       const supabase = createClient();
-      // Point directly to /reset-password. The middleware will detect the
-      // ?code= param and route through /auth/callback automatically.
       const redirectUrl = `${window.location.origin}/reset-password`;
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
         email,
@@ -39,64 +38,89 @@ function ForgotPasswordForm() {
   }
 
   return (
-    <div className="w-full max-w-md p-8 md:p-12 rounded-3xl bg-surface-2 border border-line shadow-sm">
-      <h1 className="text-3xl font-extrabold text-ink mb-2">Reset password</h1>
-      <p className="text-muted text-[15px] mb-8">
-        Enter your email and we&apos;ll send you a link to reset your password.
+    <div className="w-full max-w-md">
+      <div className="mb-6">
+        <Logo size="sm" />
+      </div>
+      <h1 className="text-2xl font-bold text-[#0A1A3F]">Reset your password</h1>
+      <p className="mt-2 text-sm text-muted">
+        Enter your work email and we&apos;ll send you a secure link to reset your password.
       </p>
 
-      {success ? (
-        <div className="flex flex-col gap-6">
-          <div className="alert-ok p-4 rounded-lg">
-            Check your email for a password reset link.
-          </div>
-          <Link
-            href="/login"
-            className="btn btn-lg bg-white border border-line text-ink hover:bg-surface-2 shadow-sm flex items-center justify-center"
-          >
-            Back to login
-          </Link>
-        </div>
-      ) : (
-        <form onSubmit={onSubmit} className="flex flex-col gap-5">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-ink">Work email</span>
-            <input
-              required
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="field"
-              placeholder="you@company.com"
-            />
-          </label>
-
-          {error && <p className="alert-error">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading || !email}
-            className="btn btn-lg btn-blue mt-2"
-          >
-            {loading ? "Sending..." : "Send reset link"}
-          </button>
-          <div className="mt-4 text-center">
-            <Link href="/login" className="text-sm font-medium text-blue hover:underline">
-              Back to login
+      <div className="mt-8">
+        {success ? (
+          <div className="flex flex-col gap-5">
+            <div className="alert-ok">
+              Check your email for a password reset link.
+            </div>
+            <Link
+              href="/login"
+              className="btn btn-lg btn-ghost w-full flex items-center justify-center"
+            >
+              Back to sign in
             </Link>
           </div>
-        </form>
-      )}
+        ) : (
+          <form onSubmit={onSubmit} className="flex flex-col gap-5">
+            <label className="flex flex-col gap-1.5 text-sm">
+              <span className="font-medium text-ink">Work email</span>
+              <input
+                required
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="field"
+                placeholder="you@company.com"
+                autoComplete="email"
+              />
+            </label>
+
+            {error && <p className="alert-error">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={loading || !email}
+              className="btn btn-lg btn-blue mt-1"
+            >
+              {loading ? "Sending..." : "Send reset link"}
+            </button>
+            <p className="mt-2 text-sm text-muted">
+              Remembered your password?{" "}
+              <Link href="/login" className="font-semibold text-text-link hover:underline">
+                Back to sign in
+              </Link>
+            </p>
+          </form>
+        )}
+      </div>
     </div>
   );
 }
 
 export default function ForgotPasswordPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface relative">
-      <Suspense>
-        <ForgotPasswordForm />
-      </Suspense>
+    <div className="simple-auth grid min-h-screen bg-white lg:grid-cols-2">
+      <div className="relative hidden flex-col justify-between overflow-hidden bg-navy p-10 text-white lg:flex [&_h1]:text-white [&_p]:text-white/80">
+        <div
+          className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-blue/15 blur-3xl"
+          aria-hidden="true"
+        />
+        <div className="relative z-10">
+          <Logo invert />
+        </div>
+        <div className="relative z-10">
+          <p className="text-xs font-semibold uppercase tracking-widest text-blue">Account Recovery</p>
+          <h1 className="mt-3 max-w-md text-3xl font-semibold leading-snug text-white">
+            Get back into your QA workspace quickly.
+          </h1>
+        </div>
+        <p className="relative z-10 text-sm text-white/70">Tanzania · English and Kiswahili</p>
+      </div>
+      <div className="grid place-items-center bg-white px-5 py-16">
+        <Suspense>
+          <ForgotPasswordForm />
+        </Suspense>
+      </div>
     </div>
   );
 }

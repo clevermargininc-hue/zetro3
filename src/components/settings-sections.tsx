@@ -68,7 +68,7 @@ function UsagePanel({
         <UsageTile label="What remains" value={remainingValue} hint={remainingHint} />
       </div>
       <p className="text-[12px] text-muted">
-        Short {count(usage.byBand.short)} · Medium {count(usage.byBand.medium)} · Long {count(usage.byBand.long)}
+        0–3m {count(usage.byBand.upTo3)} · 3–6m {count(usage.byBand.upTo6)} · 6–9m {count(usage.byBand.upTo9)} · 9–12m {count(usage.byBand.upTo12)} · 12–15m {count(usage.byBand.upTo15)}
         {usage.tierLabel ? ` · Priced at the ${usage.tierLabel} calls a month rate` : ""}
       </p>
       {!isTrial && !isPaused ? (

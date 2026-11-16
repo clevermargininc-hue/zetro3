@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { Check } from "lucide-react";
 import { SALES_EMAIL, salesMailto } from "@/lib/contact";
 import {
   ANNUAL_DISCOUNT,
@@ -66,16 +67,16 @@ export function SalesForm({
 
   if (success) {
     return (
-      <div className="border border-line bg-surface-2 p-8 text-center animate-in fade-in duration-300">
-        <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-good/15 text-good">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+      <div className="rounded-[14px] border border-[#E3E9F5] bg-[#F8FAFF] p-8 text-center">
+        <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#DCFCE7] text-[#16A34A]">
+          <Check className="h-[22px] w-[22px]" strokeWidth={2.5} />
         </div>
-        <h3 className="mb-2 text-[17px] font-semibold text-ink">Quote request received</h3>
-        <p className="text-[13px] leading-relaxed text-muted">
+        <h3 className="font-display mb-2 text-[18px] font-bold text-[#0A1A3F]">
+          Quote request received
+        </h3>
+        <p className="text-[13.5px] leading-relaxed text-[#5A6882]">
           We will reply by email with a price per call in TZS within 1 business day. For urgent contract terms, email{" "}
-          <a href={salesMailto("Zetro — contract or sales deal")} className="font-semibold text-blue hover:underline">
+          <a href={salesMailto("Zetro — contract or sales deal")} className="font-semibold text-[#2459E8] hover:underline">
             {SALES_EMAIL}
           </a>
           .

@@ -1,5 +1,5 @@
-/** Countries where Zetro is sold today. Override with ALLOWED_COUNTRIES="TZ,KE" (ISO codes). */
-export const DEFAULT_ALLOWED_COUNTRIES = ["TZ"];
+/** Countries where Zetro is accessible. Defaults to "*" (all countries worldwide). Override with ALLOWED_COUNTRIES="TZ,KE" to restrict. */
+export const DEFAULT_ALLOWED_COUNTRIES = ["*"];
 
 export const NOT_AVAILABLE_PATH = "/not-available";
 
@@ -11,6 +11,7 @@ const ISO_CODE = /^[A-Z]{2}$/;
 
 export function normalizeCountryCode(value: string | null | undefined) {
   const code = (value || "").trim().toUpperCase();
+  if (code === "*") return "*";
   // XX = unknown, T1 = Tor (Cloudflare).
   if (!ISO_CODE.test(code) || code === "XX" || code === "T1") return null;
   return code;
@@ -18,15 +19,21 @@ export function normalizeCountryCode(value: string | null | undefined) {
 
 export function allowedCountries() {
   const raw = process.env.ALLOWED_COUNTRIES?.trim();
+  if (!raw || raw === "*") {
+    return new Set(["*"]);
+  }
   const list = raw
-    ? raw.split(",").map((part) => normalizeCountryCode(part)).filter((code): code is string => Boolean(code))
-    : DEFAULT_ALLOWED_COUNTRIES;
+    .split(",")
+    .map((part) => normalizeCountryCode(part))
+    .filter((code): code is string => Boolean(code));
   return new Set(list.length ? list : DEFAULT_ALLOWED_COUNTRIES);
 }
 
 export function isAllowedCountry(code: string | null | undefined) {
+  const allowed = allowedCountries();
+  if (allowed.has("*")) return true;
   const normalized = normalizeCountryCode(code);
-  return normalized ? allowedCountries().has(normalized) : false;
+  return normalized ? allowed.has(normalized) : false;
 }
 
 /** Visitor country from the hosting edge. Null when unknown (local dev, no CDN header). */

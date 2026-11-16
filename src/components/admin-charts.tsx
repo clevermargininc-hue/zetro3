@@ -3,11 +3,12 @@ import type { ReactNode } from "react";
 export type ChartSeries = { label: string; color: string; values: number[] };
 
 export const CHART_COLORS = {
-  blue: "var(--blue)",
-  soft: "#7ea6f4",
-  green: "var(--good)",
-  amber: "var(--warn)",
-  grey: "#94a3b8",
+  blue: "#2F6BFF",
+  teal: "#0D9488",
+  soft: "#93C5FD",
+  green: "#16A34A",
+  amber: "#D97706",
+  grey: "#94A3B8",
 };
 
 const WIDTH = 640;
@@ -42,8 +43,8 @@ function Axes({ labels, max, height }: { labels: string[]; max: number; height: 
         const y = PAD.top + plotH * (1 - t);
         return (
           <g key={t}>
-            <line x1={PAD.left} x2={WIDTH - PAD.right} y1={y} y2={y} stroke="var(--line)" strokeWidth={1} />
-            <text x={PAD.left - 6} y={y + 3.5} textAnchor="end" fontSize={10} fill="var(--muted)">
+            <line x1={PAD.left} x2={WIDTH - PAD.right} y1={y} y2={y} stroke="#E2E8F0" strokeWidth={1} />
+            <text x={PAD.left - 6} y={y + 3.5} textAnchor="end" fontSize={10} fontWeight={500} fill="#64748B">
               {formatCount(Math.round(max * t))}
             </text>
           </g>
@@ -57,7 +58,8 @@ function Axes({ labels, max, height }: { labels: string[]; max: number; height: 
             y={height - 8}
             textAnchor="middle"
             fontSize={10}
-            fill="var(--muted)"
+            fontWeight={500}
+            fill="#64748B"
           >
             {label}
           </text>
@@ -111,7 +113,7 @@ export function BarChart({
                   y={PAD.top + plotH - offset}
                   width={barW}
                   height={Math.max(h, 1)}
-                  rx={1.5}
+                  rx={3}
                   fill={s.color}
                 />
               );
@@ -127,7 +129,7 @@ export function LineChart({
   labels,
   values,
   label,
-  color = "var(--blue)",
+  color = "#2F6BFF",
   height = 200,
   fixedMax,
 }: {
@@ -176,7 +178,7 @@ export function LineChart({
           </title>
           <rect x={p.x - band / 2} y={PAD.top} width={band} height={plotH} fill="transparent" />
           {p.y != null ? (
-            <circle cx={p.x} cy={p.y} r={labels.length <= 14 || i === points.length - 1 ? 3.5 : 2.75} fill={color} />
+            <circle cx={p.x} cy={p.y} r={labels.length <= 14 || i === points.length - 1 ? 3.5 : 2.75} fill="#FFFFFF" stroke={color} strokeWidth={2} />
           ) : null}
         </g>
       ))}
@@ -198,7 +200,7 @@ export function Donut({
   return (
     <div className="flex flex-col items-center gap-5 sm:flex-row">
       <svg viewBox="0 0 120 120" className="h-36 w-36 shrink-0" role="img">
-        <circle cx={60} cy={60} r={r} fill="none" stroke="var(--bg-2)" strokeWidth={16} />
+        <circle cx={60} cy={60} r={r} fill="none" stroke="#F1F5F9" strokeWidth={16} />
         {total > 0
           ? slices.map((s) => {
               if (!s.value) return null;
@@ -224,21 +226,29 @@ export function Donut({
               return node;
             })
           : null}
-        <text x={60} y={58} textAnchor="middle" fontSize={20} fontWeight={700} fill="var(--text)">
+        <text
+          x={60}
+          y={58}
+          textAnchor="middle"
+          fontSize={20}
+          fontWeight={700}
+          fill="#0A1A3F"
+          style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif' }}
+        >
           {total}
         </text>
-        <text x={60} y={74} textAnchor="middle" fontSize={9} fill="var(--muted)">
+        <text x={60} y={74} textAnchor="middle" fontSize={9.5} fontWeight={600} fill="#64748B">
           {centerLabel}
         </text>
       </svg>
       <ul className="w-full space-y-2 text-[13px]">
         {slices.map((s) => (
           <li key={s.label} className="flex items-center justify-between gap-3">
-            <span className="flex items-center gap-2 text-ink">
-              <span className="h-2.5 w-2.5 rounded-sm" style={{ background: s.color }} />
+            <span className="flex items-center gap-2 font-medium text-ink">
+              <span className="h-2.5 w-2.5 rounded-xs" style={{ background: s.color }} />
               {s.label}
             </span>
-            <span className="tabular-nums text-muted">
+            <span className="tabular-nums font-semibold text-muted">
               {s.value}
               {total ? ` · ${Math.round((s.value / total) * 100)}%` : ""}
             </span>
@@ -251,7 +261,7 @@ export function Donut({
 
 export function HBars({
   rows,
-  color = "var(--blue)",
+  color = "#2563EB",
   empty,
   scaleMax,
 }: {
@@ -266,17 +276,17 @@ export function HBars({
   return (
     <ul className="space-y-3">
       {rows.map((row) => (
-        <li key={row.key} className="space-y-1">
+        <li key={row.key} className="space-y-1.5">
           <div className="flex items-center justify-between gap-3 text-[13px]">
-            <span className="min-w-0 truncate text-ink">{row.label}</span>
-            <span className="shrink-0 tabular-nums text-muted">
+            <span className="min-w-0 truncate font-medium text-ink">{row.label}</span>
+            <span className="shrink-0 tabular-nums font-medium text-muted">
               {row.value.toLocaleString("en-US")}
               {row.hint ? ` · ${row.hint}` : ""}
             </span>
           </div>
-          <div className="h-2 w-full rounded-sm bg-bg-2">
+          <div className="h-2 w-full rounded-full bg-surface-subtle">
             <div
-              className="h-2 rounded-sm"
+              className="h-2 rounded-full"
               style={{ width: `${Math.max(2, (row.value / max) * 100)}%`, background: color }}
             />
           </div>
@@ -300,19 +310,19 @@ export function ChartCard({
   children: ReactNode;
 }) {
   return (
-    <section className="surface p-5">
+    <section className="workspace-chart surface p-5">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-[14px] font-semibold text-ink">{title}</h2>
-          {subtitle ? <p className="mt-0.5 text-[12px] text-muted">{subtitle}</p> : null}
+          <h2 className="font-display text-[15.5px] font-semibold text-[#0A1A3F]">{title}</h2>
+          {subtitle ? <p className="mt-0.5 text-[12.5px] text-muted">{subtitle}</p> : null}
         </div>
         <div className="flex flex-col items-end gap-1.5">
-          {total ? <span className="text-[20px] font-bold leading-none text-ink tabular-nums">{total}</span> : null}
+          {total ? <span className="font-display text-[21px] font-bold leading-none text-[#0A1A3F] tabular-nums">{total}</span> : null}
           {legend ? (
-            <div className="flex flex-wrap justify-end gap-3 text-[11px] text-muted">
+            <div className="flex flex-wrap justify-end gap-3 text-[11.5px] text-muted">
               {legend.map((item) => (
                 <span key={item.label} className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-sm" style={{ background: item.color }} />
+                  <span className="h-2 w-2 rounded-xs" style={{ background: item.color }} />
                   {item.label}
                 </span>
               ))}

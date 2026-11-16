@@ -5,374 +5,404 @@ import { useMemo, useState } from "react";
 import { SALES_EMAIL, salesMailto } from "@/lib/contact";
 import {
   ANNUAL_DISCOUNT,
-  DEFAULT_CALLS_PER_MONTH,
-  DEFAULT_TALK_MINUTES,
-  LARGE_VOLUME_CALLS,
+  AUDIO_DAYS_INCLUDED,
+  HIGH_VOLUME_PRICING_ENABLED,
   LENGTH_BANDS,
   MAX_CALLS_PER_MONTH,
-  MAX_TALK_MINUTES,
   MONTHLY_MINIMUM_TZS,
   SETUP_FEE_TZS,
   TRIAL_CALLS,
-  TZS_PER_USD,
+  VAT_RATE,
   VOLUME_TIERS,
-  bandLabel,
+  emptyBandCounts,
   formatTzs,
-  formatUsdFromTzs,
   pricePerCall,
-  quotePrice,
+  quoteMixedUsage,
+  totalBandCalls,
+  type BandCounts,
   type BillingCycle,
-  type PriceQuote,
+  type LengthBand,
 } from "@/lib/billing";
 
-const DISCOUNT_PERCENT = Math.round(ANNUAL_DISCOUNT * 100);
+const percentage = Math.round(ANNUAL_DISCOUNT * 100);
 
-function clampNumber(value: number, min: number, max: number, fallback: number) {
-  if (!Number.isFinite(value) || value <= 0) return fallback;
-  return Math.min(max, Math.max(min, value));
-}
-
-function salesHref(calls: number, minutes: number, cycle: BillingCycle) {
-  const params = new URLSearchParams({
-    calls: String(calls),
-    minutes: String(minutes),
-    billing: cycle,
-  });
-  return `/talk-sales?${params.toString()}`;
-}
-
-function estimateEmail(quote: PriceQuote) {
-  return salesMailto(
-    "Zetro — contract request",
-    [
-      "Hello Zetro team,",
-      "",
-      "We would like a contract for:",
-      `- Scored calls per month: ${quote.callsPerMonth.toLocaleString("en-US")}`,
-      `- Average talk time: ${quote.talkMinutes} min`,
-      `- Billing: ${quote.cycle === "annual" ? "annual" : "monthly"}`,
-      `- Estimate: ${formatTzs(quote.monthlyTzs)} per month (excluding VAT)`,
-      "",
-      "Company:",
-      "Contact person:",
-    ].join("\n"),
-  );
-}
-
-function CycleToggle({ cycle, onChange }: { cycle: BillingCycle; onChange: (cycle: BillingCycle) => void }) {
-  const options: { id: BillingCycle; label: string }[] = [
-    { id: "monthly", label: "Billed monthly" },
-    { id: "annual", label: "Billed annually" },
-  ];
+function CycleToggle({
+  cycle,
+  onChange,
+}: {
+  cycle: BillingCycle;
+  onChange: (value: BillingCycle) => void;
+}) {
   return (
-    <div role="radiogroup" aria-label="Billing period" className="inline-flex border border-line bg-white p-1">
-      {options.map((option) => {
-        const active = option.id === cycle;
-        return (
-          <button
-            key={option.id}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => onChange(option.id)}
-            className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold transition-colors ${
-              active ? "bg-blue text-white" : "text-muted hover:text-ink"
-            }`}
-          >
-            {option.label}
-            {option.id === "annual" ? (
-              <span
-                className={`px-1.5 py-0.5 text-[11px] font-bold ${
-                  active ? "bg-white/20 text-white" : "bg-blue-soft text-blue"
-                }`}
-              >
-                Save {DISCOUNT_PERCENT}%
-              </span>
-            ) : null}
-          </button>
-        );
-      })}
+    <div
+      role="radiogroup"
+      aria-label="Contract option"
+      className="inline-flex rounded-full border border-[#E3E9F5] bg-white p-1.5 shadow-[0_1px_2px_rgb(10_26_63/0.04)]"
+    >
+      {(
+        [
+          ["monthly", "Monthly"],
+          ["annual", `Annual · save ${percentage}%`],
+        ] as const
+      ).map(([value, label]) => (
+        <button
+          key={value}
+          type="button"
+          role="radio"
+          aria-checked={cycle === value}
+          onClick={() => onChange(value)}
+          className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+            cycle === value
+              ? "bg-[#0A1A3F] text-white"
+              : "text-[#5A6882] hover:text-[#0A1A3F]"
+          }`}
+        >
+          {label}
+        </button>
+      ))}
     </div>
   );
 }
 
 function PriceTable({ cycle }: { cycle: BillingCycle }) {
   return (
-    <div className="overflow-x-auto border border-line bg-white">
-      <table className="w-full min-w-[36rem] border-collapse text-left">
+    <div
+      className="z-card overflow-x-auto"
+      tabIndex={0}
+      aria-label="Tanzania price table"
+    >
+      <table className="w-full min-w-[920px] border-collapse text-left">
+        <caption className="sr-only">TZS per successfully scored call, excluding VAT</caption>
         <thead>
-          <tr className="border-b border-line bg-bg">
-            <th scope="col" className="px-5 py-4 text-[12px] font-semibold uppercase tracking-wider text-muted">
-              Scored calls per month
+          <tr className="border-b border-[#E3E9F5] bg-[#F8FAFF]">
+            <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider text-[#5A6882]">
+              Contracted calls / month
             </th>
-            {LENGTH_BANDS.map((band) => (
-              <th key={band.id} scope="col" className="px-5 py-4">
-                <span className="block text-[14px] font-semibold text-ink">{band.label}</span>
-                <span className="block text-[12px] font-normal text-muted">{band.range}</span>
+            {LENGTH_BANDS.map((b) => (
+              <th key={b.id} className="border-l border-[#E3E9F5] px-5 py-4">
+                <span className="block text-sm font-semibold text-[#0A1A3F]">{b.label}</span>
+                <span className="text-xs font-normal text-[#5A6882]">{b.range}</span>
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
           {VOLUME_TIERS.map((tier) => (
-            <tr key={tier.id} className="border-b border-line last:border-b-0">
-              <th scope="row" className="px-5 py-4 text-[14px] font-medium text-ink">
-                {tier.label}
-              </th>
-              {LENGTH_BANDS.map((band) => {
-                const price = pricePerCall(tier, band.id, cycle);
-                return (
-                  <td key={band.id} className="px-5 py-4 tabular-nums">
-                    <span className="block text-[16px] font-semibold text-ink">{formatTzs(price)}</span>
-                    <span className="block text-[12px] text-muted">
-                      {formatUsdFromTzs(price)}
-                      {cycle === "annual" ? (
-                        <span className="ml-1.5 line-through">{formatTzs(tier.prices[band.id])}</span>
-                      ) : null}
-                    </span>
-                  </td>
-                );
-              })}
+            <tr
+              key={tier.id}
+              className="border-b border-[#E3E9F5] last:border-0 hover:bg-[#F8FAFF]/80 transition-colors"
+            >
+              <th className="px-5 py-4 text-sm font-semibold text-[#0A1A3F]">{tier.label}</th>
+              {tier.conditional && !HIGH_VOLUME_PRICING_ENABLED ? (
+                <td
+                  colSpan={5}
+                  className="border-l border-[#E3E9F5] px-5 py-4 text-sm text-[#5A6882]"
+                >
+                  Custom contract pricing —{" "}
+                  <Link
+                    className="font-semibold text-[#2459E8] hover:underline"
+                    href="/talk-sales"
+                  >
+                    talk to sales
+                  </Link>
+                </td>
+              ) : (
+                LENGTH_BANDS.map((b) => {
+                  const rate = pricePerCall(tier, b.id, cycle);
+                  return (
+                    <td
+                      key={b.id}
+                      className="border-l border-[#E3E9F5] px-5 py-4 font-bold text-[#0A1A3F] tabular-nums"
+                    >
+                      {rate === null ? "Custom" : formatTzs(rate)}
+                    </td>
+                  );
+                })
+              )}
             </tr>
           ))}
-          <tr>
-            <th scope="row" className="px-5 py-4 text-[14px] font-medium text-ink">
-              Over {LARGE_VOLUME_CALLS.toLocaleString("en-US")}
-            </th>
-            <td colSpan={LENGTH_BANDS.length} className="px-5 py-4 text-[14px] text-muted">
-              Priced in your contract.{" "}
-              <a href={salesMailto("Zetro — large volume quote")} className="font-semibold text-blue hover:underline">
-                Email us
-              </a>{" "}
-              for a quote.
-            </td>
-          </tr>
         </tbody>
       </table>
     </div>
   );
 }
 
-function Charges({ cycle }: { cycle: BillingCycle }) {
-  const rows = [
-    {
-      label: "Setup and calibration",
-      value: cycle === "annual" ? "Free" : `${formatTzs(SETUP_FEE_TZS)} once`,
-      usd: cycle === "annual" ? `Waived on annual billing (normally ${formatTzs(SETUP_FEE_TZS)})` : formatUsdFromTzs(SETUP_FEE_TZS),
-      note: "We load your scorecard and scripts, then score 20 calls with your QA lead until the marks agree.",
-    },
-    {
-      label: "Monthly minimum",
-      value: formatTzs(MONTHLY_MINIMUM_TZS),
-      usd: formatUsdFromTzs(MONTHLY_MINIMUM_TZS),
-      note: "If your calls cost less in a month, the invoice is the minimum.",
-    },
-    {
-      label: "Free trial",
-      value: `${TRIAL_CALLS} calls`,
-      usd: "One trial per company",
-      note: "Scored on your own scorecard before you sign anything.",
-    },
-    {
-      label: "Re-scoring a call",
-      value: "Half price",
-      usd: "Of that call's price",
-      note: "For example, after you change your scorecard. Audio stays in your workspace; longer storage can be quoted with sales.",
-    },
-  ];
+function NumberField({
+  band,
+  value,
+  onChange,
+}: {
+  band: (typeof LENGTH_BANDS)[number];
+  value: number;
+  onChange: (id: LengthBand, value: number) => void;
+}) {
   return (
-    <div className="grid gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
-      {rows.map((row) => (
-        <div key={row.label} className="bg-white px-5 py-5">
-          <p className="text-[12px] font-semibold uppercase tracking-wider text-muted">{row.label}</p>
-          <p className="mt-2 text-[20px] font-semibold tracking-tight text-ink tabular-nums">{row.value}</p>
-          <p className="text-[12px] text-muted">{row.usd}</p>
-          <p className="mt-3 text-[13px] leading-relaxed text-muted">{row.note}</p>
-        </div>
-      ))}
-    </div>
+    <label className="rounded-[14px] border border-[#E3E9F5] bg-[#F8FAFF]/50 p-4">
+      <span className="block text-sm font-semibold text-[#0A1A3F]">{band.label}</span>
+      <span className="block text-xs text-[#5A6882]">{band.range}</span>
+      <input
+        aria-label={`Estimated scored calls ${band.label}`}
+        type="number"
+        min={0}
+        max={MAX_CALLS_PER_MONTH}
+        step={1}
+        value={value}
+        onChange={(e) =>
+          onChange(
+            band.id,
+            Math.min(MAX_CALLS_PER_MONTH, Math.max(0, Math.trunc(Number(e.target.value) || 0))),
+          )
+        }
+        className="field mt-3 tabular-nums font-semibold"
+      />
+    </label>
   );
 }
 
-function Calculator({ cycle }: { cycle: BillingCycle }) {
-  const [callsText, setCallsText] = useState(String(DEFAULT_CALLS_PER_MONTH));
-  const [minutesText, setMinutesText] = useState(String(DEFAULT_TALK_MINUTES));
-  const calls = clampNumber(Math.round(Number(callsText)), 1, MAX_CALLS_PER_MONTH, 1);
-  const minutes = clampNumber(Number(minutesText), 0.5, 60, 0.5);
+function Estimate({ cycle }: { cycle: BillingCycle }) {
+  const [contractedCalls, setContractedCalls] = useState(20_000);
+  const [counts, setCounts] = useState<BandCounts>({ ...emptyBandCounts(), upTo6: 20_000 });
+  const quote = useMemo(
+    () => quoteMixedUsage({ contractedCalls, bandCounts: counts, cycle }),
+    [contractedCalls, counts, cycle],
+  );
+  const update = (id: LengthBand, value: number) =>
+    setCounts((current) => ({ ...current, [id]: value }));
+  const estimatedCalls = totalBandCalls(counts);
+  const money = (value: number | null) => (value === null ? "Custom quote" : formatTzs(value));
 
-  const quote = useMemo(() => quotePrice({ callsPerMonth: calls, talkMinutes: minutes, cycle }), [calls, minutes, cycle]);
-  const annualSaving = useMemo(() => {
-    const monthly = quotePrice({ callsPerMonth: calls, talkMinutes: minutes, cycle: "monthly" });
-    const annual = quotePrice({ callsPerMonth: calls, talkMinutes: minutes, cycle: "annual" });
-    return monthly.firstYearTzs - annual.firstYearTzs;
-  }, [calls, minutes]);
+  const talkSalesHref = `/talk-sales?calls=${encodeURIComponent(String(contractedCalls))}&billing=${encodeURIComponent(cycle)}`;
 
   return (
-    <section className="border border-line bg-white">
-      <form
-        className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]"
-        onSubmit={(event) => event.preventDefault()}
-      >
-        <div className="space-y-5 border-b border-line px-6 py-6 lg:border-b-0 lg:border-r">
-          <div>
-            <p className="text-[15px] font-semibold text-ink">Estimate your bill</p>
-            <p className="mt-1 text-[13px] text-muted">Two numbers. Nothing else changes the price.</p>
-          </div>
-          <label className="block">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
-              Scored calls per month
+    <section id="calculator" className="z-card overflow-hidden">
+      <div className="grid lg:grid-cols-[1.05fr_.95fr]">
+        <form
+          onSubmit={(e) => e.preventDefault()}
+          className="border-b border-[#E3E9F5] p-7 sm:p-9 lg:border-b-0 lg:border-r"
+        >
+          <span className="z-eyebrow">Interactive TZS estimator</span>
+          <h3 className="font-display mt-4 text-2xl font-bold tracking-tight text-[#0A1A3F]">
+            Build your monthly estimate
+          </h3>
+          <p className="mt-2 text-sm leading-relaxed text-[#5A6882]">
+            Enter the monthly commitment in your contract, then estimate scored calls in each
+            duration band. Mixed recordings are priced independently.
+          </p>
+
+          <label className="mt-6 block">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#5A6882]">
+              Contracted calls per month
             </span>
             <input
               type="number"
-              inputMode="numeric"
-              min={1}
+              min={0}
               max={MAX_CALLS_PER_MONTH}
               step={1}
-              value={callsText}
-              onChange={(event) => setCallsText(event.target.value)}
-              onBlur={() => setCallsText(String(calls))}
-              className="field mt-1.5 tabular-nums"
+              value={contractedCalls}
+              onChange={(e) =>
+                setContractedCalls(
+                  Math.min(MAX_CALLS_PER_MONTH, Math.max(0, Math.trunc(Number(e.target.value) || 0))),
+                )
+              }
+              className="field mt-2 text-lg font-bold tabular-nums"
             />
-            <span className="mt-1 block text-[12px] text-muted">
-              Only the calls you want scored — not every call the floor takes.
+            <span className="mt-1.5 block text-xs text-[#5A6882]">
+              Actual overage keeps this contracted tier; it does not move you to another tier.
             </span>
           </label>
 
-          <label className="block">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
-              Average talk time (minutes)
-            </span>
-            <input
-              type="number"
-              min={0.5}
-              max={60}
-              step={0.5}
-              inputMode="decimal"
-              value={minutesText}
-              onChange={(event) => setMinutesText(event.target.value)}
-              onBlur={() => setMinutesText(String(minutes))}
-              className="field mt-1.5 tabular-nums"
-            />
-            <span className="mt-1 block text-[12px] text-muted">
-              Use talk time, not AHT. After-call work is not in the recording, so you do not pay for it.
-            </span>
-          </label>
-        </div>
+          <fieldset className="mt-6">
+            <legend className="text-xs font-semibold uppercase tracking-wider text-[#5A6882]">
+              Estimated successfully scored calls by recording length
+            </legend>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {LENGTH_BANDS.map((b) => (
+                <NumberField key={b.id} band={b} value={counts[b.id]} onChange={update} />
+              ))}
+            </div>
+          </fieldset>
 
-        <div className="bg-bg px-6 py-6">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
-            {cycle === "annual" ? "Per month, billed annually" : "Per month, billed monthly"}
+          <p className="mt-4 text-xs text-[#5A6882]">
+            Estimated scored calls: {estimatedCalls.toLocaleString("en-US")}. Empty, failed,
+            unscored, and over-15-minute recordings are not included here.
           </p>
-          <p className="mt-2 text-[36px] font-semibold leading-tight tracking-tight text-ink tabular-nums sm:text-[40px]">
-            {formatTzs(quote.monthlyTzs)}
+        </form>
+
+        <div className="bg-[#F8FAFF] p-7 sm:p-9" aria-live="polite">
+          <p className="text-xs font-semibold uppercase tracking-[.12em] text-[#5A6882]">
+            {cycle === "annual"
+              ? "Annual commitment · invoiced upfront"
+              : "Monthly estimate · first invoice"}
           </p>
-          <p className="text-[14px] text-muted tabular-nums">
-            {formatUsdFromTzs(quote.monthlyTzs)} / month · excludes 18% VAT
+          <p className="font-display mt-3 text-3xl font-bold tracking-tight text-[#0A1A3F] tabular-nums">
+            {quote.requiresContactSales
+              ? "Contact sales"
+              : money(cycle === "annual" ? quote.annualUpfrontTotalTzs : quote.monthlyTotalTzs)}
+          </p>
+          <p className="mt-1 text-xs text-[#5A6882]">
+            Estimate including {Math.round(VAT_RATE * 100)}% VAT · selected tier {quote.tier.label}
           </p>
 
-          <dl className="mt-5 space-y-2 border-t border-line pt-4 text-[13px]">
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted">Length band</dt>
-              <dd className="text-right font-medium text-ink">{bandLabel(quote.band)}</dd>
+          {quote.requiresContactSales ? (
+            <div className="mt-6 rounded-[12px] border border-[#DCE6FF] bg-[#EEF3FF] p-5 text-sm leading-relaxed text-[#16233F]">
+              Firm pricing above 100,000 contracted calls is quoted individually by our enterprise
+              team.{" "}
+              <Link href="/talk-sales" className="font-semibold text-[#2459E8] hover:underline">
+                Request a custom high-volume contract.
+              </Link>
             </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted">Price per call</dt>
-              <dd className="text-right font-medium text-ink tabular-nums">
-                {formatTzs(quote.pricePerCallTzs)}{" "}
-                <span className="font-normal text-muted">({formatUsdFromTzs(quote.pricePerCallTzs)})</span>
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted">{cycle === "annual" ? "Yearly invoice" : "Monthly invoice"}</dt>
-              <dd className="text-right font-medium text-ink tabular-nums">
-                {formatTzs(quote.invoiceTzs)}{" "}
-                <span className="font-normal text-muted">({formatUsdFromTzs(quote.invoiceTzs)})</span>
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted">Setup and calibration</dt>
-              <dd className="text-right font-medium text-ink tabular-nums">
-                {quote.setupTzs ? `${formatTzs(quote.setupTzs)} once` : "Free"}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted">VAT (18%) per month</dt>
-              <dd className="text-right font-medium text-ink tabular-nums">{formatTzs(quote.vatPerMonthTzs)}</dd>
-            </div>
-          </dl>
+          ) : (
+            <dl className="mt-6 space-y-3 border-t border-[#E3E9F5] pt-6 text-sm">
+              {LENGTH_BANDS.map((b) => (
+                <div key={b.id} className="flex justify-between gap-4">
+                  <dt className="text-[#5A6882]">
+                    {counts[b.id].toLocaleString("en-US")} × {b.label} @ {money(quote.rates[b.id])}
+                  </dt>
+                  <dd className="font-semibold text-[#0A1A3F] tabular-nums">
+                    {money(counts[b.id] * (quote.rates[b.id] || 0))}
+                  </dd>
+                </div>
+              ))}
+              <Row label="Usage subtotal" value={money(quote.usageTzs)} />
+              <Row label="Minimum adjustment" value={money(quote.minimumAdjustmentTzs)} />
+              <Row label="Recurring monthly subtotal" value={money(quote.recurringMonthlyTzs)} />
+              {cycle === "monthly" ? (
+                <>
+                  <Row label="Setup & calibration · once" value={money(quote.setupTzs)} />
+                  <Row
+                    label="First invoice subtotal · excl. VAT"
+                    value={money(quote.monthlySubtotalExVatTzs)}
+                  />
+                  <Row label="VAT estimate" value={money(quote.monthlyVatTzs)} />
+                  <Row
+                    strong
+                    label="First invoice total estimate"
+                    value={money(quote.monthlyTotalTzs)}
+                  />
+                </>
+              ) : (
+                <>
+                  <Row label="Monthly minimum evaluated" value="For each of 12 months" />
+                  <Row label="Setup & calibration" value="Waived" />
+                  <Row
+                    label="Annual committed usage · excl. VAT"
+                    value={money(quote.annualUpfrontExVatTzs)}
+                  />
+                  <Row label="VAT estimate" value={money(quote.annualUpfrontVatTzs)} />
+                  <Row
+                    strong
+                    label="Annual upfront total estimate"
+                    value={money(quote.annualUpfrontTotalTzs)}
+                  />
+                </>
+              )}
+            </dl>
+          )}
 
-          <div className="mt-4 space-y-2 text-[12px] leading-relaxed text-muted">
-            {annualSaving > 0 ? (
-              <p className="font-semibold text-good">
-                {cycle === "annual"
-                  ? `Saves ${formatTzs(annualSaving)} in the first year compared with monthly billing.`
-                  : `Annual billing would save ${formatTzs(annualSaving)} in the first year.`}
-              </p>
-            ) : null}
-            {quote.minimumApplied ? (
-              <p>
-                {quote.callsPerMonth.toLocaleString("en-US")} calls × {formatTzs(quote.pricePerCallTzs)} is{" "}
-                {formatTzs(quote.usageTzs)}, so the {formatTzs(MONTHLY_MINIMUM_TZS)} monthly minimum applies.
-              </p>
-            ) : (
-              <p>
-                {quote.callsPerMonth.toLocaleString("en-US")} calls × {formatTzs(quote.pricePerCallTzs)} ={" "}
-                {formatTzs(quote.usageTzs)} a month.
-              </p>
-            )}
-            {quote.overLength ? (
-              <p className="text-warn">
-                Calls over {MAX_TALK_MINUTES} minutes are quoted separately. This shows the long-call price as a guide.
-              </p>
-            ) : null}
-            {quote.largeVolume ? (
-              <p>
-                Over {LARGE_VOLUME_CALLS.toLocaleString("en-US")} calls a month we agree a lower rate in the contract.
-                This uses the 30,001 – 100,000 price as a ceiling.
-              </p>
-            ) : null}
-          </div>
-
-          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-            <a href={estimateEmail(quote)} className="btn btn-blue flex-1">
-              Email us for a contract
-            </a>
-            <Link href={salesHref(calls, minutes, cycle)} className="btn btn-outline flex-1">
-              Send estimate to sales
+          <div className="mt-7 flex flex-col gap-3">
+            <Link
+              href={talkSalesHref}
+              className="z-btn z-btn-solid w-full"
+              style={{ height: "46px" }}
+            >
+              Request official TZS quote →
             </Link>
+            <a
+              href={salesMailto(
+                "Zetro — Tanzania pricing estimate",
+                `Contracted monthly calls: ${contractedCalls}\nEstimated scored calls: ${estimatedCalls}\nBilling: ${cycle}`,
+              )}
+              className="text-center text-xs font-semibold text-[#2459E8] hover:underline"
+            >
+              Or email {SALES_EMAIL} directly
+            </a>
           </div>
         </div>
-      </form>
+      </div>
     </section>
+  );
+}
+
+function Row({
+  label,
+  value,
+  strong = false,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+}) {
+  return (
+    <div
+      className={`flex justify-between gap-4 border-t border-[#E3E9F5] pt-3 ${
+        strong ? "text-base font-bold text-[#0A1A3F]" : ""
+      }`}
+    >
+      <dt className={strong ? "text-[#0A1A3F]" : "text-[#5A6882]"}>{label}</dt>
+      <dd className="text-right font-semibold text-[#0A1A3F] tabular-nums">{value}</dd>
+    </div>
   );
 }
 
 export function PricingPlans() {
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
-
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div className="flex flex-col items-center gap-3">
         <CycleToggle cycle={cycle} onChange={setCycle} />
-        <p className="text-center text-[13px] text-muted">
+        <p className="max-w-2xl text-center text-sm text-[#5A6882]">
           {cycle === "annual"
-            ? `12-month contract, invoiced once a year. ${DISCOUNT_PERCENT}% off every call and no setup fee.`
-            : "Invoiced each month for the calls we scored. One-time setup fee."}
+            ? "12-month contract. Per-call rates are discounted 10%, setup is waived, and committed usage is invoiced upfront. Overage is invoiced monthly at the annual contracted rate."
+            : "Month-to-month at standard per-call rates, with a one-time setup fee and monthly billing floor."}
         </p>
       </div>
 
       <PriceTable cycle={cycle} />
-      <Charges cycle={cycle} />
-      <Calculator cycle={cycle} />
 
-      <p className="text-center text-[12px] leading-relaxed text-muted">
-        All prices exclude 18% VAT. Invoices are in Tanzanian shillings. US dollar amounts are a guide
-        only, at 1 USD = {TZS_PER_USD.toLocaleString("en-US")} TZS. Questions? Email{" "}
-        <a href={salesMailto("Zetro — pricing question")} className="font-semibold text-blue hover:underline">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Info
+          title="Setup & calibration"
+          value={cycle === "annual" ? "Waived" : `${formatTzs(SETUP_FEE_TZS)} once`}
+          copy="Waived on a 12-month contract."
+        />
+        <Info
+          title="Monthly minimum"
+          value={formatTzs(MONTHLY_MINIMUM_TZS)}
+          copy="A billing floor, not an extra fee."
+        />
+        <Info
+          title="Free trial"
+          value={`${TRIAL_CALLS} calls`}
+          copy="One trial per company, using your scorecard."
+        />
+        <Info
+          title="Storage & re-scoring"
+          value={`${AUDIO_DAYS_INCLUDED} days included`}
+          copy="Longer retention is quoted separately. Re-scoring is 50% of the original call price."
+        />
+      </div>
+
+      <Estimate cycle={cycle} />
+
+      <p className="mx-auto max-w-3xl text-center text-xs leading-relaxed text-[#5A6882]">
+        All results are estimates in TZS. Prices exclude VAT; the calculator shows the current
+        configurable {Math.round(VAT_RATE * 100)}% estimate separately. Only successfully scored
+        recordings are charged. Contracts and invoices are handled through{" "}
+        <a className="font-semibold text-[#2459E8] hover:underline" href={`mailto:${SALES_EMAIL}`}>
           {SALES_EMAIL}
         </a>
-        .
+        . No online checkout is available.
       </p>
+    </div>
+  );
+}
+
+function Info({ title, value, copy }: { title: string; value: string; copy: string }) {
+  return (
+    <div className="z-card p-6">
+      <p className="text-xs font-semibold uppercase tracking-wider text-[#5A6882]">{title}</p>
+      <p className="font-display mt-2 text-xl font-bold text-[#0A1A3F] tabular-nums">{value}</p>
+      <p className="mt-2 text-xs leading-relaxed text-[#5A6882]">{copy}</p>
     </div>
   );
 }

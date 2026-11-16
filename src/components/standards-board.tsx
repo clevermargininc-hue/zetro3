@@ -1,6 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  CheckCircle2,
+  ClipboardCheck,
+  FileText,
+  MessageSquare,
+  Pause,
+  ShieldCheck,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { authFetch } from "@/lib/auth-fetch";
 import {
   QA_KIND_LABELS,
@@ -26,56 +36,14 @@ const FILE_ACCEPT =
   ".pdf,.docx,.txt,.md,.csv,.xml,.xlsx,.xls,.xlsm,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/xml,text/xml,text/plain";
 
 const Icons = {
-  document: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="16" y1="13" x2="8" y2="13" />
-      <line x1="16" y1="17" x2="8" y2="17" />
-    </svg>
-  ),
-  scorecard: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 11l3 3L22 4" />
-      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-    </svg>
-  ),
-  compliance: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
-  ),
-  hold: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="6" y="4" width="4" height="16" rx="1" />
-      <rect x="14" y="4" width="4" height="16" rx="1" />
-    </svg>
-  ),
-  script: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
-  ),
-  upload: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
-    </svg>
-  ),
-  trash: (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    </svg>
-  ),
-  checkCircle: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  ),
+  document: <FileText className="h-[18px] w-[18px]" />,
+  scorecard: <ClipboardCheck className="h-[18px] w-[18px]" />,
+  compliance: <ShieldCheck className="h-[18px] w-[18px]" />,
+  hold: <Pause className="h-[18px] w-[18px]" />,
+  script: <MessageSquare className="h-[18px] w-[18px]" />,
+  upload: <Upload className="h-[15px] w-[15px]" />,
+  trash: <Trash2 className="h-[13px] w-[13px]" />,
+  checkCircle: <CheckCircle2 className="h-4 w-4" />,
 };
 
 function getKindIcon(kind: QaKind) {
@@ -105,7 +73,7 @@ function KindSection({
   readiness: QaReadiness | null;
   pendingKind: QaKind | null;
   onUpload: (kind: QaKind, file: File) => void;
-  onRemove: (id: string) => void;
+  onRemove: (id: string, title: string) => void;
 }) {
   const ok = (readiness?.counts[kind] || 0) > 0;
   const rows = (readiness?.documents || []).filter((doc) => doc.kind === kind);
@@ -145,12 +113,11 @@ function KindSection({
               {rows.map((doc) => (
                 <div
                   key={doc.id}
-                  className="flex items-center gap-2 border border-line px-2.5 py-1 text-[12px]"
+                  className="flex items-center gap-2 rounded border border-line px-2.5 py-1 text-[12px]"
                 >
                   <span
-                    className={`font-medium truncate max-w-[220px] ${
-                      doc.has_text ? "text-ink" : "text-rose line-through"
-                    }`}
+                    className={`font-medium truncate max-w-[220px] ${doc.has_text ? "text-ink" : "text-rose line-through"
+                      }`}
                     title={`${doc.title} ${!doc.has_text ? "(Unreadable content)" : doc.chars ? `(${doc.chars.toLocaleString()} characters)` : ""}`}
                   >
                     {doc.title}
@@ -162,9 +129,10 @@ function KindSection({
                   ) : null}
                   <button
                     type="button"
-                    onClick={() => onRemove(doc.id)}
+                    onClick={() => onRemove(doc.id, doc.title)}
                     className="text-muted hover:text-rose p-0.5"
                     title="Remove document"
+                    aria-label={`Remove ${doc.title}`}
                   >
                     {Icons.trash}
                   </button>
@@ -175,7 +143,7 @@ function KindSection({
         </div>
 
         <div className="md:w-48 shrink-0 md:pl-0 pl-10">
-          <label className="flex min-h-[44px] cursor-pointer items-center justify-center border border-dashed border-line bg-bg px-3 py-2.5 text-center hover:border-blue hover:bg-blue-soft group">
+          <label className="flex min-h-[44px] cursor-pointer items-center justify-center rounded-md border border-dashed border-line bg-bg px-3 py-2.5 text-center hover:border-navy hover:bg-blue-soft/60 group">
             <input
               type="file"
               accept={FILE_ACCEPT}
@@ -187,7 +155,7 @@ function KindSection({
                 if (file) onUpload(kind, file);
               }}
             />
-            <div className="flex items-center gap-2 text-[12px] font-semibold text-ink group-hover:text-blue transition-colors">
+            <div className="flex items-center gap-2 text-[12px] font-semibold text-ink group-hover:text-navy transition-colors">
               {Icons.upload}
               <span>{pendingKind === kind ? "Processing…" : "Upload"}</span>
             </div>
@@ -236,7 +204,8 @@ export function StandardsBoard() {
     }
   }
 
-  async function remove(id: string) {
+  async function remove(id: string, title: string) {
+    if (!window.confirm(`Remove "${title}" from your organization standards?`)) return;
     setError(null);
     try {
       const res = await authFetch(`/api/documents/${id}`, { method: "DELETE" });
@@ -286,7 +255,7 @@ export function StandardsBoard() {
 
       <div className="space-y-3">
         <div>
-          <h2 className="text-[15px] font-semibold text-ink">Evaluation scorecards & governance</h2>
+          <h2 className="text-[15px] font-semibold text-ink">Evaluation scorecards &amp; governance</h2>
           <p className="text-[12px] text-muted">Required files for SOP-driven quality evaluations</p>
         </div>
         <div className="surface px-5 py-2">
@@ -297,7 +266,7 @@ export function StandardsBoard() {
               readiness={readiness}
               pendingKind={pendingKind}
               onUpload={(k, f) => void upload(k, f)}
-              onRemove={(id) => void remove(id)}
+              onRemove={(id, title) => void remove(id, title)}
             />
           ))}
         </div>
@@ -318,7 +287,7 @@ export function StandardsBoard() {
               readiness={readiness}
               pendingKind={pendingKind}
               onUpload={(k, f) => void upload(k, f)}
-              onRemove={(id) => void remove(id)}
+              onRemove={(id, title) => void remove(id, title)}
             />
           ))}
         </div>

@@ -5,8 +5,6 @@ import Link from "next/link";
 
 const LINKS = [
   { href: "/about", label: "About" },
-  { href: "/how-it-works", label: "How it works" },
-  { href: "/solutions", label: "Solutions" },
   { href: "/pricing", label: "Pricing" },
 ] as const;
 
@@ -44,6 +42,18 @@ export function MarketingMobileNav({
       {open ? (
         <div className="absolute inset-x-0 top-full border-b border-black/[0.06] bg-white/95 px-6 py-5 shadow-2xl backdrop-blur-2xl">
           <nav className="flex flex-col gap-2">
+            <details className="border-b border-black/[0.06] pb-2" open>
+              <summary className="cursor-pointer list-none px-3 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-400">Products</summary>
+              <div className="grid grid-cols-2 gap-x-3">
+                {[{href:"/#in-action",label:"Quality auditing"},{href:"/how-it-works",label:"Customer intelligence"},{href:"/#capabilities",label:"Scorecards"},{href:"/#bilingual",label:"Bilingual analysis"},{href:"/how-it-works",label:"Company data"},{href:"/#security",label:"Security"}].map(link=><Link key={`${link.href}-${link.label}`} href={link.href} onClick={()=>setOpen(false)} className="px-3 py-2 text-sm text-neutral-700 hover:text-blue">{link.label}</Link>)}
+              </div>
+            </details>
+            <details className="border-b border-black/[0.06] pb-2">
+              <summary className="cursor-pointer list-none px-3 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-400">Solutions</summary>
+              <div className="grid grid-cols-2 gap-x-3">
+                {["Quality assurance","Operations","Customer experience","Telecom","Banking","BPO & outsourcing"].map(label=><Link key={label} href="/solutions" onClick={()=>setOpen(false)} className="px-3 py-2 text-sm text-neutral-700 hover:text-blue">{label}</Link>)}
+              </div>
+            </details>
             {LINKS.map((link) => {
               const active = pathname === link.href;
               return (

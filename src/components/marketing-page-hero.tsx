@@ -1,0 +1,15 @@
+import { TRIAL_CALLS } from "@/lib/billing";
+import Link from "next/link";
+import Image from "next/image";
+import { MarketingDualEngine } from "@/components/marketing-dual-engine";
+const content = {
+ about: {index:"01",label:"ABOUT ZETRO",title:"Better quality.",accent:"Deeper customer understanding.",description:"Made in Tanzania for service teams that need both sides of the truth: how the agent handled the call and what happened to the customer after it.",note:"ONE PLATFORM. TWO CONNECTED QUESTIONS.",image:"/marketing/review.jpg",caption:"For the people behind every customer outcome."},
+ "how-it-works":{index:"02",label:"HOW IT WORKS",title:"Audit the call.",accent:"Understand the journey.",description:"Zetro applies your scorecard, reads the evidence, links repeat contacts, and shows whether the same issue stayed unresolved or a different issue brought the customer back.",note:"FROM CALL QUALITY TO CUSTOMER OUTCOME",image:"/marketing/hand.jpg",caption:"Listen. Connect. Understand. Improve."},
+ solutions:{index:"03",label:"SOLUTIONS",title:"One shared view.",accent:"From agent to customer.",description:"QA leaders see performance. Operations teams see recurring failures. Customer-experience teams see who returned, why, and whether service was delivered.",note:"QUALITY AUDITING + CUSTOMER INTELLIGENCE",image:"/marketing/coach.jpg",caption:"One conversation. The full operational picture."},
+ pricing:{index:"04",label:"PRICING",title:"Every scored call.",accent:"More intelligence included.",description:`Each processed call strengthens both quality auditing and customer intelligence. Explore transparent TZS pricing and start with ${TRIAL_CALLS} free calls.`,note:"ONE CALL. TWO LAYERS OF VALUE.",image:null,caption:"Start small. Learn more from every call."}
+};
+export function MarketingPageHero({page}:{page:keyof typeof content}){
+ const c=content[page];
+ return <><section className="editorial-hero"><div className="editorial-hero-copy"><p className="editorial-kicker">{c.index} / {c.label}</p><h1>{c.title}<br/><em>{c.accent}</em></h1><p className="editorial-intro">{c.description}</p><div className="editorial-actions"><Link href={page==="pricing"?"#plans":"/signup"} className="editorial-button">{page==="pricing"?"Explore pricing":"Start analysing for free"}<span>↗</span></Link><Link href="/talk-sales" className="editorial-secondary">Talk to our team ↗</Link></div><p className="editorial-footnote">{c.note}</p></div><div className={`editorial-hero-visual ${!c.image?"editorial-price-visual":""}`}>{c.image?<><Image src={c.image} alt={c.caption} fill priority sizes="(max-width: 800px) 90vw, 35vw"/><div className="editorial-photo-caption">{c.caption}</div></>:<><div className="editorial-price-top">YOUR FIRST CHAPTER <span>↗</span></div><strong>{TRIAL_CALLS}<span>free calls</span></strong><p>Quality performance.<br/>Customer outcomes.<br/><em>One clearer picture.</em></p><div className="editorial-price-bottom"><span>Explore before you commit.</span><span>01 →</span></div></>}</div></section><MarketingDualEngine/></>;
+}
+
